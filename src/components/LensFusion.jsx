@@ -4,7 +4,7 @@ import EmailForm from "./EmailForm";
 
 function LensFusion() {
   return (
-    <main className="flex flex-col">
+    <main className="flex flex-row">
       <Hero>
         <EmailForm />
       </Hero>

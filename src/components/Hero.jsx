@@ -10,7 +10,7 @@ function Hero({ children }) {
         className="absolute inset-0 object-cover w-full h-full z-0"
       />
       {/* Background overlay */}
-      <div className="absolute inset-0 bg-black opacity-50 z-10"></div>
+      <div className="absolute inset-0  z-10"></div>
       {/* Content */}
       <div className="absolute inset-0 flex flex-col justify-center items-center z-20">
         {children && (
