@@ -1,21 +1,19 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
+import { initializeApp } from "firebase/app";
+import {getFirestore} from "firebase/firestore";
+
+
 const firebaseConfig = {
   apiKey: process.env.local.FIREBASE_API_KEY,
-  authDomain: "lensfusion-2716b.firebaseapp.com",
-  projectId: "lensfusion-2716b",
-  storageBucket: "lensfusion-2716b.firebasestorage.app",
-  messagingSenderId: "1034966194013",
-  appId: "1:1034966194013:web:07f706ee1b4e8ef471bab4"
+  authDomain: process.env.local.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.local.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.local.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.local.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.local.FIREBASE_APP_ID
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-export default{
-    app
-} 
+export {db};
