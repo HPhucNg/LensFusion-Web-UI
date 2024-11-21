@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCnb4MoAw9uDGWd_IqJhp9KHsYreKv3DMA",
+  apiKey: process.env.FIREBASE_API_KEY,
   authDomain: "lensfusion-2716b.firebaseapp.com",
   projectId: "lensfusion-2716b",
   storageBucket: "lensfusion-2716b.appspot.com",
