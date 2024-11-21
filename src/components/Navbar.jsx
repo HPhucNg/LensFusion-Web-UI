@@ -1,10 +1,10 @@
-"use client";
+"use client"
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button"
 
 import Link from "next/link";
-import { Search, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import Branding from "./Branding";
 
 function Navbar() {

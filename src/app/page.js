@@ -1,6 +1,32 @@
+"use client"
+import React, { useRef } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import {db} from '../firebase/FirebaseConfig';
+import { addDoc, collection } from 'firebase/firestore';
+
 export default function Home() {
+  
+  const messageRef = useRef();
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const message = messageRef.current.value.trim();
+
+    if (!message) {
+      console.error("Message cannot be empty.");
+      return;
+    }
+
+    try {
+      const docRef = await addDoc(collection(db, "messages"), { message, timestamp: new Date() });
+      console.log("Message saved with ID:", docRef.id);
+      messageRef.current.value = "";
+    } catch (error) {
+      console.error("Error saving message:", error);
+    }
+  };
+
   return (
     <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden'>
       <Navbar />
@@ -57,6 +83,12 @@ export default function Home() {
           <h2>Features</h2>
           <h2>Features</h2>
         </section>
+        <div className="relative flex-1 gap-1">
+          <form onSubmit={handleSave}>
+            <input className='text-black' type='text' placeholder='message' ref={messageRef}></input>
+            <button type='submit'>Submit</button>
+          </form>
+        </div>
       </div>
       <Footer/>
     </div>
