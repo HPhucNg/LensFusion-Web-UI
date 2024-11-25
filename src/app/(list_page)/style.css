@@ -1,9 +1,11 @@
+/*drak mode applied*/
 body {
     background-color: black;
     color: white;
 }
 
-/* Container holding both flex items */
+/*styling for About Us page*/
+/* Container holding image and text */
 .containerAbout {
     display: flex;
     flex-direction: column; /* Stack items vertically */
@@ -39,6 +41,7 @@ body {
     margin: 1em;  /* Add margin for spacing */
 }
 
+/*styling for Contact Us page*/
 .containerContact {   /*container with two flex items - prompt on left and form on right*/
     display: flex;
     padding-top: 60px;
@@ -89,3 +92,10 @@ input[type=text], select {
     border-radius: 12px;
     cursor: pointer;
   }
+
+/*styling for pricing offers page*/
+.priceh1 {
+    text-align: center;
+    font-weight: bold;
+    font-size: 30px;
+}
