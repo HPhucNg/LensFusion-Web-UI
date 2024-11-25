@@ -3,6 +3,42 @@ body {
     color: white;
 }
 
+/* Container holding both flex items */
+.containerAbout {
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+}
+
+/* Container for image and text overlay */
+.thumbnail-containerAbout {
+    position: relative; /* Position container for absolute positioning of text */
+    flex: 0 1 20px;
+}
+
+/* Flex item for image */
+.thumbnailAbout {
+    width: 100%; /* Make image fill the container */
+    height: 400px; /* Maintain aspect ratio */
+    display: block; /* Prevent any space below the image */
+}
+
+/* Text overlay on the image */
+.centeredAbout {
+    position: absolute; /* Position text over image */
+    top: 70%; /* Position vertically */
+    left: 50%; /* Position horizontally */
+    transform: translate(-50%, -50%); /* Adjust positioning to center the text */
+    color: white; /* Change text color for visibility */
+    font-size: 1.5em; /* Make text larger */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Optional: add a shadow for better contrast */
+}
+
+/* Flex item for text container */
+.itemsAbout {
+    flex: 1 0 80px; /* Adjust this as needed for the text container */
+    margin: 1em;  /* Add margin for spacing */
+}
+
 .containerContact {   /*container with two flex items - prompt on left and form on right*/
     display: flex;
     padding-top: 60px;
