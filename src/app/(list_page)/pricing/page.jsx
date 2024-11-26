@@ -8,12 +8,46 @@ function page() {
     <>
     <Navbar />
     <h1 className='priceh1'>How much is your time worth?</h1>
-    <div>
-      <p>Pricing cards here</p>
-    </div>
-    <div>
-      <h2>Frequently asked questions</h2>
-    </div>
+    <main className='containerPrice'>
+      <section className='cards'>
+        <div className='card'>
+          <h3>Title</h3>
+          <p>$10/mo</p>
+          <ul>
+            <li>list item</li>
+            <li>list item</li>
+            <li>list item</li>
+            <li>list item</li>
+          </ul>
+        </div>
+        <div className='card'>
+          <h3>Title</h3>
+          <p>$30/mo</p>
+          <ul>
+            <li>list item</li>
+            <li>list item</li>
+            <li>list item</li>
+            <li>list item</li>
+          </ul>
+        </div>
+        <div className='card'>
+          <h3>Title</h3>
+          <p>$50/mo</p>
+          <ul>
+            <li>list item</li>
+            <li>list item</li>
+            <li>list item</li>
+            <li>list item</li>
+          </ul>
+        </div>
+      </section>
+
+      <section className='faqItem'>
+        <h2>Frequently asked questions</h2>
+        <select><option>Lorem ipsum dolor sit amet, consectetur adipiscing elit</option></select>
+      </section>
+    </main>
+    
     </>
   )
 }

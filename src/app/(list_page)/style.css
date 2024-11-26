@@ -95,6 +95,7 @@ input[type=text], select {
 
 /*styling for pricing offers page*/
 .priceh1 {
+.priceh1 {   /*position and style header*/
     text-align: center;
     font-weight: bold;
     font-size: 30px;
