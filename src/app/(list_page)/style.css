@@ -30,15 +30,22 @@ body {
     top: 70%; /* Position vertically */
     left: 50%; /* Position horizontally */
     transform: translate(-50%, -50%); /* Adjust positioning to center the text */
-    color: white; /* Change text color for visibility */
+    color: black; /* Change text color for visibility */
     font-size: 1.5em; /* Make text larger */
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Optional: add a shadow for better contrast */
 }
 
 /* Flex item for text container */
 .itemsAbout {
     flex: 1 0 80px; /* Adjust this as needed for the text container */
     margin: 1em;  /* Add margin for spacing */
+}
+.itemsAbout h2 {
+    font-size: larger;
+    font-weight: bold;
+    padding-bottom: 10px;
+}
+.itemsAbout p {
+    padding-bottom: 25px;
 }
 
 /*styling for Contact Us page*/

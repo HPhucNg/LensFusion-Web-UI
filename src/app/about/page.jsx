@@ -2,6 +2,7 @@
 import React from 'react'
 import '../(list_page)/style.css';
 import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 function page() {
   return (
@@ -11,7 +12,7 @@ function page() {
       <div className="thumbnail-containerAbout">
         <img
           className="thumbnailAbout"
-          src="./images/backgroundAbout.png" // Adjust image path if necessary
+          src="/thumbnailAbout.png" // Adjust image path if necessary
           alt="Background Image"
         />
         <p className="centeredAbout">
@@ -39,6 +40,7 @@ function page() {
         </p>
       </div>
     </main>
+    <Footer/>
     </>
   );
 };
