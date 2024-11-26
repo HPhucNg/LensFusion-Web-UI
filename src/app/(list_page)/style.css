@@ -94,9 +94,60 @@ input[type=text], select {
   }
 
 /*styling for pricing offers page*/
-.priceh1 {
 .priceh1 {   /*position and style header*/
     text-align: center;
     font-weight: bold;
-    font-size: 30px;
+    font-size: 30px; 
+    margin-top: 2em; 
+    margin-bottom: 2em; 
 }
+
+.containerPrice {  /*create two flex items - price cards and faq*/
+    display: flex;
+    flex-direction: column;
+    margin: 5em;
+}
+
+.cards {     /*holds 3 card flex items*/
+    display: flex;
+    justify-content: space-around;
+}
+
+.card {     /*each card is being built*/
+    background-color: rgb(62, 59, 59);
+    width: 24%;
+    padding-top: 3%;
+    padding-bottom: 8%;
+    border-radius: 3%;
+}
+/*card content styling*/
+.card h3 {     
+    font-weight: bold;
+    text-align: center;
+}
+.card p {
+    font-size: 200%;
+    font-weight: bold;
+    text-align: center;
+}
+.card ul {
+    padding-top: 5%;
+    padding-left: 20%;
+    list-style-type: disc;
+}
+
+button {
+    background-color: white;
+    color: black;
+}
+
+.faqItem {
+    margin-top: 8%;
+    text-align: center;
+}
+
+.faqItem h2 {
+    font-weight: bold;
+    font-size: 25px;
+}
+
