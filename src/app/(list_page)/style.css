@@ -60,9 +60,13 @@ body {
     padding-left: 5em; /*fix*/
 }
 
+.prompt-container h1 {
+    font-size: 30px;
+    font-weight: 750;
+}
 .prompt-container h3 {  /*fix*/
     margin-top: 2em;
-    margin-bottom: 2em;
+    font-size: 18px;
 }
 
 .form-container {
@@ -93,7 +97,7 @@ input[type=text], select {
     width: 70%;
     background-color: rgb(255, 225, 52);
     color: black;
-    padding: 10px 20px;
+    padding: 7px 20px;
     margin: 8px 0;
     border: none;
     border-radius: 12px;

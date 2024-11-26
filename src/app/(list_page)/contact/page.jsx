@@ -31,14 +31,14 @@ function page() {
       <main className="containerContact">
         <div className="prompt-container">
           <h1>Contact Us</h1>
-          <h3>We are here to help</h3>
+          <h3>We are here to help</h3><br />
           <p>
             If you have any questions<br />
             about LensFusion, or<br />
             would like to leave us a<br />
             comment, feel free to<br />
             contact us.
-          </p>
+          </p><br />
           <p>
             Simply, fill out the form<br />
             and we will get<br />
