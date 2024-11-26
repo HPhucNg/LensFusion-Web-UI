@@ -72,6 +72,7 @@ body {
 .form-container {
     flex: 1;
     margin-top: 2em;
+    margin-bottom: 2em;
 }
 
 input[type=text], select {
@@ -110,13 +111,16 @@ input[type=text], select {
     font-weight: bold;
     font-size: 30px; 
     margin-top: 2em; 
-    margin-bottom: 2em; 
 }
 
 .containerPrice {  /*create two flex items - price cards and faq*/
     display: flex;
     flex-direction: column;
-    margin: 5em;
+    margin: 3em;
+}
+
+.termFees {
+    text-align: center;
 }
 
 .cards {     /*holds 3 card flex items*/
@@ -125,11 +129,17 @@ input[type=text], select {
 }
 
 .card {     /*each card is being built*/
-    background-color: rgb(62, 59, 59);
+    background-color: rgb(45, 42, 42);
     width: 24%;
     padding-top: 3%;
-    padding-bottom: 8%;
     border-radius: 3%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.cardmiddle{     /*each card is being built*/
+    background-color: whitesmoke;
+    color: rgb(45, 42, 42);
 }
 /*card content styling*/
 .card h3 {     
@@ -137,19 +147,29 @@ input[type=text], select {
     text-align: center;
 }
 .card p {
-    font-size: 200%;
-    font-weight: bold;
     text-align: center;
 }
+.price {
+    font-size: 200%;
+    font-weight: bold;
+}
+.period {
+    font-size: 80%;
+    font-weight: lighter;
+}
 .card ul {
-    padding-top: 5%;
-    padding-left: 20%;
+    padding: 5% 0 10% 20%;
     list-style-type: disc;
 }
 
 button {
     background-color: white;
     color: black;
+    border-radius: 10px;
+    padding: 5px 0 5px 0;
+    margin: 0 1em 1em 1em;
+
+    
 }
 
 .faqItem {
