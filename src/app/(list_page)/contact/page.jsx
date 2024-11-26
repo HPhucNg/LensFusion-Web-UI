@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 import Navbar from '../../../components/Navbar';
 import '../style.css';
+import Footer from '../../../components/Footer';
 
 function page() {
   const [formData, setFormData] = useState({
@@ -94,6 +95,7 @@ function page() {
           </form>
         </div>
       </main>
+      <Footer />
     </>
   );
 }
