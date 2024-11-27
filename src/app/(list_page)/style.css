@@ -122,6 +122,17 @@ input[type=text], select {
 .termFees {
     text-align: center;
 }
+.termFees button.selected {
+    background-color: rgb(80, 79, 79); /*background when selected */
+    color: white;
+    border-radius: 5px;
+    padding: 2px 10px;
+  }
+
+  .termFees button{
+    background-color: black; /*background when selected */
+    color: white;
+  }
 
 .cards {     /*holds 3 card flex items*/
     display: flex;

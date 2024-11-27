@@ -2,14 +2,24 @@
 import React, { useState } from 'react'
 import Navbar from '@/components/Navbar';
 import '../style.css';
+import Footer from '../../../components/Footer';
 
 function page() {
   // State to toggle between monthly and yearly pricing
   const [pricingType, setPricingType] = useState('monthly');
 
   //handle the toggle
-  const togglePricing = () => {
-    setPricingType(pricingType === 'monthly' ? 'yearly' : 'monthly');
+  const togglePricing = (type) => {
+    setPricingType(type);
+  };
+
+   // State to track visibility of individual answers
+  const [visibleAnswer, setVisibleAnswer] = useState(null);
+
+   // Toggle the visibility of a specific answer
+  const toggleAnswer = (index) => {
+     // If the clicked answer is already visible, collapse it (null), else expand it
+    setVisibleAnswer(prevState => (prevState === index ? null : index));
   };
 
   //convert price based on the selected pricing type
@@ -25,7 +35,7 @@ function page() {
       periodText = '/yr';
     }
   
-    //With spans for styling
+    //spans for styling
     return (
       <>
         <span className="price">{priceText}</span>
@@ -39,12 +49,20 @@ function page() {
       <Navbar />
       <h1 className="priceh1">How much is your time worth?</h1>
       <main className="containerPrice">
-        <p className='termFees'>
-          {pricingType === 'monthly' ? 'Monthly' : 'Yearly'}
-          <button onClick={togglePricing}>
-            {pricingType === 'monthly' ? 'Yearly' : 'Monthly'}
+        <div className="termFees">
+          <button
+            className={pricingType === 'monthly' ? 'selected' : ''}
+            onClick={() => togglePricing('monthly')}
+          >
+            Monthly
           </button>
-        </p>
+          <button
+            className={pricingType === 'yearly' ? 'selected' : ''}
+            onClick={() => togglePricing('yearly')}
+          >
+            Yearly
+          </button>
+        </div>
         <section className="cards">
           <div className="card">
             <h3>Title</h3>
@@ -83,11 +101,37 @@ function page() {
 
         <section className="faqItem">
           <h2>Frequently asked questions</h2>
-          <select>
-            <option>Lorem ipsum dolor sit amet, consectetur adipiscing elit</option>
-          </select>
+          <div>
+            <button onClick={() => toggleAnswer(0)}>
+              {visibleAnswer === 0 ? 'Answer is here.' : 'Lorem ipsum dolor sit amet, consectetur adipiscing elit'}
+            </button>
+            {visibleAnswer === 0 && <p>This is the answer to the first question.</p>}
+          </div>
+
+          <div>
+            <button onClick={() => toggleAnswer(1)}>
+              {visibleAnswer === 1 ? 'Answer is here.' : 'Lorem ipsum dolor sit amet, consectetur adipiscing elit'}
+            </button>
+            {visibleAnswer === 1 && <p>This is the answer to the second question.</p>}
+          </div>
+
+          <div>
+            <button onClick={() => toggleAnswer(2)}>
+              {visibleAnswer === 2 ? 'Answer is here.' : 'Lorem ipsum dolor sit amet, consectetur adipiscing elit'}
+            </button>
+            {visibleAnswer === 2 && <p>This is the answer to the third question.</p>}
+          </div>
+
+          <div>
+            <button onClick={() => toggleAnswer(3)}>
+              {visibleAnswer === 3 ? 'Answer is here.' : 'Lorem ipsum dolor sit amet, consectetur adipiscing elit'}
+            </button>
+            {visibleAnswer === 3 && <p>This is the answer to the fourth question.</p>}
+          </div>
         </section>
+
       </main>
+      <Footer />
     </>
   );
 }
