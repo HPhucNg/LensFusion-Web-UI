@@ -23,7 +23,7 @@ function page() {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
-    // Here, you could send the formData to a server or handle it however you need
+    // Here - could send the formData to a server or handle it however you need
   };
 
   return (
