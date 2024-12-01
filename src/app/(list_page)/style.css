@@ -72,10 +72,10 @@ body {
 .form-container {
     flex: 1;
     margin-top: 2em;
-    margin-bottom: 2em;
+    margin-bottom: 4em;
 }
 
-input[type=text], select {
+.form-container input[type=text], .form-container select {
     width: 70%;
     background-color: rgb(218, 218, 218);
     padding: 10px 20px;
@@ -85,16 +85,15 @@ input[type=text], select {
     border: 1px solid #ccc;
     border-radius: 10px;
     box-sizing: border-box;
-    
   }
 
   /* Make the message input taller */
-  input[type=text][id="message"] {
+  .form-container input[type=text][id="message"] {
         height: 80px;
   }
 
   /* Styling for the submit button */
-  input[type=submit] {
+  .form-container input[type=submit] {
     width: 70%;
     background-color: rgb(255, 225, 52);
     color: black;
@@ -222,7 +221,7 @@ button {
     justify-content: space-between;  /* Spacing between expiration and CVV fields */
 }
 
-.containerPayment input[type="text"], select {
+.containerPayment input[type="text"], .containerPayment select {
     border-radius: 5px;
     color: black;
     width: 100%;  /* Full width of the input container */
