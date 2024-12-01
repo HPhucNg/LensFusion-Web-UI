@@ -42,10 +42,10 @@ body {
 .itemsAbout h2 {
     font-size: larger;
     font-weight: bold;
-    padding-bottom: 10px;
+    margin-left: 1em;
 }
 .itemsAbout p {
-    padding-bottom: 25px;
+    margin: 1em 1em 3em 1em;
 }
 
 /*styling for Contact Us page*/
