@@ -5,6 +5,10 @@ import { Auth0Provider } from "@auth0/auth0-react";
 
 const domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN;
 const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID;
+const redirectUri =
+  typeof window !== "undefined"
+    ? `${window.location.origin}/login/callback`
+    : "http://localhost:3000/login/callback"; // Default fallback for SSR
 
 export default function RootLayout({ children }) {
   return (
@@ -12,7 +16,7 @@ export default function RootLayout({ children }) {
       domain={domain}
       clientId={clientId}
       authorizationParams={{
-        redirect_uri: `${window.location.origin}/login/callback`,
+        redirect_uri: redirectUri,
       }}
     >
       <html lang="en">
