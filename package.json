@@ -10,6 +10,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@auth0/auth0-react": "^2.2.4",
+    "@okta/okta-auth-js": "^7.8.1",
+    "@okta/okta-react": "^6.9.0",
     "@radix-ui/react-slot": "^1.1.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
