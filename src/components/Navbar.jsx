@@ -67,7 +67,7 @@ function Navbar() {
             <Link  href="#">
                 <Button
                 variant="outline"
-                className="hidden bg-black-80 text-white md:inline-flex border-slate-700 hover:bg-slate-400 transition-colors pr--5"
+                className="hidden bg-black-80 text-black md:inline-flex border-slate-700 hover:bg-slate-400 transition-colors pr--5"
                 >
                 Register
               </Button>

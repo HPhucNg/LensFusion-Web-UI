@@ -38,6 +38,7 @@ function Page() {
 
   return (
     <>
+    <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden'>
       <Navbar />
       <div>
         <h1>Upgrade to a Pro Membership</h1>
@@ -149,6 +150,7 @@ function Page() {
       
       <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
       <Footer />
+    </div>
     </>
   );
 }

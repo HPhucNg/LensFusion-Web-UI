@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 function page() {
   return (
     <>
+    <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden'>
     <Navbar />
     <main className="containerAbout">
       <div className="thumbnail-containerAbout">
@@ -16,7 +17,7 @@ function page() {
           alt="Background Image"
         />
         <p className="centeredAbout">
-          We are a team of four developers from California State University, Long Beach
+          Leveraging AI to help Improve Businesses
         </p>
       </div>
       
@@ -41,6 +42,7 @@ function page() {
       </div>
     </main>
     <Footer/>
+    </div>
     </>
   );
 };
