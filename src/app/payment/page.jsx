@@ -3,6 +3,11 @@ import React, { useState } from 'react';
 import '../(list_page)/style.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { Input } from "@/components/ui/input"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+
+ 
 
 function Page() { 
   const [formData, setFormData] = useState({
@@ -40,115 +45,44 @@ function Page() {
     <>
     <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden'>
       <Navbar />
-      <div>
-        <h1>Upgrade to a Pro Membership</h1>
-        <p>Get all access and an extra 20% off when you subscribe annually</p>
-      </div>
-        
-      <form onSubmit={handleSubmit} className="containerPayment">
-        <section className='paymentCardInfo'>
-          <p>Billed to</p>
-          <label htmlFor="cardname"></label><br />
-          <input
-            type="text"
-            id="cardname"
-            name="cardname"
-            placeholder="Card Holder Name"
-            value={formData.cardname}
-            onChange={handleChange}
-          /><br />
-          
-          <label htmlFor="cardnumber"></label><br />
-          <input
-            type="text"
-            id="cardnumber"
-            name="cardnumber"
-            placeholder="Card Number"
-            value={formData.cardnumber}
-            onChange={handleChange}
-          /><br />
-          
-          <div className='dateCvv'>
-            <label htmlFor="expiration"></label><br />
-            <input
-              type="text"
-              id="expiration"
-              name="expiration"
-              placeholder="MM/YY"
-              value={formData.expiration}
-              onChange={handleChange}
-            /><br />
-
-            <label htmlFor="cvv"></label><br />
-            <input
-              type="text"
-              id="cvv"
-              name="cvv"
-              placeholder="CVV"
-              value={formData.cvv}
-              onChange={handleChange}
-            /><br />
+      <div className='containerPayment'>
+        <div>
+          <div className='billed'>
+            <p>Billed To</p>
+            <Input type="cardholdername" placeholder="Card Holder Name" />
+            <Input type="cardnumber" placeholder="Card Number" />
+            <span className='inline-block'><Input type="expiration" placeholder="MM/YY" /></span><span className='inline-block'><Input className='inline-block' type="cvv" placeholder="CVV" /></span>
           </div>
-
-          <div>
+          <div className='country'>
             <p>Country</p>
-            <label htmlFor="country"></label><br />
-            <select
-              name="country"
-              id="country"
-              value={formData.country}
-              onChange={handleChange}
-            >
-              <option value="default">Select Country</option>
-              <option value="usa">United States</option>
-              <option value="mexico">Mexico</option>
-              <option value="canada">Canada</option>
-              <option value="other">Other</option>
-            </select><br />
-
-            <label htmlFor="zipcode"></label><br />
-            <input
-              type="text"
-              id="zipcode"
-              name="zipcode"
-              placeholder='Zip Code'
-              value={formData.zipcode}
-              onChange={handleChange}
-            /><br />
+            <Select>
+              <SelectTrigger className="text-white w-[180px]">
+                <SelectValue placeholder="Select Country" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="canada">Canada</SelectItem>
+                <SelectItem value="usa">United States</SelectItem>
+                <SelectItem value="mexico">Mexico</SelectItem>
+                </SelectContent>
+              </Select>
+            <Input type="zipcode" placeholder="Zip Code" />
           </div>
-        </section>
-
-        <section className='paymentSelect'>
+        </div>
+        <div>
           <p>Membership Type</p>
-          <label>
-            <input 
-              type="radio" 
-              name="membershipType" 
-              value="monthly" 
-              checked={formData.membershipType === 'monthly'}
-              onChange={handleRadioChange}
-            />
-            Pay monthly
-          </label>
-          <label>
-            <input 
-              type="radio" 
-              name="membershipType" 
-              value="annually" 
-              checked={formData.membershipType === 'annually'}
-              onChange={handleRadioChange}
-            />
-            Pay annually
-          </label>
+          <RadioGroup defaultValue="option-one">
+            <div className="flex items-center space-x-1">
+              <RadioGroupItem value="monthly" id="monthly" />
+              <p>Monthly</p>
+            </div>
+            <div className="flex flex-col space-y-1">
+              <RadioGroupItem value="yearly" id="yearly" />
+              <p>Yearly</p>
+            </div>
+          </RadioGroup>
 
-          <p>Add-Ons</p>
-          {/* Add Add-Ons inputs here if needed */}
-
-          <input type="submit" value="Submit" />
-        </section>
-      </form>
-      
-      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+        </div>
+      </div>
       <Footer />
     </div>
     </>

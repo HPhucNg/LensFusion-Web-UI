@@ -73,7 +73,7 @@
 
 .form-container input[type=text], .form-container select {
     width: 70%;
-    background-color: rgb(218, 218, 218);
+    background-color: transparent;
     padding: 10px 20px;
     margin-top: 8px;
     margin-bottom: 25px;
@@ -81,11 +81,6 @@
     border: 1px solid #ccc;
     border-radius: 10px;
     box-sizing: border-box;
-  }
-
-  /* Make the message input taller */
-  .form-container input[type=text][id="message"] {
-        height: 80px;
   }
 
   /* Styling for the submit button */
@@ -98,6 +93,10 @@
     border: none;
     border-radius: 12px;
     cursor: pointer;
+  }
+  .form-container input[type=submit]:hover {
+    background-color: #fbf779; /* Green */
+    color: white;
   }
 
 /*styling for pricing offers page*/
@@ -194,63 +193,14 @@ button {
 
 
 /*payment page styling*/
-/* Payment page styling */
 .containerPayment {
     display: flex;
     justify-content: space-between;  /* Space between the two sections */
     gap: 3em;  /* Adds space between the two columns */
-    margin-top: 2em;
-    margin-left: 2em;
-}
-
-.paymentCardInfo, .paymentSelect {
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-}
-
-.paymentCardInfo {
-    flex: 1 1 30%;  /* Left section takes 50% of the width */  
-}
-
-.paymentSelect {
-    flex: 1 1 40%;  /* Right section takes 40% of the width */
-}
-
-.dateCvv {
-    display: flex;
-    justify-content: space-between;  /* Spacing between expiration and CVV fields */
-}
-
-.containerPayment input[type="text"], .containerPayment select {
-    border-radius: 5px;
-    color: black;
-    width: 100%;  /* Full width of the input container */
-}
-
-.containerPayment input[type="submit"] {
-    background-color: #669be1;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1em;
-    width: 50%;
-    margin-top: 1em;
-}
-
-.containerPayment input[type="submit"]:hover {
-    background-color: lightblue;
-}
-
-/* For Membership Type Radio Buttons */
-.paymentSelect label {
-    margin-top: 2em;
-    font-weight: bold;
-}
-
-.paymentSelect input[type="radio"] {
-    margin-right: 0.5em;
+    margin: 3em 0 8em 2em;
 }
 
 
+.country{
+    margin-top: 10%;
+}

@@ -3,6 +3,9 @@ import React, { useState } from 'react'
 import Navbar from '../../../components/Navbar';
 import '../style.css';
 import Footer from '../../../components/Footer';
+import { Input } from "@/components/ui/input"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select"
+
 
 
 function page() {
@@ -52,48 +55,52 @@ function page() {
         <div className="form-container">
           <form onSubmit={handleSubmit}>
             <label htmlFor="subject">Subject</label><br />
-            <select
+            <Select 
               name="subject"
               id="subject"
               value={formData.subject}
-              onChange={handleChange}
-            >
-              <option value="default">Select option</option>
-              <option value="feedback">Feedback</option>
-              <option value="trouble">Trouble-shooting</option>
-              <option value="community">Community</option>
-              <option value="subscription">Subscription</option>
-              <option value="other">Other</option>
-            </select><br />
+              onChange={handleChange}>
+              <SelectTrigger className="text-white">
+                <SelectValue placeholder="Select Option" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Select Option</SelectItem>
+                <SelectItem value="feedback">Feedback</SelectItem>
+                <SelectItem value="subscription">Subscription</SelectItem>
+                </SelectContent>
+              </Select>
             
             <label htmlFor="name">Name</label><br />
-            <input
+            <Input
               type="text"
               id="name"
               name="name"
+              placeholder="Name"
               value={formData.name}
               onChange={handleChange}
             /><br />
             
             <label htmlFor="email">Email Address</label><br />
-            <input
+            <Input
               type="text"
               id="email"
               name="email"
+              placeholder='Email'
               value={formData.email}
               onChange={handleChange}
             /><br />
             
             <label htmlFor="message">Message</label><br />
-            <input
+            <Input
               type="text"
               id="message"
               name="message"
+              placeholder='Message'
               value={formData.message}
               onChange={handleChange}
             /><br />
             
-            <input type="submit" value="Submit" />
+            <input type="submit" value="Submit" onChange={handleSubmit}/>
           </form>
         </div>
       </main>
