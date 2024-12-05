@@ -45,9 +45,13 @@ function Page() {
     <>
     <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden'>
       <Navbar />
+      <div className='h1payment'>
+      <h1>Upgrade to a Pro Membership</h1>
+      <p>Get all access and an extra 20% off when you subscribe annually</p>
+      </div>
       <div className='containerPayment'>
-        <div>
-          <div className='billed'>
+        <div className='paymentForm'>
+          <div>
             <p>Billed To</p>
             <Input type="cardholdername" placeholder="Card Holder Name" />
             <Input type="cardnumber" placeholder="Card Number" />
@@ -55,32 +59,18 @@ function Page() {
           </div>
           <div className='country'>
             <p>Country</p>
-            <Select>
-              <SelectTrigger className="text-white w-[180px]">
-                <SelectValue placeholder="Select Country" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="canada">Canada</SelectItem>
-                <SelectItem value="usa">United States</SelectItem>
-                <SelectItem value="mexico">Mexico</SelectItem>
-                </SelectContent>
-              </Select>
+            <select>
+              <option value="default">Select Country</option>
+                <option value="canada">Canada</option>
+                <option value="usa">United States</option>
+                <option value="mexico">Mexico</option>
+              </select>
             <Input type="zipcode" placeholder="Zip Code" />
           </div>
+          <div><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></div>
         </div>
-        <div>
+        <div className='membership'>
           <p>Membership Type</p>
-          <RadioGroup defaultValue="option-one">
-            <div className="flex items-center space-x-1">
-              <RadioGroupItem value="monthly" id="monthly" />
-              <p>Monthly</p>
-            </div>
-            <div className="flex flex-col space-y-1">
-              <RadioGroupItem value="yearly" id="yearly" />
-              <p>Yearly</p>
-            </div>
-          </RadioGroup>
-
         </div>
       </div>
       <Footer />

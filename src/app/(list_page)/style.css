@@ -5,17 +5,11 @@
     flex-direction: column; /* Stack items vertically */
 }
 
-/* Container for image and text overlay */
-.thumbnail-containerAbout {
-    position: relative; /* Position container for absolute positioning of text */
-    flex: 0 1 20px;
-}
-
-/* Flex item for image */
-.thumbnailAbout {
-    width: 100%; /* Make image fill the container */
-    height: 600px; /* Maintain aspect ratio */
-    display: block; /* Prevent any space below the image */
+.thumbnailContainer {
+    background-image: url("/thumbnailAbout.png");
+    background-size: cover;
+    flex: 1 0 600px;
+    position: relative;
 }
 
 /* Text overlay on the image */
@@ -29,46 +23,61 @@
     font-family: 'Cambria Math';
 }
 
-/* Flex item for text container */
-.itemsAbout {
+
+.textAbout {
     flex: 1 0 80px; /* Adjust this as needed for the text container */
     margin: 3em;  /* Add margin for spacing */
+    color: white;
 }
-.itemsAbout h2 {
+.textAbout h2 {
     font-size: 2.5em;
     font-weight: 500;
     font-family: 'Cambria Math';
 }
-.itemsAbout p {
+.textAbout p {
     margin: 1em 1em 4em 0;
     font-size: 1.3em;
 }
+
 
 /*styling for Contact Us page*/
 .containerContact {   /*container with two flex items - prompt on left and form on right*/
     display: flex;
     margin: 4em 2em 4em 2em;
-    font-family: Arial, Helvetica, sans-serif;
 }
 
 .prompt-container {
     flex: 1 ;
-    padding-left: 5em; /*fix*/
+    padding-left: 6em; 
 }
 
-.prompt-container h1 {
-    font-size: 30px;
+.abouth1 {
+    font-size: 50px;
     font-weight: 750;
+    font-family: 'Cambria Math';
+    margin-left: 2.5em;
 }
 .prompt-container h3 {  /*fix*/
-    margin-top: 2em;
-    font-size: 18px;
+    font-size: 24px;
+    font-weight: 500;
 }
 
 .form-container {
     flex: 1;
-    margin-top: 2em;
     margin-bottom: 4em;
+}
+
+.form-container select::-ms-expand {
+    display: none;}
+
+.form-container select {
+    appearance: none;
+        /* Add some styling */
+    width: 100%;
+    height: 39px;
+    font-size: 14px;
+    color: #727682b1;
+    background-color: #ffffff;  
 }
 
 .form-container input[type=text], .form-container select {
@@ -77,17 +86,21 @@
     padding: 10px 20px;
     margin-top: 8px;
     margin-bottom: 25px;
-    display: inline-block;
     border: 1px solid #ccc;
     border-radius: 10px;
+    display: inline;
     box-sizing: border-box;
   }
+
+  /*.form-container select {
+    padding: 1em 1em 1em 1em;
+  }*/
 
   /* Styling for the submit button */
   .form-container input[type=submit] {
     width: 70%;
-    background-color: rgb(255, 225, 52);
-    color: black;
+    background-color: #fffc56; ;
+    color:  #ccc;
     padding: 7px 20px;
     margin: 8px 0;
     border: none;
@@ -95,7 +108,7 @@
     cursor: pointer;
   }
   .form-container input[type=submit]:hover {
-    background-color: #fbf779; /* Green */
+    background-color: rgb(255, 225, 52);
     color: white;
   }
 
@@ -195,12 +208,40 @@ button {
 /*payment page styling*/
 .containerPayment {
     display: flex;
-    justify-content: space-between;  /* Space between the two sections */
-    gap: 3em;  /* Adds space between the two columns */
-    margin: 3em 0 8em 2em;
+    justify-content: flex-start;
+    margin: 4em 2em 8em 4em;
 }
-
-
 .country{
     margin-top: 10%;
+}
+
+.country select::-ms-expand {
+    display: none;}
+
+.country select {
+    appearance: none;
+        /* Add some styling */
+    width: 100%;
+    height: 39px;
+    font-size: 15px;
+    color: #727682b1;
+    background-color: transparent;
+    border: 1px solid #ccc;
+    padding: 5px 13px;
+}
+
+.paymentForm {
+    flex-basis: 500px;
+}
+.membership {
+    flex-basis: 300px;
+    margin-left: 6em;
+}
+
+.h1payment {
+    margin: 2em 0 0 4em;
+}
+.h1payment h1{
+    font-weight: bolder;
+    font-size: 30px;
 }

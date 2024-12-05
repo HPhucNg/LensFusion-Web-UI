@@ -34,9 +34,9 @@ function page() {
     <>
     <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden'>
       <Navbar />
+      <h1 className='abouth1'>Contact Us</h1>
       <main className="containerContact">
         <div className="prompt-container">
-          <h1>Contact Us</h1>
           <h3>We are here to help</h3><br />
           <p>
             If you have any questions<br />
@@ -55,20 +55,17 @@ function page() {
         <div className="form-container">
           <form onSubmit={handleSubmit}>
             <label htmlFor="subject">Subject</label><br />
-            <Select 
+            <select 
               name="subject"
               id="subject"
               value={formData.subject}
-              onChange={handleChange}>
-              <SelectTrigger className="text-white">
-                <SelectValue placeholder="Select Option" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Select Option</SelectItem>
-                <SelectItem value="feedback">Feedback</SelectItem>
-                <SelectItem value="subscription">Subscription</SelectItem>
-                </SelectContent>
-              </Select>
+              onChange={handleChange}
+              >
+                <option value="deafult">Select Option</option>
+                <option value="trouble-shooting">Trouble-shooting</option>
+                <option value="feedback">Feedback</option>
+                <option value="subscription">Subscription</option>
+              </select><br />
             
             <label htmlFor="name">Name</label><br />
             <Input
