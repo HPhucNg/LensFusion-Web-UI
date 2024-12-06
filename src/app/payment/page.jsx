@@ -53,9 +53,9 @@ function Page() {
         <div className='paymentForm'>
           <div>
             <p>Billed To</p>
-            <Input type="cardholdername" placeholder="Card Holder Name" />
-            <Input type="cardnumber" placeholder="Card Number" />
-            <span className='inline-block'><Input type="expiration" placeholder="MM/YY" /></span><span className='inline-block'><Input className='inline-block' type="cvv" placeholder="CVV" /></span>
+            <Input type="text" placeholder="Card Holder Name" />
+            <Input type="text" placeholder="Card Number" />
+            <span className='inline-block'><Input type="text" placeholder="MM/YY" /></span><span className='inline-block'><Input className='text' type="cvv" placeholder="CVV" /></span>
           </div>
           <div className='country'>
             <p>Country</p>
@@ -65,7 +65,7 @@ function Page() {
                 <option value="usa">United States</option>
                 <option value="mexico">Mexico</option>
               </select>
-            <Input type="zipcode" placeholder="Zip Code" />
+            <Input type="text" placeholder="Zip Code" />
           </div>
           <div><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></div>
         </div>
