@@ -80,7 +80,7 @@
     background-color: #ffffff;  
 }
 
-.form-container input[type=text], .form-container select {
+.form-container input[type=text], .form-container input[type=email], .form-container select, .form-container textarea {
     width: 70%;
     background-color: transparent;
     padding: 10px 20px;
