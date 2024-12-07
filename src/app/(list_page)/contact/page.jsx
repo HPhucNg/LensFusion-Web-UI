@@ -26,6 +26,7 @@ function page() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    //basic validation
     if (!formData.name || !formData.email || !formData.message) {
       alert('Please fill in all fields');
       return;

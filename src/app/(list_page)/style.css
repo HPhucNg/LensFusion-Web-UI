@@ -6,7 +6,7 @@
 }
 
 .thumbnailContainer {
-    background-image: url("/thumbnailAbout.png");
+    background-image: url("/thumbnailAbout.jpg");
     background-size: cover;
     flex: 1 0 600px;
     position: relative;
@@ -18,14 +18,15 @@
     top: 50%; /* Position vertically */
     left: 50%; /* Position horizontally */
     transform: translate(-50%, -50%); /* Adjust positioning to center the text */
-    color: black; /* Change text color for visibility */
+    color: white; /* Change text color for visibility */
     font-size: 2em; /* Make text larger */
     font-family: 'Cambria Math';
+    text-shadow: 2px 2px 10px rgba(95, 95, 95, 0.7);
 }
 
 
 .textAbout {
-    flex: 1 0 80px; /* Adjust this as needed for the text container */
+    flex: 1 0 80px; /* Adjust for the text container */
     margin: 3em;  /* Add margin for spacing */
     color: white;
 }
@@ -37,6 +38,68 @@
 .textAbout p {
     margin: 1em 1em 4em 0;
     font-size: 1.3em;
+}
+/* Main content container */
+.textAbout {
+    flex: 1;
+    margin: 3em 1em; /* spacing around text */
+    color: white;
+   /*background-color: rgba(0, 0, 0, 0.5); /* Slightly darken the background  */
+    /*border-radius: 10px; /* Rounded corners for modern look */
+    padding: 2em; /* Added padding to give space around the content */
+}
+
+/* Headings styling */
+.textAbout h2 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    font-family: 'Cambria Math', serif;
+    margin-bottom: 1em;
+    color: #39bdff; /* Highlight headings */
+}
+
+.textAbout p {
+    font-size: 1.3rem;
+    line-height: 1.6; /* Better line spacing f*/
+    margin: 1em 0;
+}
+
+/* padding and background to text section for better spacing */
+.textAbout section {
+    margin-bottom: 2em;
+}
+
+/* Responsive styling */
+@media (max-width: 768px) {
+    .centeredAbout {
+        font-size: 1.8rem; /* Smaller font on smaller screens */
+        padding: 0 10px; /* Ensure the text doesn't overflow */
+    }
+
+    .textAbout {
+        margin: 2em; /* Reduced margin for smaller screens */
+        padding: 1.5em; /* Reduced padding for smaller screens */
+    }
+
+    .textAbout h2 {
+        font-size: 2rem; /* Adjust heading size */
+    }
+
+    .textAbout p {
+        font-size: 1.2rem; /* Adjust paragraph font size */
+    }
+}
+
+@media (max-width: 480px) {
+    .centeredAbout {
+        font-size: 1.5rem; /* adjust text size for very small screens */
+    }
+    .textAbout h2 {
+        font-size: 1.8rem; /* reduce heading size */
+    }
+    .textAbout p {
+        font-size: 1.1rem; /* reduce paragraph font size */
+    }
 }
 
 
