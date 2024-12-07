@@ -13,6 +13,11 @@ function PricingPage() {
   const togglePricing = (type) => {
     setPricingType(type);
   };
+  /*Handle plan select
+  const handlePlanSelect = (plan) => {
+    navigate('/payment', { state: { plan, pricingType } });
+  };*/
+
 
   // price based on the selected pricing type
   const formatPrice = (price, type) => {
@@ -92,7 +97,7 @@ function PricingPage() {
                   <li key={`feature-3-${index}`}>Feature 3</li>
                   <li key={`feature-4-${index}`}>Feature 4</li>
                 </ul>
-                <button className={`${index === 1 ? 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white' : ''}`}>Button</button>
+                <button onClick={() => handlePlanSelect(plan)} className={`${index === 1 ? 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white' : ''}`}>Button</button>
               </div>
             ))}
           </section>
