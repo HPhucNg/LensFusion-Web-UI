@@ -94,9 +94,11 @@ export default function UserProfile() {
                     <HoverCardTrigger asChild>
                       <div className="relative aspect-square rounded-2xl overflow-hidden group cursor-pointer">
                         <Image
-                          src={`/placeholder-${index}.jpg`}
+                          // Use Lorem Picsum API URL with unique images
+                          src={`https://picsum.photos/200/200?random=${index}`}
                           alt={`Gallery item ${index}`}
-                          fill
+                          width={200} // Match the width for the placeholder
+                          height={200} // Match the height for the placeholder
                           className="object-cover"
                         />
                         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
