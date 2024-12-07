@@ -46,41 +46,35 @@ function Navbar() {
               className="text-slate-400 hover:text-white transition-colors"
             >
             Contact
-          </Link>
-          {isAuthenticated && (
-            <Link href="/profile" className="text-slate-400 hover:text-white transition-colors">
-              Profile
             </Link>
-          )}
-        </div>
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden text-slate-400 hover:text-slate-900 transition-colors"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            <Menu className="h-6 w-6" />
-          </Button>
-          {isAuthenticated ? (
+          </div>
+          <div className="flex items-center space-x-4">
             <Button
-              variant="outline"
-              onClick={() => logout({ returnTo: window.location.origin })}
-              className="hidden bg-red-500 text-white md:inline-flex border-red-700 hover:bg-red-600 transition-colors"
+              variant="ghost"
+              size="icon"
+              className="md:hidden text-slate-400 hover:text-slate-900 transition-colors"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              Log Out
+              <Menu className="h-6 w-6" />
             </Button>
-          ) : (
-            <Button
-              variant="outline"
-              onClick={() => loginWithRedirect()}
-              className="hidden bg-white text-black md:inline-flex border-slate-700 hover:bg-slate-400 transition-colors"
-            >
-              Sign In
-            </Button>
-          )}
-        </div>
-      </nav>
+            <Link href="#">
+              <Button
+                variant="outline"
+                className="hidden bg-white text-black md:inline-flex border-slate-700 hover:bg-slate-400 transition-colors"
+              >
+                Sign in
+              </Button>
+            </Link>
+            <Link  href="#">
+                <Button
+                variant="outline"
+                className="hidden bg-black-80 text-black md:inline-flex border-slate-700 hover:bg-slate-400 transition-colors pr--5"
+                >
+                Register
+              </Button>
+            </Link>
+          </div>
+        </nav>
     </header>
   );
 }
