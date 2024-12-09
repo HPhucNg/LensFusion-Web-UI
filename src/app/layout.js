@@ -13,8 +13,10 @@ export default function RootLayout({ children }) {
       }}
     >
       <html lang="en">
-        <body className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
-          {children}
+        <body className="h-screen overflow-y-auto bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans">
+          <div className="flex flex-col min-h-screen">
+            {children}
+          </div>
         </body>
       </html>
     </Auth0Provider>
