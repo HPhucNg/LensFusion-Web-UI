@@ -6,7 +6,7 @@ import Footer from '../../../components/Footer';
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger,} from "@/components/ui/accordion"
 
 
-function page() {
+function Page() {
   // State to toggle between monthly and yearly pricing
   const [pricingType, setPricingType] = useState('monthly');
 
@@ -123,4 +123,4 @@ function page() {
   
 }
 
-export default page
+export default Page
