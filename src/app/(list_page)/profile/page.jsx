@@ -18,6 +18,39 @@ import Footer from "@/components/Footer";
 export default function UserProfile() {
   const { user, isAuthenticated, isLoading } = useAuth0();
 
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      saveUserToFirebase(user);
+    }
+  }, [isAuthenticated, user]);
+
+  const saveUserToFirebase = async (userData) => {
+    try {
+      const userRef = doc(db, 'users', userData.sub);
+      
+      // Check if user exists
+      const userDoc = await getDoc(userRef);
+      
+      const userDataToSave = {
+        auth0Id: userData.sub,
+        email: userData.email,
+        name: userData.name,
+        nickname: userData.nickname,
+        picture: userData.picture,
+        lastLogin: serverTimestamp(),
+        updatedAt: userData.updated_at,
+        // Add additional fields here
+        milestoneProgress: userDoc.exists() ? userDoc.data().milestoneProgress || 35 : 35,
+        galleryItems: userDoc.exists() ? userDoc.data().galleryItems || [] : []
+      };
+
+      await setDoc(userRef, userDataToSave, { merge: true });
+      console.log("User data saved successfully");
+    } catch (error) {
+      console.error("Error saving user data:", error);
+    }
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -142,3 +175,4 @@ export default function UserProfile() {
     </div>
   );
 }
+
