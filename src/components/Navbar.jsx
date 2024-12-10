@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useAuth0 } from "@auth0/auth0-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Menu, UserCircle2 } from "lucide-react";
+import { Menu, UserCircle2, CircleUser, X } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import Branding from "./Branding";
+import { auth } from '@/firebase/FirebaseConfig';
+import { signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,70 +15,81 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-function Navbar() {
+export default function Navbar() {
   const router = useRouter();
-  const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
+  const [user, setUser] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Handle successful authentication
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/profile');
-    }
-  }, [isAuthenticated, router]);
-
-  const handleLogin = () => {
-    loginWithRedirect({
-      redirectUri: "http://localhost:3000/profile"
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
     });
+  
+    return () => unsubscribe();
+  }, [router]);
+
+  const handleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      console.error("Error signing in:", error);
+    }
   };
 
-  const handleLogout = () => {
-    logout({ returnTo: window.location.origin });
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
+
+  const authenticatedLinks = [
+    { href: '/dashboard', label: 'Dashboard' },
+    { href: '/resources', label: 'Resources' },
+    { href: '/payment', label: 'Payment' },
+    { href: '/profile', label: 'Profile' },
+    { href: '/community', label: 'Community' },
+    { href: '/contact', label: 'Contact' },
+    { href: '/solutions', label: 'Solutions' },
+    { href: '/pricing', label: 'Pricing' },
+    { href: '/about', label: 'About' }
+  ];
+  
+  const unauthenticatedLinks = [
+    { href: '/solutions', label: 'Solutions' },
+    { href: '/resources', label: 'Resources' },
+    { href: '/community', label: 'Community' },
+    { href: '/pricing', label: 'Pricing' },
+    { href: '/contact', label: 'Contact' },
+    { href: '/about', label: 'About' }
+  ];
+
+  const currentLinks = user ? authenticatedLinks : unauthenticatedLinks;
 
   return (
-    <header className="top-0 w-full z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5 px-4">
+    <header className="relative top-0 w-full z-50 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 border-slate-900 rounded-full border shadow-xl border-gray-800">
         <div className="flex items-center ml-5">
           <Branding />
         </div>
         
-        {/* Navigation Links */}
+        {/* Desktop Navigation Links */}
         <div className="hidden md:flex space-x-4">
-          {isAuthenticated ? (
-            // Authenticated Navigation
-            <>
-              <Link href="/dashboard" className="text-slate-400 hover:text-white transition-colors">
-                Dashboard
-              </Link>
-              <Link href="/resources" className="text-slate-400 hover:text-white transition-colors">
-                Resources
-              </Link>
-              <Link href="/upgrade" className="text-slate-400 hover:text-white transition-colors">
-                Upgrade
-              </Link>
-            </>
-          ) : (
-            // Unauthenticated Navigation
-            <>
-              <Link href="/solutions" className="text-slate-400 hover:text-white transition-colors">
-                Solutions
-              </Link>
-              <Link href="/resources" className="text-slate-400 hover:text-white transition-colors">
-                Resources
-              </Link>
-              <Link href="/community" className="text-slate-400 hover:text-white transition-colors">
-                Community
-              </Link>
-              <Link href="/pricing" className="text-slate-400 hover:text-white transition-colors">
-                Pricing
-              </Link>
-              <Link href="/contact" className="text-slate-400 hover:text-white transition-colors">
-                Contact
-              </Link>
-            </>
-          )}
+          {currentLinks.map((link) => (
+            <Link 
+              key={link.href}
+              href={link.href} 
+              className="text-slate-400 hover:text-white transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
 
         {/* Right side buttons/menu */}
@@ -85,52 +97,77 @@ function Navbar() {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden text-slate-400 hover:text-slate-900 transition-colors"
+            className="md:hidden text-slate-400 hover:text-white transition-colors"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            <Menu className="h-6 w-6" />
+            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
 
-          {isAuthenticated ? (
-            // User Profile Dropdown
+          {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
-                  <UserCircle2 className="h-6 w-6 text-slate-400 hover:text-white" />
+                  {user.photoURL ? (
+                    <img 
+                      src={user.photoURL} 
+                      alt={user.displayName || 'User profile'} 
+                      className="h-8 w-8 rounded-full"
+                    />
+                  ) : (
+                    <CircleUser className="h-8 w-8 text-slate-400 hover:text-white" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-[#0D161F] border-gray-800">
-                <DropdownMenuItem onSelect={() => router.push('/profile')} className="text-slate-400 hover:text-white">
+                <DropdownMenuItem onClick={() => router.push('/dashboard')} className="text-slate-400 hover:text-white cursor-pointer">
+                  Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/profile')} className="text-slate-400 hover:text-white cursor-pointer">
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={handleLogout} className="text-slate-400 hover:text-white">
+                <DropdownMenuItem onClick={handleLogout} className="text-slate-400 hover:text-white cursor-pointer">
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            // Login/Register Buttons
             <>
               <Button
                 variant="outline"
                 onClick={handleLogin}
                 className="hidden bg-white text-black md:inline-flex border-slate-700 hover:bg-slate-400 transition-colors"
               >
-                Sign in
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => loginWithRedirect({ screen_hint: 'signup' })}
-                className="hidden bg-black-80 text-black md:inline-flex border-slate-700 hover:bg-slate-400 transition-colors pr--5"
-              >
-                Register
+                Sign in with Google
               </Button>
             </>
           )}
         </div>
       </nav>
+
+      {/* Mobile Menu */}
+      {isMenuOpen && (
+        <div className="md:hidden absolute top-20 left-0 right-0 bg-[#0D161F] border border-gray-800 rounded-lg shadow-xl p-4">
+          {currentLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="block py-2 px-4 text-slate-400 hover:text-white transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
+          {!user && (
+            <Button
+              variant="outline"
+              onClick={handleLogin}
+              className="w-full mt-4 bg-white text-black border-slate-700 hover:bg-slate-400 transition-colors"
+            >
+              Sign in with Google
+            </Button>
+          )}
+        </div>
+      )}
     </header>
   );
 }
-
-export default Navbar;
