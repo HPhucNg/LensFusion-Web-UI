@@ -55,88 +55,89 @@ export default function UserProfile() {
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row gap-12">
+        <div className="flex flex-col lg:flex-row gap-12">
           {/* Left Column - Profile */}
-          <div className="flex-shrink-0">
-            <div className="flex flex-col items-center">
+          <div className="flex-shrink-0 w-full lg:w-1/4">
+            <div className="flex flex-col items-center bg-[#0D161F] p-8 rounded-2xl shadow-2xl border border-gray-800">
               {user?.photoURL ? (
                 <img
                   src={user.photoURL}
                   alt={user.displayName}
-                  className="w-32 h-32 rounded-full shadow-lg mb-4"
+                  className="w-40 h-40 rounded-full shadow-2xl border-4 border-gray-800 mb-6"
                 />
               ) : (
-                <div className="w-32 h-32 bg-gray-800 rounded-full flex items-center justify-center mb-4">
-                  <User2 className="w-16 h-16 text-gray-400" />
+                <div className="w-40 h-40 bg-gray-800 rounded-full flex items-center justify-center mb-6 shadow-2xl border-4 border-gray-700">
+                  <User2 className="w-20 h-20 text-gray-400" />
                 </div>
               )}
-              <h2 className="text-2xl font-bold">
+              <h2 className="text-3xl font-bold text-center mb-2">
                 {user?.displayName || "Guest"}
               </h2>
-              <p className="text-gray-400">
+              <p className="text-gray-400 text-lg mb-4">
                 {user?.email || "default text box"}
               </p>
+              <div className="w-full space-y-3">
+                <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white">
+                  <Settings className="mr-3 h-5 w-5 text-white" />
+                  <span className="text-lg">Manage Account</span>
+                </Button>
+                <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white">
+                  <User2 className="mr-3 h-5 w-5 text-white" />
+                  <span className="text-lg">Manage Subscription</span>
+                </Button>
+                <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white">
+                  <Share2 className="mr-3 h-5 w-5 text-white" />
+                  <span className="text-lg">Share</span>
+                </Button>
+                <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white">
+                  <Moon className="mr-3 h-5 w-5 text-white" />
+                  <span className="text-lg">Dark Mode</span>
+                </Button>
+              </div>
             </div>
           </div>
 
           {/* Right Column - Content */}
           <div className="flex-grow">
-            <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
+            <div className="mb-8">
               {/* Milestone Tracker */}
-              <Card className="flex-grow bg-[#0D161F] border-gray-800">
+              <Card className="bg-[#0D161F] border-gray-800 shadow-2xl">
                 <CardHeader>
-                  <h3 className="text-xl font-semibold text-white">Milestone tracker</h3>
+                  <h3 className="text-2xl font-bold text-white">Milestone tracker</h3>
                 </CardHeader>
                 <CardContent>
-                  <Progress value={35} className="h-2" />
+                  <Progress value={35} className="h-3 rounded-lg bg-gray-800" />
+                  <p className="mt-2 text-gray-400">35% Complete</p>
                 </CardContent>
               </Card>
-
-              {/* Action Buttons */}
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] hover:bg-slate-800">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Manage Account
-                </Button>
-                <Button variant="outline" className="w-full justify-start border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] hover:bg-slate-800">
-                  <User2 className="mr-2 h-4 w-4" />
-                  Manage Subscription
-                </Button>
-                <Button variant="outline" className="w-full justify-start border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] hover:bg-slate-800">
-                  <Share2 className="mr-2 h-4 w-4" />
-                  Share
-                </Button>
-                <Button variant="outline" className="w-full justify-start border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] hover:bg-slate-800">
-                  <Moon className="mr-2 h-4 w-4" />
-                  Dark Mode
-                </Button>
-              </div>
             </div>
 
             {/* Gallery Section */}
-            <div>
-              <h3 className="text-xl font-semibold mb-6">Your Gallery</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-[#0D161F] p-6 rounded-2xl shadow-2xl border border-gray-800">
+              <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((index) => (
                   <HoverCard key={index}>
                     <HoverCardTrigger asChild>
-                      <div className="relative aspect-square rounded-[25px] overflow-hidden bg-[#0D161F] p-2 shadow-2xl group cursor-pointer">
+                      <div className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-all duration-300 hover:scale-105">
                         <Image
-                          src={`https://picsum.photos/200/200?random=${index}`}
+                          src={`https://picsum.photos/400/400?random=${index}`}
                           alt={`Gallery item ${index}`}
-                          width={200}
-                          height={200}
-                          className="object-cover rounded-[25px]"
+                          width={400}
+                          height={400}
+                          className="object-cover"
                         />
-                        <div className="absolute top-2 right-2 w-6 h-6 rounded-md flex items-center justify-center bg-gray-900/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Check className="w-4 h-4 text-white" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          <div className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                            <Check className="w-5 h-5 text-white" />
+                          </div>
                         </div>
                       </div>
                     </HoverCardTrigger>
-                    <HoverCardContent className="w-80">
+                    <HoverCardContent className="w-80 bg-[#0D161F] border-gray-800 shadow-2xl">
                       <div className="space-y-2">
-                        <h4 className="text-sm font-semibold">Image Details</h4>
-                        <p className="text-sm">Gallery item {index}</p>
+                        <h4 className="text-lg font-semibold">Image Details</h4>
+                        <p className="text-gray-400">Gallery item {index}</p>
                       </div>
                     </HoverCardContent>
                   </HoverCard>
@@ -144,15 +145,17 @@ export default function UserProfile() {
               </div>
 
               {/* Pagination */}
-              <div className="flex justify-center items-center gap-2 mt-6">
+              <div className="flex justify-center items-center gap-3 mt-8">
                 {[1, 2, '...', 9, 10].map((page, i) => (
                   <Button
                     key={i}
                     variant="outline"
                     size="icon"
-                    className={`w-8 h-8 ${
-                      page === 1 ? 'bg-white text-black' : 'bg-transparent'
-                    } border-gray-800 hover:bg-gray-800`}
+                    className={`w-10 h-10 text-lg font-medium text-white ${
+                      page === 1 
+                        ? 'bg-white text-black hover:bg-gray-200' 
+                        : 'border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700'
+                    } shadow-lg transition-all duration-300`}
                   >
                     {page}
                   </Button>
