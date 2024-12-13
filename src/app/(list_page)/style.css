@@ -1,47 +1,44 @@
 /*styling for About Us page*/
-/* Container holding image and text */
-.containerAbout {
-    display: flex;
-    flex-direction: column; /* Stack items vertically */
+
+
+.about-bg {
+    position: relative;
+    background-size: cover;
+    background-attachment: fixed;
+    height: 1800px;
 }
 
-.thumbnailContainer {
-    background-image: url("/thumbnailAbout.jpg");
-    background-size: cover;
-    flex: 1 0 600px;
-    position: relative;
+.about-bg:before {
+    content: ''; /* Add the desired text */
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 4em;
+    bottom: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.94) 0%, rgba(0, 0, 0, 0.2) 100%); /* Gradient overlay */
+    display: flex;
+    justify-content: center; /* Center text horizontally */
+    align-items: center; /* Center text vertically */
 }
+
 
 /* Text overlay on the image */
 .centeredAbout {
     position: absolute; /* Position text over image */
-    top: 50%; /* Position vertically */
+    top: 25%; /* Position vertically */
     left: 50%; /* Position horizontally */
-    transform: translate(-50%, -50%); /* Adjust positioning to center the text */
+    transform: translate(-50%, -200%); /* Adjust positioning to center the text */
     color: white; /* Change text color for visibility */
-    font-size: 2em; /* Make text larger */
-    font-family: 'Cambria Math';
-    text-shadow: 2px 2px 10px rgba(95, 95, 95, 0.7);
+    font-size: 2.5rem; /* Make text larger */
+    font-weight: bold;
+    white-space: nowrap;
 }
 
 
-.textAbout {
-    flex: 1 0 80px; /* Adjust for the text container */
-    margin: 3em;  /* Add margin for spacing */
-    color: white;
-}
-.textAbout h2 {
-    font-size: 2.5em;
-    font-weight: 500;
-    font-family: 'Cambria Math';
-}
-.textAbout p {
-    margin: 1em 1em 4em 0;
-    font-size: 1.3em;
-}
 /* Main content container */
 .textAbout {
-    flex: 1;
+    position: absolute;
+    top: 40%;
     margin: 3em 1em; /* spacing around text */
     color: white;
    /*background-color: rgba(0, 0, 0, 0.5); /* Slightly darken the background  */
@@ -54,20 +51,15 @@
     font-size: 2.5rem;
     font-weight: 600;
     font-family: 'Cambria Math', serif;
-    margin-bottom: 1em;
-   /* color: #777778; /* Highlight headings */
+    margin-top: 2em;
 }
-
 .textAbout p {
     font-size: 1.3rem;
     line-height: 1.6; /* Better line spacing f*/
-    margin: 1em 0;
+
 }
 
-/* padding and background to text section for better spacing */
-.textAbout section {
-    margin-bottom: 2em;
-}
+
 
 /* Responsive styling */
 @media (max-width: 768px) {

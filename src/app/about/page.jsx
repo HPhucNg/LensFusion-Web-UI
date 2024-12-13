@@ -6,13 +6,11 @@ import Footer from '@/components/Footer';
 
 function page() {
   return (
-    <>    
-    <main className="containerAbout bg-gradient-to-r from-gray-900 via-gray-800 to-black">
-      <div className='thumbnailContainer'>
-        <Navbar />
-        <p className='centeredAbout'>Leveraging AI to Help Improve Businesses</p>
-      </div>
-      
+    <>  
+    <main className="about-bg bg-[url('/thumbnailAbout.jpg')]">
+      <Navbar/>
+      <p className='centeredAbout'>Leveraging AI to Help Improve Businesses</p>
+
       <div className='textAbout '>
         <h2>Our Goal</h2>
         <p>
@@ -32,7 +30,10 @@ function page() {
           and parameters, so that they can generate images without needing to code or use command-line tools.
         </p>
       </div>
+      
+      
     </main>
+
     <Footer/>
     
     </>
