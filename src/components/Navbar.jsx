@@ -50,10 +50,7 @@ export default function Navbar() {
   };
 
   const authenticatedLinks = [
-    { href: '/dashboard', label: 'Dashboard' },
     { href: '/resources', label: 'Resources' },
-    { href: '/payment', label: 'Payment' },
-    { href: '/profile', label: 'Profile' },
     { href: '/community', label: 'Community' },
     { href: '/contact', label: 'Contact' },
     { href: '/solutions', label: 'Solutions' },
