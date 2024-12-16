@@ -34,7 +34,7 @@ const brands = [
 export default function BrandSection() {
   return (
     
-    <section className="bg-slate-200 w-full">
+    <section className="bg-[#d7e1ea] w-full h-auto">
       <div className="container mx-auto px-4">
         {/* <h2 className="text-3xl md:text-2xl lg:text-4xl font-bold text-center text-black mb-1">Trusted by Industry Leaders</h2> */}
         <div className="relative flex overflow-hidden">
