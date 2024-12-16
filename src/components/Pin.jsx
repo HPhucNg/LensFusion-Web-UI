@@ -3,8 +3,17 @@ import React from 'react';
 import '../styles/pin_styles.css';
 
 function Pin({ pinDetails }) { // Accept pinDetails directly
+    // Generate a random integer between 0 and 2
+    const randomCardSize = Math.floor(Math.random() * 3); // This will give 0, 1, or 2
+
+    // Map random value to class names
+    const cardSizeClass = randomCardSize === 0 ? 'card_large' :
+                          randomCardSize === 1 ? 'card_medium' : 
+                          'card_small';
+
     return (
-        <div className='card'>
+
+        <div className={`card ${cardSizeClass}`}>
             <div className='pin_title'>{pinDetails.title}</div>
             
             <div className='pin_modal'>

@@ -8,7 +8,7 @@
 .navigation_bar .icon_container{
     position: relative;
     top: 10%;
-    width: 5%;
+    width: 3%;
     left: 90%;
     border-radius: 40px;
     background-color: #929292;
@@ -22,8 +22,8 @@
 
 .pin_container {
     margin: 0;
-    padding: 0; 
-    width: 80vw;
+    padding: 0;
+    width: 100%;
     display: grid;
     grid-template-columns: repeat(auto-fill, 250px);
     grid-auto-rows: 10px;
@@ -31,7 +31,6 @@
 }
 
 .card {
-    /*add width and height to display*/
     margin: 15px 10px;
     padding: 0;
     border-radius: 16px;
@@ -39,15 +38,13 @@
     overflow: hidden;
 }
 
+
 .card_small {
     grid-row-end: span 26;
 }
-
 .card_medium {
     grid-row-end: span 33;
 }
-
 .card_large {
     grid-row-end: span 45;
 }
-

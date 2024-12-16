@@ -16,7 +16,7 @@ class FinalBoard extends React.Component {
     add_pin = pinDetails => {
         this.setState(_state => {
             const new_pins = [..._state.pins]; // Copy old pins
-            new_pins.push(pinDetails); // Add new pin details
+            new_pins.push( <Pin pinDetails={pinDetails} key={_state.pins.length} />); // Add new pin details
             return { pins: new_pins, show_modal: false };
         });
     }
@@ -28,16 +28,14 @@ class FinalBoard extends React.Component {
     render() {
         return (
             <div>
-                <div className="navigation_bar">
+                <div className="navigation_bar"> {/* when "+"" icon is clicked, show modal - could change it when in profile and user clicks on an image and clicks on "post to community*/}
                     <div onClick={() => this.setState({show_modal: true})} className='icon_container add_pin'>
                         <img src="/plus.png" alt="add" className='icon_add' />
                     </div>
                 </div>
             
                 <div className="pin_container">
-                    {this.state.pins.map((pinDetails, index) => (
-                        <Pin key={index} pinDetails={pinDetails} /> // Pass pinDetails as a prop
-                    ))}
+                    {this.state.pins}
                 </div>
 
                 {/* Modal */}

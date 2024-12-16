@@ -37,6 +37,7 @@ function Modal({ closeModal, add_pin }) { // Accept add_pin as a prop
         title: '',
         description: '',
         destination: '',
+        pin_num: '',
         img_data: '',
     });
 
@@ -44,13 +45,14 @@ function Modal({ closeModal, add_pin }) { // Accept add_pin as a prop
     const [showModalPin, setShowModalPin] = useState(false);
 
     return (
+        
         <div className="add_pin_modal">
-            <div className="add_pin_container">
+            <div className="add_pin_container ">
                 <div className="side" id="left_side">
                     <div className="topsection">
                         <div className="post_to">Post to Community</div>
                     </div>
-
+                
                     <div className="midsection">
                         <label htmlFor="upload_img" id="upload_img_label"
                             style={{ display: showLabel ? 'block' : 'none' }}

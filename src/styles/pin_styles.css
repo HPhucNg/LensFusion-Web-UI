@@ -34,11 +34,11 @@
     height: 15%;
     position: fixed;
     top: 0;
-
     display: flex; /*make save button to the left*/
     justify-content: center;
     align-items: center;  
 }
+
 .pin_modal .modal_head .post_title{
     font-weight: 800; 
 }
@@ -75,6 +75,6 @@
 
 .pin_image img {
     width: 100%;          /* Stretch the image to fill the width */
-    height: 100%;         /* Stretch the image to fill the height */
+    height: auto;         /* Stretch the image to fill the height */
     object-fit: cover;    /* Ensure the image covers the container (cropping if necessary) */
 }

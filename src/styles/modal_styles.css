@@ -12,15 +12,19 @@
 .add_pin_container{
     width: 880px;
     height: 550px;
-    border-radius: 16px;
+    border-radius: 25px;
     position: absolute;
     top: 44%;
     left: 50%;
     transform: translate(-50%, -50%);
     display: flex;
     overflow: hidden;
-    background-color: white;
-    color: black;
+    color: white;
+    border: solid 2px transparent;
+    border-radius: 50px;
+    background:
+        linear-gradient(to right, #395f72, #1a202c, #2d3748) padding-box,
+        linear-gradient(to right, #81f2eb, #1a202c, #5403a4) border-box;
 }
 
 .side {
@@ -38,7 +42,9 @@
     width: 100%;
     height: 100%;
     cursor: pointer;
+    color: #1a202c;
 }
+
 
 #left_side .midsection #upload_img_label input{
     width: 0;
@@ -53,6 +59,7 @@
     border-radius: 8px;
     background-color: #EFEFEF;
 }
+
 
 #left_side .midsection #upload_img_label .upload_img_container #dotted_border{
     width: 100%;
@@ -69,6 +76,8 @@
 .topsection {
     width: 100%;
     height: 10%;
+    padding: 0px 10px;
+    
 }
 
 .midsection {
@@ -98,7 +107,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-
+    color: #1a202c;
     background-color: pink;
     transition-duration: 0.3s;
 }
@@ -140,6 +149,7 @@
     display: flex;
     justify-content: flex-end;
 }
+
 
 #right_side .midsection .new_pin_input {
     margin-bottom: 20px;
