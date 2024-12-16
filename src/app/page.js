@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import BrandSection from '../components/BrandSection';
 import ProductCategory from '@/components/landing_page/ProductCategory';
+import ScrollToTop from '@/components/ScrollToTop';
 import {db} from '../firebase/FirebaseConfig';
 import { addDoc, collection } from 'firebase/firestore';
 import Image from 'next/image'
@@ -100,7 +101,41 @@ export default function Home() {
         <section>
           <ProductCategory />
         </section>
+      </div>
 
+      {/* Background Removal Section - Moved outside the container */}
+      <section className="w-full">
+        <div className="max-w-7xl mx-auto px-4 mb-10">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            {/* Left Content */}
+            <div className="space-y-6">
+              <h2 className="text-3xl md:text-5xl text-white font-bold">
+                Remove any Photo Background in One Click
+              </h2>
+              <p className="text-xl text-gray">
+                Simply upload your product, and our AI will automatically remove the background for you.
+              </p>
+              <p className="text-xl text-gray">
+                Our AI is trained to remove the background for a wide range of products—in seconds.
+              </p>
+            </div>
+
+            {/* Right Content - Single Image */}
+            <div className="relative w-[800px] max-w-full">
+              <Image
+                src="/background-removal.png"
+                alt="Background removal demonstration"
+                width={2400}
+                height={1600}
+                className="w-full h-auto object-contain"
+                priority
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* <div className='max-w-[1400px] mx-auto px-4 sm:px-6'>
         <section className="py-20 bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500">
           <div className="space-y-4">
             <h2>Features</h2>
@@ -119,8 +154,8 @@ export default function Home() {
             <h2>Features</h2>
           </div>
         </section>
-      </div>
-      
+      </div> */}
+      <ScrollToTop />
       <Footer/>
     </div>
   );

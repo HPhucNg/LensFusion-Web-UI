@@ -102,7 +102,7 @@ const ProductCategory = () => {
                 alt={image.alt}
                 width={300}
                 height={300}
-                className="w-full h-full object-cover transition-opacity duration-300"
+                className="w-full h-full object-cover transition-transform duration-500 ease-in-out transform hover:scale-110"
               />
             </div>
           ))}
