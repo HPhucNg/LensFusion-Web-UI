@@ -108,7 +108,7 @@ function PricingPage() {
               index === 1 ? 'bg-white text-black' : 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white'
             }`}
           >
-            <h3 className="text-l font-bold mb-4">{plan.title}</h3>
+            <h3 className="text-l font-bold mb-1">{plan.title}</h3>
             <div className="flex justify-center items-baseline mb-4">
               <span className="text-3xl font-bold">
                 {pricingType === 'monthly' ? `$${plan.priceMonthly}` : `$${plan.priceYearly}`}
@@ -125,7 +125,7 @@ function PricingPage() {
               ))}
             </ul>
             <button
-              className={`w-full py-2 rounded-lg ${
+              className={`w-full py-2 rounded-lg mb-0 ${
                 index === 1 ? 'bg-black text-white' : 'bg-white text-black'
               }`}
               onClick={() =>
