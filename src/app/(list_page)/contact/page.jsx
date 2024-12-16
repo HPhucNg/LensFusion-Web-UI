@@ -26,8 +26,18 @@ function page() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    //basic validation
+    if (!formData.name || !formData.email || !formData.message) {
+      alert('Please fill in all fields');
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
     console.log('Form submitted:', formData);
-    // Here - could send the formData to a server or handle it however you need
+    // Here - could send the formData to a server or handle it however
+    setFormData({ subject: '', name: '', email: '', message: '' }); // reset the form when submitted
   };
 
   return (
@@ -61,7 +71,7 @@ function page() {
               value={formData.subject}
               onChange={handleChange}
               >
-                <option value="deafult">Select Option</option>
+                <option value="">Select Option</option>
                 <option value="trouble-shooting">Trouble-shooting</option>
                 <option value="feedback">Feedback</option>
                 <option value="subscription">Subscription</option>
@@ -79,7 +89,7 @@ function page() {
             
             <label htmlFor="email">Email Address</label><br />
             <Input
-              type="text"
+              type="email"
               id="email"
               name="email"
               placeholder='Email'
@@ -88,16 +98,16 @@ function page() {
             /><br />
             
             <label htmlFor="message">Message</label><br />
-            <Input
-              type="text"
+            <textarea
               id="message"
               name="message"
               placeholder='Message'
               value={formData.message}
               onChange={handleChange}
+              rows="5"  // row size for better UX
             /><br />
             
-            <input type="submit" value="Submit" onChange={handleSubmit}/>
+            <input type="submit" value="Submit"/>
           </form>
         </div>
       </main>

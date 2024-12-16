@@ -119,7 +119,7 @@ export default function Navbar() {
                 <DropdownMenuItem onClick={() => router.push('/dashboard')} className="text-slate-400 hover:text-white cursor-pointer">
                   Dashboard
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/profile')} className="text-slate-400 hover:text-white cursor-pointer">
+                <DropdownMenuItem onClick={() => router.push('/dashboard/profile')} className="text-slate-400 hover:text-white cursor-pointer">
                   Profile
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout} className="text-slate-400 hover:text-white cursor-pointer">
