@@ -2,10 +2,8 @@
 
 Install dependencies:
 
-Install Next:
-
 ```bash
-npm install next
+npm install
 ```
 
 Run the development server:
@@ -24,14 +22,6 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
-Dependencies to install 
-
-```
-npm install -D tailwindcss postcss autoprefixer
-npm install react react-dom
-```
-
-# LensFusion-Web-UI
 
 # LensFusion-Web-UI
 
