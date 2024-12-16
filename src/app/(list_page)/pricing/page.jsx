@@ -4,12 +4,26 @@ import Navbar from '@/components/Navbar';
 import '../style.css';
 import Footer from '../../../components/Footer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { createCheckoutSession } from '../../../../stripe/createCheckoutSession';
+import { loadStripe } from '@stripe/stripe-js';
+import { PricingPlans } from '../pricing/plans'
 
 function PricingPage() {
   // State to toggle between monthly and yearly pricing
   const [pricingType, setPricingType] = useState('monthly');
 
-  // Handle the toggle
+
+  const handleSubscription = (link) => {
+    //redirect to stripe payment
+    if (link) {
+      window.location.href = link; 
+    } else {
+      console.error('No payment link provided.');
+    }
+  };
+  
+  
+  //handle the toggle
   const togglePricing = (type) => {
     setPricingType(type);
   };
@@ -65,42 +79,69 @@ function PricingPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
-        <Navbar />
-        <h1 className="priceh1">How much is your time worth?</h1>
-        <main className="containerPrice">
-          <div className="termFees">
+    <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden'>
+      <Navbar />
+      <h1 className="priceh1">How much is your time worth?</h1>
+      <main className="containerPrice">
+        <div className="termFees">
+          <button 
+            className={pricingType === 'monthly' ? 'selected' : ''} 
+            onClick={() => togglePricing('monthly')}
+          >
+            Monthly
+          </button>
+          <button
+            className={pricingType === 'yearly' ? 'selected' : ''}
+            onClick={() => togglePricing('yearly')}
+          >
+            Yearly
+          </button>
+        </div>
+
+
+        {/* Pricing Cards */}
+        <section className="flex justify-evenly">
+          {PricingPlans.map((plan, index) => (
+            <div
+            key={plan.title}
+            className={`rounded-lg p-6 shadow-lg w-64 h-full flex flex-col justify-center items-center text-center ${
+              index === 1 ? 'bg-white text-black' : 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white'
+            }`}
+          >
+            <h3 className="text-l font-bold mb-1">{plan.title}</h3>
+            <div className="flex justify-center items-baseline mb-4">
+              <span className="text-3xl font-bold">
+                {pricingType === 'monthly' ? `$${plan.priceMonthly}` : `$${plan.priceYearly}`}
+              </span>
+              <span className="text-sm ml-1">
+                /{pricingType === 'monthly' ? 'mo' : 'yr'}
+              </span>
+            </div>
+            <ul className="mb-4 space-y-1 list-disc list-inside text-left w-full">
+              {plan.features.map((feature, idx) => (
+                <li key={idx} className="text-sm">
+                  {feature}
+                </li>
+              ))}
+            </ul>
             <button
-              className={pricingType === 'monthly' ? 'selected' : ''}
-              onClick={() => togglePricing('monthly')}
+              className={`w-full py-2 rounded-lg mb-0 ${
+                index === 1 ? 'bg-black text-white' : 'bg-white text-black'
+              }`}
+              onClick={() =>
+                handleSubscription(
+                  pricingType === 'monthly' ? plan.linkMonthly : plan.linkYearly
+                )
+              }
             >
-              Monthly
-            </button>
-            <button
-              className={pricingType === 'yearly' ? 'selected' : ''}
-              onClick={() => togglePricing('yearly')}
-            >
-              Yearly
+              Button
             </button>
           </div>
+          
+          ))}
+        </section>
 
-          {/* Pricing Cards */}
-          <section className="cards ">
-            {pricingPlans.map((plan, index) => (
-              <div key={index} className={`card ${index === 1 ? 'cardmiddle' : 'bg-gradient-to-r from-gray-900 via-gray-800 to-black'}`}
->
-                <h3>{plan.title}</h3>
-                <p>{formatPrice(plan[pricingType], pricingType)}</p>
-                <ul>
-                  <li key={`feature-1-${index}`}>Feature 1</li>
-                  <li key={`feature-2-${index}`}>Feature 2</li>
-                  <li key={`feature-3-${index}`}>Feature 3</li>
-                  <li key={`feature-4-${index}`}>Feature 4</li>
-                </ul>
-                <button onClick={() => handlePlanSelect(plan)} className={`${index === 1 ? 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white' : ''}`}>Button</button>
-              </div>
-            ))}
-          </section>
+         
 
           {/* FAQ Accordion */}
           <section className="faqItem">
