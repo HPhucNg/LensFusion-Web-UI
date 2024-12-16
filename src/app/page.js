@@ -97,7 +97,7 @@ export default function Home() {
       </section>
 
       <section className="w-full">
-        <div className="max-w-7xl mx-auto py-20 m-10">
+        <div className="max-w-7xl mx-auto pt-10 pb-40 m-10">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             {/* Left Content */}
             <div className="space-y-6">
@@ -124,7 +124,34 @@ export default function Home() {
               />
             </div>
           </div>
+          <div className="grid md:grid-cols-2 gap-8 items-center mt-10">
+            {/* Left Content */}
+            <div className="relative w-[800px] max-w-full">
+              <Image
+                src="/change_background.jpg"
+                alt="Background removal demonstration"
+                width={2400}
+                height={1600}
+                className="w-full h-auto object-contain"
+                priority
+              />
+            </div>
+
+            {/* Right Content - Single Image */}
+            <div className="space-y-6 pl-4">
+              <h2 className="text-3xl md:text-5xl text-white font-bold">
+              Generate Photo Background with Any Image
+              </h2>
+              <p className="text-xl text-gray">
+                Just upload your product, and our AI will automatically generate the background for you.
+              </p>
+              <p className="text-xl text-gray">
+              Change the background of any photo with the image of your choice, creating a completely new visual look.
+              </p>
+            </div>
+          </div>
         </div>
+        
       </section>
 
       {/* Rest of the sections in container */}
