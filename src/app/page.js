@@ -96,16 +96,8 @@ export default function Home() {
         <BrandSection />
       </section>
 
-      {/* Rest of the sections in container */}
-      <div className='max-w-[1400px] mx-auto px-4 sm:px-6'>
-        <section>
-          <ProductCategory />
-        </section>
-      </div>
-
-      {/* Background Removal Section - Moved outside the container */}
       <section className="w-full">
-        <div className="max-w-7xl mx-auto px-4 mb-10">
+        <div className="max-w-7xl mx-auto py-20 m-10">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             {/* Left Content */}
             <div className="space-y-6">
@@ -135,6 +127,15 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Rest of the sections in container */}
+      <div className='max-w-[1400px] mx-auto px-4 sm:px-6'>
+        <section>
+          <ProductCategory />
+        </section>
+      </div>
+
+      {/* Background Removal Section - Moved outside the container */}
+     
       {/* <div className='max-w-[1400px] mx-auto px-4 sm:px-6'>
         <section className="py-20 bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500">
           <div className="space-y-4">
