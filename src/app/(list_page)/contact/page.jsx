@@ -5,8 +5,8 @@ import '../style.css';
 import Footer from '../../../components/Footer';
 import { Input } from "@/components/ui/input"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select"
-
-
+import { db } from '@/firebase/FirebaseConfig';
+import { addDoc, collection } from 'firebase/firestore';
 
 function page() {
   const [formData, setFormData] = useState({
@@ -24,10 +24,38 @@ function page() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault();
+    //basic validation
+    if (!formData.name || !formData.email || !formData.message) {
+      alert('Please fill in all fields');
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
     console.log('Form submitted:', formData);
-    // Here - could send the formData to a server or handle it however you need
+
+
+    try{
+      const docRef = await addDoc(collection(db, "contact_us"),{
+        subject: formData.subject,
+        name: formData.name,
+        email: formData.email,
+        message: formData.message,
+        timestamp: new Date()
+      }); 
+      console.log("Queries saved with ID:", docRef.id);
+      
+      // Here - could send the formData to a server or handle it however you need
+      setFormData({ subject: '', name: '', email: '', message: '' }); // reset the form when submitted
+
+
+    }catch (error){
+        alert(error.message);
+
+      }
   };
 
   return (
@@ -61,7 +89,7 @@ function page() {
               value={formData.subject}
               onChange={handleChange}
               >
-                <option value="deafult">Select Option</option>
+                <option value="">Select Option</option>
                 <option value="trouble-shooting">Trouble-shooting</option>
                 <option value="feedback">Feedback</option>
                 <option value="subscription">Subscription</option>
@@ -79,7 +107,7 @@ function page() {
             
             <label htmlFor="email">Email Address</label><br />
             <Input
-              type="text"
+              type="email"
               id="email"
               name="email"
               placeholder='Email'
@@ -88,16 +116,16 @@ function page() {
             /><br />
             
             <label htmlFor="message">Message</label><br />
-            <Input
-              type="text"
+            <textarea
               id="message"
               name="message"
               placeholder='Message'
               value={formData.message}
               onChange={handleChange}
+              rows="5"  // row size for better UX
             /><br />
             
-            <input type="submit" value="Submit" onChange={handleSubmit}/>
+            <input type="submit" value="Submit"/>
           </form>
         </div>
       </main>

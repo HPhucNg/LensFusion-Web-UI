@@ -1,34 +1,51 @@
-'use client'
-import React, { useState } from 'react'
+'use client';
+import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import '../style.css';
 import Footer from '../../../components/Footer';
-import {Accordion, AccordionContent, AccordionItem, AccordionTrigger,} from "@/components/ui/accordion"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { createCheckoutSession } from '../../../../stripe/createCheckoutSession';
+import { loadStripe } from '@stripe/stripe-js';
+import { PricingPlans } from '../pricing/plans'
 
-
-function page() {
+function PricingPage() {
   // State to toggle between monthly and yearly pricing
   const [pricingType, setPricingType] = useState('monthly');
 
+
+  const handleSubscription = (link) => {
+    //redirect to stripe payment
+    if (link) {
+      window.location.href = link; 
+    } else {
+      console.error('No payment link provided.');
+    }
+  };
+  
+  
   //handle the toggle
   const togglePricing = (type) => {
     setPricingType(type);
   };
+  /*Handle plan select
+  const handlePlanSelect = (plan) => {
+    navigate('/payment', { state: { plan, pricingType } });
+  };*/
 
-  //convert price based on the selected pricing type
+
+  // price based on the selected pricing type
   const formatPrice = (price, type) => {
     let priceText = `$${price}`;
     let periodText = '';
-  
+
     if (type === 'monthly') {
       periodText = '/mo';
     } else {
-      // Assuming yearly price is 12 times the monthly price
-      priceText = `$${price * 12}`;
+      priceText = `$${price}`;
       periodText = '/yr';
     }
-  
-    //spans for styling
+
+    // for styling
     return (
       <>
         <span className="price">{priceText}</span>
@@ -36,6 +53,29 @@ function page() {
       </>
     );
   };
+
+  // dynamic rendering
+  const faqItems = [
+    {
+      question: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit?',
+      answer: 'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+    },
+    {
+      question: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit?',
+      answer: 'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+    },
+    {
+      question: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit?',
+      answer: 'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+    }
+  ];
+
+  // dynamic rendering
+  const pricingPlans = [
+    { title: 'Basic Plan', monthly: 5, yearly: 50 },
+    { title: 'Pro Plan', monthly: 10, yearly: 100 },
+    { title: 'Enterprise Plan', monthly: 20, yearly: 200 },
+  ];
 
   return (
     <>
@@ -57,70 +97,73 @@ function page() {
             Yearly
           </button>
         </div>
-        <section className="cards">
-          <div className="card bg-gradient-to-r from-gray-900 via-gray-800 to-black">
-            <h3>Title</h3>
-            <p>{formatPrice(5, pricingType)}</p>
-            <ul>
-              <li>list item</li>
-              <li>list item</li>
-              <li>list item</li>
-              <li>list item</li>
+
+
+        {/* Pricing Cards */}
+        <section className="flex justify-evenly">
+          {PricingPlans.map((plan, index) => (
+            <div
+            key={plan.title}
+            className={`rounded-lg p-6 shadow-lg w-64 h-full flex flex-col justify-center items-center text-center ${
+              index === 1 ? 'bg-white text-black' : 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white'
+            }`}
+          >
+            <h3 className="text-l font-bold mb-4">{plan.title}</h3>
+            <div className="flex justify-center items-baseline mb-4">
+              <span className="text-3xl font-bold">
+                {pricingType === 'monthly' ? `$${plan.priceMonthly}` : `$${plan.priceYearly}`}
+              </span>
+              <span className="text-sm ml-1">
+                /{pricingType === 'monthly' ? 'mo' : 'yr'}
+              </span>
+            </div>
+            <ul className="mb-4 space-y-1 list-disc list-inside text-left w-full">
+              {plan.features.map((feature, idx) => (
+                <li key={idx} className="text-sm">
+                  {feature}
+                </li>
+              ))}
             </ul>
-            <button>Button</button>
+            <button
+              className={`w-full py-2 rounded-lg ${
+                index === 1 ? 'bg-black text-white' : 'bg-white text-black'
+              }`}
+              onClick={() =>
+                handleSubscription(
+                  pricingType === 'monthly' ? plan.linkMonthly : plan.linkYearly
+                )
+              }
+            >
+              Button
+            </button>
           </div>
-          <div className="card cardmiddle text-gradient-to-r from-gray-900 via-gray-800 to-black">
-            <h3>Title</h3>
-            <p>{formatPrice(10, pricingType)}</p>
-            <ul>
-              <li>list item</li>
-              <li>list item</li>
-              <li>list item</li>
-              <li>list item</li>
-            </ul>
-            <button className='bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white'>Button</button>
-          </div>
-          <div className="card bg-gradient-to-r from-gray-900 via-gray-800 to-black">
-            <h3>Title</h3>
-            <p>{formatPrice(20, pricingType)}</p>
-            <ul>
-              <li>list item</li>
-              <li>list item</li>
-              <li>list item</li>
-              <li>list item</li>
-            </ul>
-            <button>Button</button>
-          </div>
+          
+          ))}
         </section>
 
-        <section className="faqItem ">
-          <h2>Frequently asked questions</h2>
-          <Accordion type="single" collapsible>
-            <AccordionItem value="item-1">
-              <AccordionTrigger className='bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white'>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore.</AccordionTrigger>
-              <AccordionContent> Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</AccordionContent>
-            </AccordionItem>
-          </Accordion>
-          <Accordion type="single" collapsible>
-            <AccordionItem value="item-2">
-              <AccordionTrigger className='bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white'>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore.</AccordionTrigger>
-              <AccordionContent> Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</AccordionContent>
-            </AccordionItem>
-          </Accordion>
-          <Accordion type="single" collapsible>
-            <AccordionItem value="item-2">
-              <AccordionTrigger className='bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white'>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore.</AccordionTrigger>
-              <AccordionContent> Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </section>
+         
 
-      </main>
-      <Footer />
+          {/* FAQ Accordion */}
+          <section className="faqItem">
+            <h2>Frequently Asked Questions</h2>
+            <Accordion type="single" collapsible>
+              {faqItems.map((item, index) => (
+                <AccordionItem key={index} value={`item-${index}`}>
+                  <AccordionTrigger className="bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white">
+                    {item.question}
+                  </AccordionTrigger>
+                  <AccordionContent>{item.answer}</AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </section>
+        </main>
+        <Footer />
       </div>
     </>
   );
-  
 }
 
-export default page
+
+export default PricingPage;
+

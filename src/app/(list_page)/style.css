@@ -1,42 +1,97 @@
 /*styling for About Us page*/
-/* Container holding image and text */
-.containerAbout {
-    display: flex;
-    flex-direction: column; /* Stack items vertically */
+
+
+.about-bg {
+    position: relative;
+    background-size: cover;
+    background-attachment: fixed;
+    height: 1800px;
 }
 
-.thumbnailContainer {
-    background-image: url("/thumbnailAbout.png");
-    background-size: cover;
-    flex: 1 0 600px;
-    position: relative;
+.about-bg:before {
+    content: ''; /* Add the desired text */
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 4em;
+    bottom: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.94) 0%, rgba(0, 0, 0, 0.2) 100%); /* Gradient overlay */
+    display: flex;
+    justify-content: center; /* Center text horizontally */
+    align-items: center; /* Center text vertically */
 }
+
 
 /* Text overlay on the image */
 .centeredAbout {
     position: absolute; /* Position text over image */
-    top: 50%; /* Position vertically */
+    top: 25%; /* Position vertically */
     left: 50%; /* Position horizontally */
-    transform: translate(-50%, -50%); /* Adjust positioning to center the text */
-    color: black; /* Change text color for visibility */
-    font-size: 2em; /* Make text larger */
-    font-family: 'Cambria Math';
+    transform: translate(-50%, -200%); /* Adjust positioning to center the text */
+    color: white; /* Change text color for visibility */
+    font-size: 2.5rem; /* Make text larger */
+    font-weight: bold;
+    white-space: nowrap;
 }
 
 
+/* Main content container */
 .textAbout {
-    flex: 1 0 80px; /* Adjust this as needed for the text container */
-    margin: 3em;  /* Add margin for spacing */
+    position: absolute;
+    top: 40%;
+    margin: 3em 1em; /* spacing around text */
     color: white;
+   /*background-color: rgba(0, 0, 0, 0.5); /* Slightly darken the background  */
+    /*border-radius: 10px; /* Rounded corners for modern look */
+    padding: 2em; /* Added padding to give space around the content */
 }
+
+/* Headings styling */
 .textAbout h2 {
-    font-size: 2.5em;
-    font-weight: 500;
-    font-family: 'Cambria Math';
+    font-size: 2.5rem;
+    font-weight: 600;
+    font-family: 'Cambria Math', serif;
+    margin-top: 2em;
 }
 .textAbout p {
-    margin: 1em 1em 4em 0;
-    font-size: 1.3em;
+    font-size: 1.3rem;
+    line-height: 1.6; /* Better line spacing f*/
+
+}
+
+
+
+/* Responsive styling */
+@media (max-width: 768px) {
+    .centeredAbout {
+        font-size: 1.8rem; /* Smaller font on smaller screens */
+        padding: 0 10px; /* Ensure the text doesn't overflow */
+    }
+
+    .textAbout {
+        margin: 2em; /* Reduced margin for smaller screens */
+        padding: 1.5em; /* Reduced padding for smaller screens */
+    }
+
+    .textAbout h2 {
+        font-size: 2rem; /* Adjust heading size */
+    }
+
+    .textAbout p {
+        font-size: 1.2rem; /* Adjust paragraph font size */
+    }
+}
+
+@media (max-width: 480px) {
+    .centeredAbout {
+        font-size: 1.5rem; /* adjust text size for very small screens */
+    }
+    .textAbout h2 {
+        font-size: 1.8rem; /* reduce heading size */
+    }
+    .textAbout p {
+        font-size: 1.1rem; /* reduce paragraph font size */
+    }
 }
 
 
@@ -80,7 +135,7 @@
     background-color: #ffffff;  
 }
 
-.form-container input[type=text], .form-container select {
+.form-container input[type=text], .form-container input[type=email], .form-container select, .form-container textarea {
     width: 70%;
     background-color: transparent;
     padding: 10px 20px;
@@ -195,7 +250,6 @@ button {
     flex: 1 1 auto;
   
 }
-
 
 .faqItem h2 {
     font-weight: bold;
