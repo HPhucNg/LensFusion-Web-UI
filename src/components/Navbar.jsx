@@ -33,7 +33,7 @@ export default function Navbar() {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
-        router.push('/dashboard');
+        router.push('/dashboard/profile');
       }
     } catch (error) {
       console.error("Error signing in:", error);
