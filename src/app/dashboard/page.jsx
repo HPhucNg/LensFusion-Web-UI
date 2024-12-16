@@ -56,10 +56,10 @@ export default function Page() {
               {/* Grid Sections */}
               <div className="p-6 bg-gradient-to-r from-gray-900 via-gray-800 to-black min-h-screen text-white">
                 {/* Section 1 */}
-                <div className="mb-8">
+                <div className="mb-16 border-t border-white/20 pt-8">
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold"> LensFusion&apos;s AI Tools</h2>
-                    <a href="#" className="text-sm text-gray-400 hover:underline">More ...</a>
+                    <h2 className="text-2xl font-semibold">LensFusion&apos;s AI Tools</h2>
+                    <a href="#" className="text-lg text-gray-400 hover:underline">More ...</a>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div className="aspect-square rounded-lg overflow-hidden shadow-md relative group">
@@ -117,10 +117,10 @@ export default function Page() {
                 </div>
 
                 {/* Section 2 */}
-                <div className="mb-8">
+                <div className="mb-16 border-t border-white/20 pt-8">
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold">Template</h2>
-                    <a href="#" className="text-sm text-gray-400 hover:underline">More ...</a>
+                    <h2 className="text-2xl font-semibold">Template</h2>
+                    <a href="#" className="text-lg text-gray-400 hover:underline">More ...</a>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div className="aspect-square rounded-lg overflow-hidden shadow-md relative group">
@@ -178,10 +178,10 @@ export default function Page() {
                 </div>
 
                 {/* Section 3 */}
-                <div>
+                <div className="mb-16 border-t border-white/20 pt-8">
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold">Tutorials</h2>
-                    <a href="#" className="text-sm text-gray-400 hover:underline">Learn more</a>
+                    <h2 className="text-2xl font-semibold">Tutorials</h2>
+                    <a href="#" className="text-lg text-gray-400 hover:underline">Learn more</a>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div className="aspect-square rounded-lg overflow-hidden shadow-md relative group">
@@ -199,7 +199,7 @@ export default function Page() {
 
                     <div className="aspect-square rounded-lg overflow-hidden shadow-md relative group">
                       <Image
-                        src="https://i.pinimg.com/236x/44/46/b6/4446b627d9015e6f60d10eccfd18387d.jpg"
+                        src="https://i.pinimg.com/236x/3f/23/88/3f2388f22ae0594ae77f03fd697f821c.jpg"
                         alt="Object Swap Tutorial"
                         width={300}
                         height={300}
