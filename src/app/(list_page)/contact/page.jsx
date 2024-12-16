@@ -5,8 +5,8 @@ import '../style.css';
 import Footer from '../../../components/Footer';
 import { Input } from "@/components/ui/input"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select"
-
-
+import { db } from '@/firebase/FirebaseConfig';
+import { addDoc, collection } from 'firebase/firestore';
 
 function page() {
   const [formData, setFormData] = useState({
@@ -24,7 +24,7 @@ function page() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault();
     //basic validation
     if (!formData.name || !formData.email || !formData.message) {
@@ -36,8 +36,26 @@ function page() {
       return;
     }
     console.log('Form submitted:', formData);
-    // Here - could send the formData to a server or handle it however
-    setFormData({ subject: '', name: '', email: '', message: '' }); // reset the form when submitted
+
+
+    try{
+      const docRef = await addDoc(collection(db, "contact_us"),{
+        subject: formData.subject,
+        name: formData.name,
+        email: formData.email,
+        message: formData.message,
+        timestamp: new Date()
+      }); 
+      console.log("Queries saved with ID:", docRef.id);
+      
+      // Here - could send the formData to a server or handle it however you need
+      setFormData({ subject: '', name: '', email: '', message: '' }); // reset the form when submitted
+
+
+    }catch (error){
+        alert(error.message);
+
+      }
   };
 
   return (
