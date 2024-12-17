@@ -39,22 +39,35 @@ const ScrollToTop = () => {
             fixed 
             bottom-4 
             right-4 
-            p-4 
+            sm:bottom-6 
+            sm:right-6 
+            lg:bottom-8 
+            lg:right-8 
+            p-3 
+            sm:p-4 
             rounded-full 
             bg-black 
             text-white 
             shadow-lg 
             cursor-pointer 
-            hover:bg-slate-200
+            hover:bg-slate-800
+            focus:outline-none
+            focus:ring-2
+            focus:ring-white
+            focus:ring-opacity-50
             transition-all 
             duration-300 
             border-2
             border-white
             z-50
+            transform 
+            hover:scale-110 
+            active:scale-95
           `}
+          aria-label="Scroll to Top"
         >
           <svg
-            className="w-6 h-6"
+            className="w-5 h-5 sm:w-6 sm:h-6"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
