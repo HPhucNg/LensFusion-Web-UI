@@ -17,6 +17,11 @@ pnpm dev
 # or
 bun dev
 ```
+Run Stripe server
+
+```bash
+stripe listen --forward-to localhost:3000/api/webhook/stripe
+```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
