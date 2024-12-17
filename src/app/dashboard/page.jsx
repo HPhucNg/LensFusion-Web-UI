@@ -23,19 +23,19 @@ export default function Page() {
           
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
               {/* Hero Content - Enhanced Flexibility */}
-              <div className="w-full  min-h-[18rem] lg:min-h-[25rem] bg-[#1E1E1E] rounded-lg shadow-md flex flex-col lg:flex-row items-center justify-center text-gray-300 p-6 sm:p-8 space-y-6 lg:space-y-0 lg:space-x-8">
+              <div className="w-full  min-h-[15rem] lg:min-h-[20rem] bg-[#1E1E1E] rounded-lg shadow-md flex flex-col lg:flex-row items-center justify-center text-gray-300 p-6 sm:p-8 space-y-6 lg:space-y-0 lg:space-x-8">
                 <div className="w-full lg:w-1/2 text-center lg:text-left space-y-6">
-                  <h1 className="text-3xl md:text-5lg lg:text-6lg font-bold text-white leading-tight">
+                  <h1 className="text-2xl md:text-3lg lg:text-6lg font-bold text-white leading-tight">
                     Introducing AI Object Removal
                   </h1>
-                  <p className="text-xl md:text-2xl text-gray-400 mb-6">
+                  <p className="text-xl md:text-lg text-gray-400 mb-6">
                     Choose objects and effortlessly remove them from your images with advanced AI technology
                   </p>
                   <div className="flex justify-center lg:justify-start space-x-4">
-                    <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 md:px-8 py-3 rounded-lg text-lg transition-colors duration-300">
+                    <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 md:px-8 py-3 rounded-lg text-base transition-colors duration-300">
                       Try it now
                     </button>
-                    <button className="bg-gray-700 hover:bg-gray-600 text-white px-6 md:px-8 py-3 rounded-lg text-lg transition-colors duration-300">
+                    <button className="bg-gray-700 hover:bg-gray-600 text-white px-6 md:px-8 py-3 rounded-lg text-base transition-colors duration-300">
                       Learn more
                     </button>
                   </div>
