@@ -33,7 +33,7 @@ export default function Navbar() {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
-        router.push('/dashboard');
+        router.push('/dashboard/profile');
       }
     } catch (error) {
       console.error("Error signing in:", error);
@@ -50,10 +50,7 @@ export default function Navbar() {
   };
 
   const authenticatedLinks = [
-    { href: '/dashboard', label: 'Dashboard' },
     { href: '/resources', label: 'Resources' },
-    { href: '/payment', label: 'Payment' },
-    { href: '/profile', label: 'Profile' },
     { href: '/community', label: 'Community' },
     { href: '/contact', label: 'Contact' },
     { href: '/solutions', label: 'Solutions' },
@@ -122,7 +119,7 @@ export default function Navbar() {
                 <DropdownMenuItem onClick={() => router.push('/dashboard')} className="text-slate-400 hover:text-white cursor-pointer">
                   Dashboard
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/profile')} className="text-slate-400 hover:text-white cursor-pointer">
+                <DropdownMenuItem onClick={() => router.push('/dashboard/profile')} className="text-slate-400 hover:text-white cursor-pointer">
                   Profile
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout} className="text-slate-400 hover:text-white cursor-pointer">
