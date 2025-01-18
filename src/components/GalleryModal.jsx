@@ -40,9 +40,9 @@ function GalleryModal({ closeModal, image }) {  // Accept the 'image' prop
                     </div>
 
                     <div className="midsection">
-                        <input placeholder="Open Workflow" type="text" className="new_pin_input" id="pin_title" />
-                        <input placeholder="Post to Community" type="text" className="new_pin_input" id="pin_description" />
-                        <input placeholder="Delete" type="text" className="new_pin_input" id="pin_destination" />
+                        <button class="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-pink-100 hover:bg-[rgb(245,105,129)] transition-all duration-100">Open Workflow</button>
+                        <button class="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-pink-100 hover:bg-[rgb(245,105,129)] transition-all duration-100" >Post to Community</button>
+                        <button class="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-pink-100 hover:bg-[rgb(245,105,129)] transition-all duration-100">Delete</button> 
                     </div>
                 </div>
             </div>
