@@ -15,10 +15,13 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { auth, db } from '@/firebase/FirebaseConfig';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import GalleryModal from '../../../components/GalleryModal.jsx';
 
 export default function UserProfile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);  // To control modal visibility
+  const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -45,6 +48,17 @@ export default function UserProfile() {
       console.error("Error saving user data:", error);
     }
   };
+
+  // Function to handle image click
+  const handleImageClick = (index) => {
+    setSelectedImage(`https://picsum.photos/400/400?random=${index}`);
+    setShowModal(true);  // Show the modal
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+}
+
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -119,13 +133,15 @@ export default function UserProfile() {
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((index) => (
                   <HoverCard key={index}>
                     <HoverCardTrigger asChild>
-                      <div className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-all duration-300 hover:scale-105">
+                      <div className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-all duration-300 hover:scale-105"
+                      onClick={() => handleImageClick(index)}>
                         <Image
                           src={`https://picsum.photos/400/400?random=${index}`}
                           alt={`Gallery item ${index}`}
                           width={400}
                           height={400}
                           className="object-cover"
+                          
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
                           <div className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
@@ -167,6 +183,10 @@ export default function UserProfile() {
       </main>
 
       <Footer />
+      {/* Gallery Modal */}
+      {showModal && (
+        <GalleryModal closeModal={() => setShowModal(false)} image={selectedImage} />
+      )}
     </div>
   );
 }
