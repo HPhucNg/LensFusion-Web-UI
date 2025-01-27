@@ -16,12 +16,14 @@ import Footer from "@/components/Footer";
 import { auth, db } from '@/firebase/FirebaseConfig';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import GalleryModal from '../../../components/GalleryModal.jsx';
+import Modal from '../../../components/Modal.jsx';
 
 export default function UserProfile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);  // To control modal visibility
   const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
+  const [showPostModal, setShowPostModal] = useState(false); // For Post Modal
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -58,6 +60,14 @@ export default function UserProfile() {
   const closeModal = () => {
     setShowModal(false);
 }
+  const openPostModal = () => {
+    setShowModal(false);  // Close Gallery Modal
+    setShowPostModal(true);  // Open Post Modal
+  };
+
+  const closePostModal = () => {
+    setShowPostModal(false);  // Close Post Modal
+  };
 
 
   if (loading) {
@@ -185,7 +195,21 @@ export default function UserProfile() {
       <Footer />
       {/* Gallery Modal */}
       {showModal && (
-        <GalleryModal closeModal={() => setShowModal(false)} image={selectedImage} />
+                <GalleryModal
+                    closeModal={closeModal}
+                    image={selectedImage}
+                    openPostModal={openPostModal}  // Pass openPostModal function
+                />
+            )}
+
+            {/* Post Modal */}
+            {showPostModal && (
+                <Modal
+                    closeModal={closePostModal}
+                    add_pin={() => {}}
+                    selectedImage={selectedImage}
+                    createdBy={user?.displayName}
+                />
       )}
     </div>
   );

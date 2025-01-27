@@ -2,8 +2,14 @@
 import React, { useState } from 'react';
 import '../styles/modal_styles.css';
 
-function GalleryModal({ closeModal, image }) {  // Accept the 'image' prop
+function GalleryModal({ closeModal, image, openPostModal }) {  // Accept the 'image' prop
     const [showModalPin, setShowModalPin] = useState(false);
+
+    // Trigger Post Modal when "Post to Community" is clicked
+    const handlePostToCommunityClick = () => {
+        openPostModal();  // This will open the Post Modal in UserProfile
+        closeModal();     // Close the Gallery Modal
+    };
 
     return (
         <div>
@@ -40,9 +46,9 @@ function GalleryModal({ closeModal, image }) {  // Accept the 'image' prop
                     </div>
 
                     <div className="midsection">
-                        <button class="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-pink-100 hover:bg-[rgb(245,105,129)] transition-all duration-100">Open Workflow</button>
-                        <button class="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-pink-100 hover:bg-[rgb(245,105,129)] transition-all duration-100" >Post to Community</button>
-                        <button class="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-pink-100 hover:bg-[rgb(245,105,129)] transition-all duration-100">Delete</button> 
+                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-pink-100 hover:bg-[rgb(245,105,129)] transition-all duration-100">Open Workflow</button>
+                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-pink-100 hover:bg-[rgb(245,105,129)] transition-all duration-100" onClick={handlePostToCommunityClick} >Post to Community</button>
+                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-pink-100 hover:bg-[rgb(245,105,129)] transition-all duration-100">Delete</button> 
                     </div>
                 </div>
             </div>
