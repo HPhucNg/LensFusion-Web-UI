@@ -24,6 +24,31 @@ export default function UserProfile() {
   const [showModal, setShowModal] = useState(false);  // To control modal visibility
   const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
   const [showPostModal, setShowPostModal] = useState(false); // For Post Modal
+  const [isDarkMode, setIsDarkMode] = useState(false);  // Track dark mode state
+
+  // On initial load, check for the user's saved theme preference in localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      setIsDarkMode(savedTheme === "dark");
+    } else {
+      // If no preference is saved, default to dark mode or light mode
+      setIsDarkMode(true);
+    }
+  }, []);
+
+  // Update body class based on the theme
+  useEffect(() => {
+    if (isDarkMode) {
+      document.body.classList.add("dark");
+      document.body.classList.remove("light");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.body.classList.add("light");
+      document.body.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDarkMode]);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -69,13 +94,17 @@ export default function UserProfile() {
     setShowPostModal(false);  // Close Post Modal
   };
 
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);  // Toggle the theme state
+  };
+
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white' : 'bg-gradient-to-r from-white via-gray-100 to-gray-300 text-black'}`}>
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
@@ -113,10 +142,11 @@ export default function UserProfile() {
                   <Share2 className="mr-3 h-5 w-5 text-white" />
                   <span className="text-lg">Share</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white">
+                <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white" onClick={toggleTheme}>
                   <Moon className="mr-3 h-5 w-5 text-white" />
-                  <span className="text-lg">Dark Mode</span>
+                  <span className="text-lg">{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
                 </Button>
+
               </div>
             </div>
           </div>
