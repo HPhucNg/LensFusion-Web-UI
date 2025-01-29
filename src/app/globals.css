@@ -95,7 +95,13 @@ body {
         --radius: 0.5rem;
     }
 
+html{
+  background: linear-gradient(to right, #1a1a1a, #333333, #000000);
+}
 
+html.dark .bg-gradient-to-r {
+    background: linear-gradient(to right, #1a1a1a, #333333, #000000);
+}
 
 /* Light theme custom styles */
 html.light .bg-gradient-to-r {
