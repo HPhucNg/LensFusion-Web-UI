@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from "next/image";
-import { Settings, User2, Share2, Moon, Check } from 'lucide-react';
+import { Settings, User2, Share2, Moon, Sun, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -24,31 +24,24 @@ export default function UserProfile() {
   const [showModal, setShowModal] = useState(false);  // To control modal visibility
   const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
   const [showPostModal, setShowPostModal] = useState(false); // For Post Modal
-  const [isDarkMode, setIsDarkMode] = useState(false);  // Track dark mode state
+  const [theme, setTheme] = useState("dark");
 
-  // On initial load, check for the user's saved theme preference in localStorage
+  // Check for saved theme in localStorage
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) {
-      setIsDarkMode(savedTheme === "dark");
-    } else {
-      // If no preference is saved, default to dark mode or light mode
-      setIsDarkMode(true);
+      setTheme(savedTheme);
     }
   }, []);
 
-  // Update body class based on the theme
-  useEffect(() => {
-    if (isDarkMode) {
-      document.body.classList.add("dark");
-      document.body.classList.remove("light");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.body.classList.add("light");
-      document.body.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [isDarkMode]);
+  // Toggle theme function
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
+    document.documentElement.classList.remove("dark", "light");
+    document.documentElement.classList.add(newTheme);
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -94,9 +87,6 @@ export default function UserProfile() {
     setShowPostModal(false);  // Close Post Modal
   };
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);  // Toggle the theme state
-  };
 
 
   if (loading) {
@@ -104,9 +94,8 @@ export default function UserProfile() {
   }
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white' : 'bg-gradient-to-r from-white via-gray-100 to-gray-300 text-black'}`}>
-      <Navbar />
-      
+    <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
+      <Navbar /> 
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Left Column - Profile */}
@@ -143,9 +132,13 @@ export default function UserProfile() {
                   <span className="text-lg">Share</span>
                 </Button>
                 <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white" onClick={toggleTheme}>
+                  {theme === "dark" ? (
+                  <Sun className="mr-3 h-5 w-5 text-white" />
+                ) : (
                   <Moon className="mr-3 h-5 w-5 text-white" />
-                  <span className="text-lg">{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
-                </Button>
+                )}
+                  <span className="text-lg">{theme === "dark" ? "Light" : "Dark"} Mode</span>
+              </Button>
 
               </div>
             </div>
