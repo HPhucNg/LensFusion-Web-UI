@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
-      domains: ['picsum.photos'], // Allow picsum.photos as a valid image domain
+      domains: ['picsum.photos', 'pebblely.com', 'i.pinimg.com'], // Allow picsum.photos as a valid image domain
     },
   };
   
