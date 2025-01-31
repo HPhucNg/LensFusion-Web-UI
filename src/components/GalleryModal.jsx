@@ -13,7 +13,7 @@ function GalleryModal({ closeModal, image, openPostModal }) {  // Accept the 'im
 
     return (
         <div>
-            <div className="w-[880px] h-[550px] absolute top-[60%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 flex overflow-hidden text-white border-2 border-transparent rounded-[50px] bg-white bg-opacity-30 backdrop-blur-lg p-[2px]">
+            <div className="w-[880px] h-[550px] absolute top-[40%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 flex overflow-hidden text-white border-2 border-transparent rounded-[50px] bg-white bg-opacity-30 backdrop-blur-lg p-[2px]">
                 
                 <div className="side" id="left_side">
                     <div className="topsection">

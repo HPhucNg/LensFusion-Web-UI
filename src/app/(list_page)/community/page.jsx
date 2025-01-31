@@ -1,56 +1,59 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase/FirebaseConfig'; // Assuming you already have Firebase config set up.
+import { db } from '@/firebase/FirebaseConfig'; // Firebase config import
+import Pin from '@/components/Pin'; // Pin is the component to render each post
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
+
 function Page() {
-  const [pins, setPins] = useState([]);
+  const [posts, setPosts] = useState([]);  // State to hold fetched posts
+  const [loading, setLoading] = useState(true);  // State for loading state
 
   useEffect(() => {
-    const fetchPins = async () => {
+    // Fetch community posts from the correct Firestore collection
+    const fetchPosts = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'pins'));
-        const pinsList = [];
+        const querySnapshot = await getDocs(collection(db, 'pins')); 
+        const postsArray = [];
         querySnapshot.forEach((doc) => {
-          pinsList.push({ id: doc.id, ...doc.data() });
+          postsArray.push({ id: doc.id, ...doc.data() });
         });
-        setPins(pinsList);
-      } catch (error) {
-        console.error('Error fetching pins: ', error);
+        setPosts(postsArray);  // Set posts to state
+      } catch (e) {
+        console.error("Error fetching posts: ", e);
+      } finally {
+        setLoading(false);  // Set loading to false after fetching
       }
     };
-
-    fetchPins();
+  
+    fetchPosts();
   }, []);
+  
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
 
   return (
-    <main className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden'>
+    <main className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
       <Navbar />
-
-      <div className="container mx-auto p-6">
-        <h2 className="text-3xl font-bold mb-8">Community Pins</h2>
+      
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-center mb-8">Community Posts</h1>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {pins.map((pin) => (
-            <div key={pin.id} className="relative">
-              <img
-                src={pin.img_data}
-                alt={pin.title}
-                className="object-cover w-full h-60 rounded-xl shadow-2xl"
-              />
-              <div className="absolute top-0 left-0 bg-black/50 text-white p-3 w-full text-center rounded-b-xl">
-                <h3 className="font-semibold">{pin.title}</h3>
-                <p>{pin.description}</p>
-              </div>
-            </div>
+          {/* Display each post using the Pin component */}
+          {posts.map((post) => (
+            <Pin key={post.id} pinDetails={post} />
           ))}
         </div>
       </div>
-
+      
       <Footer />
     </main>
   );
 }
 
 export default Page;
+

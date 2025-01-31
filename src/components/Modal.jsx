@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import '../styles/modal_styles.css';
-import { db } from '@/firebase/FirebaseConfig'; // Firebase config import
+import { auth, db } from '@/firebase/FirebaseConfig'; // Firebase config import
 import { collection, addDoc } from 'firebase/firestore';
+
 
 function Modal({ closeModal, add_pin, selectedImage, createdBy }) {
     const [pinDetails, setPinDetails] = useState({
@@ -21,7 +22,7 @@ function Modal({ closeModal, add_pin, selectedImage, createdBy }) {
             description: document.querySelector('#pin_description').value,
             destination: document.querySelector('#pin_destination').value,
         };
-
+    
         try {
             // Add the pin data to Firestore
             const pinRef = await addDoc(collection(db, 'pins'), {
@@ -31,15 +32,18 @@ function Modal({ closeModal, add_pin, selectedImage, createdBy }) {
                 destination: users_data.destination,
                 img_data: users_data.img_data,
                 createdAt: new Date(), // Timestamp
+                userId: auth.currentUser?.uid  // Add the user ID here
             });
-
+    
             console.log('Pin saved with ID: ', pinRef.id);
-            add_pin(users_data); // Pass the final pin data to the parent component (if needed)
+            add_pin(users_data); // Pass the final pin data to the parent component
             closeModal(); // Close the modal after saving the pin
         } catch (e) {
             console.error('Error adding document: ', e);
         }
     };
+    
+    
 
     return (
         <div className="add_pin_modal">
