@@ -1,3 +1,5 @@
+'use client';
+import React, { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   SidebarInset,
@@ -6,8 +8,34 @@ import {
 } from "@/components/ui/sidebar"
 import ScrollToTop from "@/components/ScrollToTop";
 import Image from "next/image";
+import { auth, db } from "@/firebase/FirebaseConfig";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
 export default function Page() {
+  const [user, setUser] = useState(null);
+  const [tokens, setTokens] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+        if (currentUser) {
+            const userRef = doc(db, "users", currentUser.uid);
+            const userDoc = await getDoc(userRef);
+            if (userDoc.exists()) {
+                setTokens(userDoc.data().tokens || 0);
+            }
+            setUser(currentUser);
+        }
+        setLoading(false);
+    });
+
+    return () => unsubscribe();
+}, []);
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">...Loading page...</div>;
+  }
+
   return (
     <div>
       <SidebarProvider>
@@ -17,6 +45,15 @@ export default function Page() {
             <header className="flex h-16 shrink-0 items-center gap-2">
               <div className="flex items-center gap-2 px-4">
                 <SidebarTrigger className=" fixed z-50-ml-1" />
+              </div>
+              <div className="ml-auto">
+                {!user ? (
+                  <span className="text-lg font-medium">Please log in to view your tokens.</span>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <span className="text-lg font-medium">Tokens: {tokens}</span>
+                  </div>
+                )}
               </div>
             </header>
           

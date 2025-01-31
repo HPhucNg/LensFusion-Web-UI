@@ -14,7 +14,7 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { auth, db } from '@/firebase/FirebaseConfig';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function UserProfile() {
   const [user, setUser] = useState(null);
@@ -32,15 +32,46 @@ export default function UserProfile() {
     return () => unsubscribe();
   }, []);
 
-  const saveUserToFirebase = async (userData) => {
+  const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId = null, subscriptionStatus = 'inactive', currentPlan = null) => {
     try {
-      const userRef = doc(db, 'users', userData.uid);
-      await setDoc(userRef, {
-        email: userData.email,
-        name: userData.displayName,
-        photoURL: userData.photoURL,
-        lastLogin: serverTimestamp(),
-      }, { merge: true });
+      if (!userData || !userData.uid) {
+        console.error("User data is missing essential properties.");
+        return;
+      }
+      const userRef = doc(db, 'users', userData.uid); 
+      const userDoc = await getDoc(userRef);
+      
+      //if the user doesnt exist, create new doc/user
+      if (!userDoc.exists()) {
+        const newUser = {
+          email: userData.email,
+          name: userData.displayName || "guest",
+          photoURL: userData.photoURL,
+          lastLogin: serverTimestamp(),
+          tokens: tokensToAdd, 
+          customerId: customerId,
+          subscriptionStatus: subscriptionStatus,
+          currentPlan: currentPlan,
+        };
+        await setDoc(userRef, newUser);
+        console.log("New user created in Firebase");
+      } else {
+        //this updates  into existing doc/user
+        const existingData = userDoc.data();
+        const updatedData = {
+          email: userData.email,
+          name: userData.displayName || existingData.name || "guest",
+          photoURL: userData.photoURL,
+          lastLogin: serverTimestamp(),
+          tokens: (existingData.tokens || 0) + tokensToAdd,
+          customerId: customerId || existingData.customerId,
+          subscriptionStatus: subscriptionStatus|| existingData.subscriptionStatus,
+          currentPlan: currentPlan || existingData.currentPlan,
+        };
+
+      await setDoc(userRef, updatedData);
+      console.log("User saved to Firebase");
+      }
     } catch (error) {
       console.error("Error saving user data:", error);
     }
