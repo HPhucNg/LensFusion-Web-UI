@@ -82,15 +82,17 @@ export default function Home() {
             {/* Hero Video */}
             <div className="mt-16 max-w-5xl mx-auto">
               <div className="relative rounded-xl bg-[#0D161F] p-4 shadow-2xl">
-                <video 
-                  className="rounded-lg w-full"
-                  autoPlay 
-                  loop 
-                  muted 
-                  playsInline
-                >
-                  <source src="/hero-video.mp4" type="video/mp4" />
-                </video>
+                {isClient && (
+                  <video 
+                    className="rounded-lg w-full"
+                    autoPlay={true}
+                    loop={true}
+                    muted={true}
+                    playsInline={true}
+                  >
+                    <source src="/hero-video.mp4" type="video/mp4" />
+                  </video>
+                )}
               </div>
             </div>
           </div>
