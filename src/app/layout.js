@@ -12,8 +12,8 @@ export default function RootLayout({ children }) {
         redirect_uri: "http://localhost:3000/profile"
       }}
     >
-      <html lang="en">
-        <body className="h-screen overflow-y-auto bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans">
+      <html lang="en" suppressHydrationWarning>
+        <body suppressHydrationWarning className="h-screen overflow-y-auto bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans">
           <div className="flex flex-col min-h-screen">
             {children}
           </div>
