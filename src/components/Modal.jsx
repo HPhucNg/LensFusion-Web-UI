@@ -11,7 +11,6 @@ function Modal({ closeModal, add_pin, selectedImage, createdBy }) {
         created_by: createdBy,
         title: '',
         description: '',
-        destination: '',
         img_data: selectedImage,
     });
 
@@ -20,7 +19,6 @@ function Modal({ closeModal, add_pin, selectedImage, createdBy }) {
             ...pinDetails,
             title: document.querySelector('#pin_title').value,
             description: document.querySelector('#pin_description').value,
-            destination: document.querySelector('#pin_destination').value,
         };
     
         try {
@@ -29,7 +27,6 @@ function Modal({ closeModal, add_pin, selectedImage, createdBy }) {
                 created_by: users_data.created_by,
                 title: users_data.title,
                 description: users_data.description,
-                destination: users_data.destination,
                 img_data: users_data.img_data,
                 createdAt: new Date(), // Timestamp
                 userId: auth.currentUser?.uid  // Add the user ID here

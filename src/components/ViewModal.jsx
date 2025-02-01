@@ -2,24 +2,20 @@
 import React, { useState } from 'react';
 import '../styles/modal_styles.css';
 
-function GalleryModal({ closeModal, image, openPostModal }) {  // Accept the 'image' prop
+function ViewModal({ closeModal, image}) {  // Accept the 'image' prop
     const [showModalPin, setShowModalPin] = useState(false);
 
-    // Trigger Post Modal when "Post to Community" is clicked
-    const handlePostToCommunityClick = () => {
-        openPostModal();  // This will open the Post Modal in UserProfile
-        closeModal();     // Close the Gallery Modal
-    };
+
 
     return (
         <div className='add_pin_modal'>
             {/* LIGHT MODE
             <div className="w-[880px] h-[550px] absolute top-[40%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 flex overflow-hidden text-white border-2 border-transparent rounded-[50px] bg-white bg-opacity-30 backdrop-blur-lg p-[2px]">
                */} 
-            <div className='add_pin_container'>
+            <div className='add_pin_container '>
                 <div className="side" id="left_side">
                     <div className="topsection">
-                        <div className="post_to">Manage Image</div>
+                        <div className="post_to">Viewing Image</div>
                     </div>
                 
                     <div className="midsection">
@@ -45,10 +41,12 @@ function GalleryModal({ closeModal, image, openPostModal }) {  // Accept the 'im
                         </div>
                     </div>
 
-                    <div className="midsection items-center">
-                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100">Open Workflow</button>
-                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100" onClick={handlePostToCommunityClick} >Post to Community</button>
-                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100">Delete</button> 
+                    <div className="midsection items-start ">
+                        <div>Title</div>
+                        <div>Description</div>
+                        <div>Created By:</div>
+                        <div>Like</div>
+                        <div>Comment</div>
                     </div>
                 </div>
             </div>
@@ -56,4 +54,4 @@ function GalleryModal({ closeModal, image, openPostModal }) {  // Accept the 'im
     );
 }
 
-export default GalleryModal;
+export default ViewModal;

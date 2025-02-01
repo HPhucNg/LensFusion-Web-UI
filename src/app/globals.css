@@ -106,7 +106,8 @@ body {
 
 /* Light theme custom styles */
 html.light .bg-gradient-to-r {
-  background: rgb(249, 221, 221);
+  background: rgb(255, 237, 245);
+  color: rgb(177, 177, 177);
 }
 
 

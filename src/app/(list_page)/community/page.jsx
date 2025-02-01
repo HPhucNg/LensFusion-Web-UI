@@ -5,11 +5,14 @@ import { db } from '@/firebase/FirebaseConfig'; // Firebase config import
 import Pin from '@/components/Pin'; // Pin is the component to render each post
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import ViewModal from '@/components/ViewModal';
 
 
 function Page() {
   const [posts, setPosts] = useState([]);  // State to hold fetched posts
   const [loading, setLoading] = useState(true);  // State for loading state
+  const [showModal, setShowModal] = useState(false);  // To control modal visibility
+  const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
 
   useEffect(() => {
     // Fetch community posts from the correct Firestore collection
@@ -30,6 +33,17 @@ function Page() {
   
     fetchPosts();
   }, []);
+
+  // Function to handle image click
+  const handleImageClick = (image) => {
+    setSelectedImage(image);
+    setShowModal(true);  // Show the modal
+  };
+
+  const closeModal = () => {
+    setShowModal(false);  // Hide modal
+    setSelectedImage(null); // Reset selected image
+}
   
 
   if (loading) {
@@ -45,12 +59,20 @@ function Page() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {/* Display each post using the Pin component */}
           {posts.map((post) => (
-            <Pin key={post.id} pinDetails={post} />
+            <div key={post.id} onClick={() => handleImageClick(post.img_data)} className="cursor-pointer">
+              <Pin pinDetails={post} />
+            </div>
           ))}
         </div>
       </div>
       
       <Footer />
+      {showModal && (
+                <ViewModal
+                    closeModal={closeModal}
+                    image={selectedImage}
+                />
+            )}
     </main>
   );
 }
