@@ -44,6 +44,7 @@
 /* Dimming effect on hover */
 .card:hover .pin_image img {
     opacity: 0.7; /* Dim the image on hover */
+    transform: scale(1.05);
 }
 
 

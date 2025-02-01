@@ -12,9 +12,11 @@ function GalleryModal({ closeModal, image, openPostModal }) {  // Accept the 'im
     };
 
     return (
-        <div>
+        <div className='add_pin_modal'>
+            {/* LIGHT MODE
             <div className="w-[880px] h-[550px] absolute top-[40%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 flex overflow-hidden text-white border-2 border-transparent rounded-[50px] bg-white bg-opacity-30 backdrop-blur-lg p-[2px]">
-                
+               */} 
+            <div className='add_pin_container'>
                 <div className="side" id="left_side">
                     <div className="topsection">
                         <div className="post_to">Viewing Image</div>
@@ -45,10 +47,10 @@ function GalleryModal({ closeModal, image, openPostModal }) {  // Accept the 'im
                         </div>
                     </div>
 
-                    <div className="midsection">
-                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-pink-100 hover:bg-[rgb(245,105,129)] transition-all duration-100">Open Workflow</button>
-                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-pink-100 hover:bg-[rgb(245,105,129)] transition-all duration-100" onClick={handlePostToCommunityClick} >Post to Community</button>
-                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-pink-100 hover:bg-[rgb(245,105,129)] transition-all duration-100">Delete</button> 
+                    <div className="midsection items-center">
+                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100">Open Workflow</button>
+                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100" onClick={handlePostToCommunityClick} >Post to Community</button>
+                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100">Delete</button> 
                     </div>
                 </div>
             </div>

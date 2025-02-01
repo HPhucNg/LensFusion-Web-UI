@@ -57,7 +57,7 @@ function Modal({ closeModal, add_pin, selectedImage, createdBy }) {
                         {/* Display the image passed from the GalleryModal */}
                         {pinDetails.img_data && (
                             <div className="upload_img_container">
-                                <div id="dotted_border">
+                                <div>
                                     <img
                                         src={pinDetails.img_data}
                                         alt="Selected"
@@ -77,24 +77,21 @@ function Modal({ closeModal, add_pin, selectedImage, createdBy }) {
                     </div>
 
                     <div className="midsection">
+                        <div className='text-2xl'>Title</div>
                         <input
                             placeholder="Add your Title"
                             type="text"
                             className="new_pin_input"
                             id="pin_title"
                         />
+                        <div className='text-2xl'>Description</div>
                         <input
                             placeholder="Caption your image"
                             type="text"
                             className="new_pin_input"
                             id="pin_description"
                         />
-                        <input
-                            placeholder="Destination URL"
-                            type="text"
-                            className="new_pin_input"
-                            id="pin_destination"
-                        />
+
                         Created By: {pinDetails.created_by}
                     </div>
 

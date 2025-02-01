@@ -154,7 +154,7 @@
   /* Styling for the submit button */
   .form-container input[type=submit] {
     width: 70%;
-    background-color: #fffc56; ;
+    background-color: rgb(141, 90, 237);
     color:  #ccc;
     padding: 7px 20px;
     margin: 8px 0;
@@ -163,7 +163,7 @@
     cursor: pointer;
   }
   .form-container input[type=submit]:hover {
-    background-color: rgb(255, 225, 52);
+    background-color: rgb(182, 154, 239);
     color: white;
   }
 
