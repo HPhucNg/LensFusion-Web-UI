@@ -120,22 +120,22 @@ export default function UserProfile() {
               </p>
               <div className="w-full space-y-3">
                 <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white">
-                  <Settings className="mr-3 h-5 w-5 text-white" />
+                  <Settings className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Account</span>
                 </Button>
                 <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white">
-                  <User2 className="mr-3 h-5 w-5 text-white" />
+                  <User2 className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Subscription</span>
                 </Button>
                 <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white">
-                  <Share2 className="mr-3 h-5 w-5 text-white" />
+                  <Share2 className="mr-3 h-5 w-5" />
                   <span className="text-lg">Share</span>
                 </Button>
                 <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white" onClick={toggleTheme}>
                   {theme === "dark" ? (
-                  <Sun className="mr-3 h-5 w-5 text-white" />
+                  <Sun className="mr-3 h-5 w-5 " />
                 ) : (
-                  <Moon className="mr-3 h-5 w-5 text-white" />
+                  <Moon className="mr-3 h-5 w-5 " />
                 )}
                   <span className="text-lg">{theme === "dark" ? "Light" : "Dark"} Mode</span>
               </Button>
