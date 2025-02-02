@@ -100,7 +100,7 @@ export default function UserProfile() {
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Left Column - Profile */}
           <div className="flex-shrink-0 w-full lg:w-1/4">
-            <div className="flex flex-col items-center bg-[#0D161F] p-8 rounded-2xl shadow-2xl border border-gray-800">
+            <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl shadow-2xl border border-gray-800">
               {user?.photoURL ? (
                 <img
                   src={user.photoURL}
@@ -148,9 +148,9 @@ export default function UserProfile() {
           <div className="flex-grow">
             <div className="mb-8">
               {/* Milestone Tracker */}
-              <Card className="bg-[#0D161F] border-gray-800 shadow-2xl">
+              <Card className="bg-[var(--card-background)] border-gray-800 shadow-2xl">
                 <CardHeader>
-                  <h3 className="text-2xl font-bold text-white">Milestone tracker</h3>
+                  <h3 className="text-2xl font-bold">Milestone tracker</h3>
                 </CardHeader>
                 <CardContent>
                   <Progress value={35} className="h-3 rounded-lg bg-gray-800" />
@@ -160,7 +160,7 @@ export default function UserProfile() {
             </div>
 
             {/* Gallery Section */}
-            <div className="bg-[#0D161F] p-6 rounded-2xl shadow-2xl border border-gray-800">
+            <div className="bg-[var(--card-background)] p-6 rounded-2xl shadow-2xl border border-gray-800">
               <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((index) => (

@@ -22,9 +22,8 @@
     color: white;
     border: solid 2px transparent;
     border-radius: 50px;
-    background:
-        linear-gradient(to right, #395f72, #1a202c, #2d3748) padding-box,
-        linear-gradient(to right, #81f2eb, #1a202c, #5403a4) border-box;
+    background: var(--modal-background);
+    backdrop-filter: var(--modal-backdrop);
 }
 
 .side {
@@ -84,6 +83,10 @@
 
 .icon_close {
     width: 10%;
+}
+
+.icon_close:hover{
+    transform: scale(.8);
 }
 
 .modals_pin {

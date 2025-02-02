@@ -106,8 +106,11 @@ body {
 
 /* Light theme custom styles */
 html.light .bg-gradient-to-r {
-  background: rgb(255, 237, 245);
-  color: rgb(177, 177, 177);
+  background: rgb(255, 249, 251);
+  color: rgb(65, 65, 65);
+  --card-background: rgb(240, 227, 232);
+  --modal-background: rgba(255, 255, 255, 0.404);
+  --modal-backdrop: blur(10px); /* Equivalent to backdrop-blur-lg */
 }
 
 
@@ -144,6 +147,10 @@ html.light .bg-gradient-to-r {
         --sidebar-accent-foreground: 240 4.8% 95.9%;
         --sidebar-border: 240 3.7% 15.9%;
         --sidebar-ring: 217.2 91.2% 59.8%;
+        --card-background: #0D161F;
+        --modal-background: linear-gradient(to right, #395f72, #1a202c, #2d3748) padding-box,
+                            linear-gradient(to right, #81f2eb, #1a202c, #5403a4) border-box;
+        --modal-backdrop: none; /* No backdrop blur in dark mode */
     }
 }
 
