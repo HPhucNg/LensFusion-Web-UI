@@ -17,7 +17,7 @@ export default function LoginPage() {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
-        router.push('/dashboard');
+        router.push('/dashboard/profile');
       }
     } catch (error) {
       console.error("Error signing in with Google:", error);
@@ -29,7 +29,7 @@ export default function LoginPage() {
       const provider = new GithubAuthProvider();
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
-        router.push('/dashboard');
+        router.push('/dashboard/profile');
       }
     } catch (error) {
       console.error("Error signing in with GitHub:", error);
