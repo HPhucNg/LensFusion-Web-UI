@@ -1,79 +1,85 @@
 "use client";
 
-import { OktaAuth, toRelativeUrl } from "@okta/okta-auth-js";
-import { Security, useOktaAuth } from "@okta/okta-react";
+import React from 'react';
+import { Button } from "@/components/ui/button";
+import { useRouter } from 'next/navigation';
+import { auth } from '@/firebase/FirebaseConfig';
+import { signInWithPopup, GoogleAuthProvider, GithubAuthProvider } from "firebase/auth";
+import { FaGoogle, FaGithub } from 'react-icons/fa'; // Install react-icons if not already installed
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/button";
 
-// Configure OktaAuth instance using environment variables
-const oktaAuth = new OktaAuth({
-  issuer: process.env.NEXT_PUBLIC_OKTA_ISSUER, // Example: "https://dev-123456.okta.com/oauth2/default"
-  clientId: process.env.NEXT_PUBLIC_OKTA_CLIENT_ID, // Example: "aBcc....t"
-  redirectUri: `${window.location.origin}/login/callback`,
-});
+export default function LoginPage() {
+  const router = useRouter();
 
-function LoginPage() {
-  const { oktaAuth, authState } = useOktaAuth();
-
-  const handleSignIn = async () => {
+  const handleGoogleLogin = async () => {
     try {
-      await oktaAuth.signInWithRedirect();
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        router.push('/dashboard');
+      }
     } catch (error) {
-      console.error("Error during login:", error);
+      console.error("Error signing in with Google:", error);
     }
   };
 
-  if (!authState) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
-  if (authState.isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans">
-        <Navbar />
-        <div className="flex flex-col justify-center items-center py-20">
-          <h1 className="text-4xl font-bold mb-6">Welcome Back!</h1>
-          <p className="mb-4 text-lg">You are already signed in.</p>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+  const handleGithubLogin = async () => {
+    try {
+      const provider = new GithubAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      console.error("Error signing in with GitHub:", error);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans">
+    <>
       <Navbar />
-      <div className="flex flex-col justify-center items-center py-20">
-        <h1 className="text-4xl font-bold mb-6">Welcome to LensFusion</h1>
-        <p className="mb-4 text-lg">
-          Sign in to continue and explore AI-powered solutions.
-        </p>
-        <Button
-          onClick={handleSignIn}
-          className="px-8 py-4 text-lg font-semibold bg-purple-600 hover:bg-purple-700 transition rounded-full"
-        >
-          Sign In
-        </Button>
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-[#0D161F] p-8 rounded-2xl shadow-2xl border border-gray-800">
+          <h2 className="text-3xl font-bold text-center mb-8">Welcome Back</h2>
+          <div className="space-y-4">
+            <Button
+              variant="outline"
+              onClick={handleGoogleLogin}
+              className="w-full py-6 bg-white hover:bg-gray-100 text-black transition-all duration-300 flex items-center justify-center space-x-3"
+            >
+              <FaGoogle className="w-5 h-5" />
+              <span className="text-lg">Continue with Google</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={handleGithubLogin}
+              className="w-full py-6 bg-[#24292e] hover:bg-[#1b1f23] text-white transition-all duration-300 flex items-center justify-center space-x-3"
+            >
+              <FaGithub className="w-5 h-5" />
+              <span className="text-lg">Continue with GitHub</span>
+            </Button>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-[#0D161F] text-gray-400">Or</span>
+              </div>
+            </div>
+
+            <p className="text-center text-gray-400">
+              Don't have an account?{" "}
+              <button onClick={() => router.push('/register')} className="text-blue-500 hover:text-blue-400">
+                Sign up
+              </button>
+            </p>
+          </div>
+        </div>
       </div>
       <Footer />
-    </div>
-  );
-}
-
-export default function Root() {
-  return (
-    <Security
-      oktaAuth={oktaAuth}
-      restoreOriginalUri={(oktaAuth, originalUri) =>
-        oktaAuth.setOriginalUri(toRelativeUrl(originalUri, window.location.origin))
-      }
-    >
-      <LoginPage />
-    </Security>
+    </>
   );
 }
