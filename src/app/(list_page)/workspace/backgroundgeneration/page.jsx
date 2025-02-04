@@ -1,4 +1,4 @@
-import ImageProcessor from '../backgroundgeneration/_component/ImageProcessor';
+import ImageProcessor from '../backgroundgeneration/_components/ImageProcessor';
 
 export default function Home() {
   return (
