@@ -16,7 +16,7 @@ export async function processImage(imageFile, options = {}) {
 
     const params = {
       bg_source: "Right Light",
-      prompt: "professional advertising design of a product. natural lighting. a rustic barn in open fields in the background.",
+      prompt: "professional advertising design of a product. golden time. a modern living room with a fireplace in the background.",
       image_height: 1152,
       num_samples: 1,
       seed: Math.floor(Math.random() * 1000000),
