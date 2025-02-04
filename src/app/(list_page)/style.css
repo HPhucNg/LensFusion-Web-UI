@@ -184,6 +184,7 @@
 .termFees {
     text-align: center;
 }
+
 .termFees button.selected {
     background-color: rgb(80, 79, 79); /*background when selected */
     color: white;
@@ -194,7 +195,7 @@
 .termFees button{
     background: transparent;
     border: none !important;
-    color: white;
+    color:rgb(138, 138, 138);
   }
 
 .cards {     /*holds 3 card flex items*/
@@ -210,10 +211,7 @@
     flex-direction: column;
     justify-content: center;
 }
-.cardmiddle{     /*each card is being built*/
-    background-color: whitesmoke;
-    color: rgb(45, 42, 42);
-}
+
 /*card content styling*/
 .card h3 {     
     font-weight: bold;
@@ -238,7 +236,6 @@
 
 button {
     background-color: white;
-    color: black;
     border-radius: 10px;
     padding: 5px 0 5px 0;
     margin: 0 1em 1em 1em;

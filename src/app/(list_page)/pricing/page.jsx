@@ -80,7 +80,7 @@ function PricingPage() {
 
   return (
     <>
-    <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden'>
+    <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black font-sans relative overflow-hidden'>
       <Navbar />
       <h1 className="priceh1">How much is your time worth?</h1>
       <main className="containerPrice">
@@ -127,7 +127,7 @@ function PricingPage() {
             </ul>
             <button
               className={`w-full py-2 rounded-lg mb-0 ${
-                index === 1 ? 'bg-[var(--card-background)] text-[var(color)]' : 'bg-[var(background)]'
+                index === 1 ? 'bg-[var(--card-background)] text-white' : 'bg-[var(background)] text-black '
               }`}
               onClick={() =>
                 handleSubscription(

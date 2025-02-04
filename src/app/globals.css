@@ -111,6 +111,7 @@ html.light .bg-gradient-to-r {
   --card-background: rgb(240, 227, 232);
   --modal-background: rgba(255, 255, 255, 0.404);
   --modal-backdrop: blur(10px); /* Equivalent to backdrop-blur-lg */
+  --border-gray:#e0e0e0; 
 }
 
 
@@ -151,6 +152,7 @@ html.light .bg-gradient-to-r {
         --modal-background: linear-gradient(to right, #395f72, #1a202c, #2d3748) padding-box,
                             linear-gradient(to right, #81f2eb, #1a202c, #5403a4) border-box;
         --modal-backdrop: none; /* No backdrop blur in dark mode */
+        --border-gray: #242c3a;
     }
 }
 
