@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.2.4",
+    "@gradio/client": "^1.10.0",
     "@hookform/resolvers": "^3.9.1",
     "@okta/okta-auth-js": "^7.8.1",
     "@okta/okta-react": "^6.9.0",
