@@ -3,8 +3,8 @@ let Client;
 
 async function getClient() {
   if (!Client) {
-    const module = await import('@gradio/client');
-    Client = module.Client;
+    const { Client: ImportedClient } = await import('@gradio/client');
+    Client = ImportedClient;
   }
   return Client;
 }
@@ -15,8 +15,9 @@ export async function processImage(imageFile, options = {}) {
     const client = await ClientClass.connect("lllyasviel/iclight-v2");
 
     const params = {
-      bg_source: "Right Light",
-      prompt: "professional advertising design of a product. golden time. a modern living room with a fireplace in the background.",
+      bg_source: "Top Light",
+      prompt: "professional ultra realistic advertising design of a product. golden time. a modern living room with a fireplace in the background.",
+      image_width: 1152,
       image_height: 1152,
       num_samples: 1,
       seed: Math.floor(Math.random() * 1000000),
