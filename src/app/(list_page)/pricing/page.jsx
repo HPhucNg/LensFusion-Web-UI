@@ -106,7 +106,7 @@ function PricingPage() {
             <div
             key={plan.title}
             className={`rounded-lg p-6 shadow-lg w-64 h-full flex flex-col justify-center items-center text-center ${
-              index === 1 ? 'bg-white text-black' : 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white'
+              index === 1 ? 'bg-white text-black' : 'bg-[var(--card-background)]'
             }`}
           >
             <h3 className="text-l font-bold mb-1">{plan.title}</h3>
@@ -127,7 +127,7 @@ function PricingPage() {
             </ul>
             <button
               className={`w-full py-2 rounded-lg mb-0 ${
-                index === 1 ? 'bg-black text-white' : 'bg-white text-black'
+                index === 1 ? 'bg-[var(--card-background)] text-[var(color)]' : 'bg-[var(background)]'
               }`}
               onClick={() =>
                 handleSubscription(
