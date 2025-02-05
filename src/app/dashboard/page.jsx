@@ -19,22 +19,23 @@ export default function Page() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
         if (currentUser) {
+          setUser(currentUser); 
             const userRef = doc(db, "users", currentUser.uid);
-            const userDoc = await getDoc(userRef);
-            if (userDoc.exists()) {
+            const unsubscribeSnapshot = onSnapshot(userRef, (userDoc) => {
+              if (userDoc.exists()) {
                 setTokens(userDoc.data().tokens || 0);
-            }
-            setUser(currentUser);
-        }
-        setLoading(false);
-    });
+              }
+            });
+            return () => unsubscribeSnapshot();
+          } else {
+            setUser(null); 
+            setLoading(false);
+          }
+        });
+      
+        return () => unsubscribe();
+      }, []);
 
-    return () => unsubscribe();
-}, []);
-
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">...Loading page...</div>;
-  }
 
   return (
     <div>

@@ -6,7 +6,8 @@ import Footer from '../../../components/Footer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { createCheckoutSession } from '../../../../stripe/createCheckoutSession';
 import { loadStripe } from '@stripe/stripe-js';
-import { PricingPlans } from '../pricing/plans'
+import { PricingPlans } from '../pricing/plans';
+
 
 function PricingPage() {
 
@@ -129,11 +130,7 @@ function PricingPage() {
               className={`w-full px-4 py-2 rounded-lg ${
                 index === 1 ? 'bg-black text-white' : 'bg-white text-black'
               }`}
-              onClick={() =>
-                handleSubscription(
-                  pricingType === 'monthly' ? plan.linkMonthly : plan.linkYearly
-                )
-              }
+              onClick={() => handleSubscription(pricingType === 'monthly' ? plan.linkMonthly : plan.linkYearly)}
             >
               {`Get ${plan.title}`}
             </button>
