@@ -6,7 +6,7 @@ import Pin from '@/components/Pin'; // Pin is the component to render each post
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ViewModal from '@/components/ViewModal';
-
+import '../style.css';
 
 function Page() {
   const [posts, setPosts] = useState([]);  // State to hold fetched posts
@@ -54,9 +54,9 @@ function Page() {
     <main className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-center mb-8">Community Posts</h1>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="pin_container">
           {/* Display each post using the Pin component */}
           {posts.map((post) => (
             <div key={post.id} onClick={() => handleImageClick(post.img_data)} className="cursor-pointer">

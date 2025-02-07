@@ -303,3 +303,36 @@ button:hover {
     font-weight: bolder;
     font-size: 30px;
 }
+
+/*community styling*/
+.pin_container {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 250px); /* Makes the grid responsive */
+    grid-gap: 16px; /* Adjust the gap between cards */
+    justify-content: center;  /* Center the grid items */
+    justify-items: center;  /* Align grid items properly */
+}
+
+.card {
+    width: 100%; /* Ensure card takes full width of grid item */
+    padding: 0;
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.card_large {
+    grid-row-end: span 45;
+}
+
+.card_medium {
+    grid-row-end: span 33;
+}
+
+.card_small {
+    grid-row-end: span 26;
+}
