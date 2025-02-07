@@ -212,6 +212,7 @@
     justify-content: center;
 }
 
+
 /*card content styling*/
 .card h3 {     
     font-weight: bold;
@@ -235,11 +236,17 @@
 }
 
 button {
-    background-color: white;
+    background-color: rgb(141, 90, 237);
+    color: white;
     border-radius: 10px;
     padding: 5px 0 5px 0;
     margin: 0 1em 1em 1em;
 }
+
+button:hover {
+    background-color: rgb(182, 154, 239);
+    color: white;
+  }
 
 .faqItem {
     text-align: center;

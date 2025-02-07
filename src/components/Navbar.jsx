@@ -71,7 +71,7 @@ export default function Navbar() {
 
   return (
     <header className="relative top-0 w-full z-50 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
-      <nav className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 border-slate-900 rounded-full border shadow-xl border-gray-800">
+      <nav className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 border-slate-900 rounded-full border shadow-xl border-[var(--border-gray)]">
         <div className="flex items-center ml-5">
           <Branding />
         </div>

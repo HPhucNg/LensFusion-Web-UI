@@ -101,7 +101,7 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-8 items-center">
             {/* Left Content */}
             <div className="space-y-6">
-              <h2 className="text-3xl md:text-5xl text-white font-bold">
+              <h2 className="text-3xl md:text-5xl font-bold">
                 Remove any Photo Background in One Click
               </h2>
               <p className="text-xl text-gray">
@@ -139,7 +139,7 @@ export default function Home() {
 
             {/* Right Content - Single Image */}
             <div className="space-y-6 pl-4">
-              <h2 className="text-3xl md:text-5xl text-white font-bold">
+              <h2 className="text-3xl md:text-5xl font-bold">
               Generate Photo Background with Any Image
               </h2>
               <p className="text-xl text-gray">

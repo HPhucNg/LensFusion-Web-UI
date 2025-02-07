@@ -100,15 +100,15 @@ export default function UserProfile() {
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Left Column - Profile */}
           <div className="flex-shrink-0 w-full lg:w-1/4">
-            <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl shadow-2xl border border-[var(--border-gray)]">
+            <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl  border border-[var(--border-gray)]">
               {user?.photoURL ? (
                 <img
                   src={user.photoURL}
                   alt={user.displayName}
-                  className="w-40 h-40 rounded-full shadow-2xl border-4 border-[var(--border-gray)] mb-6"
+                  className="w-40 h-40 rounded-full  border-4 border-[var(--border-gray)] mb-6"
                 />
               ) : (
-                <div className="w-40 h-40 bg-gray-800 rounded-full flex items-center justify-center mb-6 shadow-2xl border-4 border-[var(--border-gray)]">
+                <div className="w-40 h-40 bg-gray-800 rounded-full flex items-center justify-center mb-6 border-4 border-[var(--border-gray)]">
                   <User2 className="w-20 h-20 text-gray-400" />
                 </div>
               )}
@@ -119,19 +119,19 @@ export default function UserProfile() {
                 {user?.email || "default text box"}
               </p>
               <div className="w-full space-y-3">
-                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white">
+                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
                   <Settings className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Account</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white">
+                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
                   <User2 className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Subscription</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white">
+                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
                   <Share2 className="mr-3 h-5 w-5" />
                   <span className="text-lg">Share</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white" onClick={toggleTheme}>
+                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white" onClick={toggleTheme}>
                   {theme === "dark" ? (
                   <Sun className="mr-3 h-5 w-5 " />
                 ) : (
@@ -148,7 +148,7 @@ export default function UserProfile() {
           <div className="flex-grow">
             <div className="mb-8">
               {/* Milestone Tracker */}
-              <Card className="bg-[var(--card-background)] border-[var(--border-gray)] shadow-2xl">
+              <Card className="bg-[var(--card-background)] border-[var(--border-gray)]">
                 <CardHeader>
                   <h3 className="text-2xl font-bold">Milestone tracker</h3>
                 </CardHeader>
@@ -160,7 +160,7 @@ export default function UserProfile() {
             </div>
 
             {/* Gallery Section */}
-            <div className="bg-[var(--card-background)] p-6 rounded-2xl shadow-2xl border border-[var(--border-gray)]">
+            <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
               <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((index) => (
@@ -183,7 +183,7 @@ export default function UserProfile() {
                         </div>
                       </div>
                     </HoverCardTrigger>
-                    <HoverCardContent className="w-80 bg-[var(--card-background)] border-[var(--border-gray)] shadow-2xl">
+                    <HoverCardContent className="w-80 bg-[var(--card-background)] border-[var(--border-gray)]">
                       <div className="space-y-2">
                         <h4 className="text-lg font-semibold">Image Details</h4>
                         <p className="text-gray-400">Gallery item {index}</p>
