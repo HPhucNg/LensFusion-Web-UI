@@ -46,41 +46,50 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
+  
     setIsLoading(true);
     setError('');
-
+  
     try {
-      // Create a unique file name
+      // Create a unique file name using user ID and timestamp
       const fileExtension = file.name.split('.').pop();
       const fileName = `${user.uid}_${Date.now()}.${fileExtension}`;
       
       // Create a reference to the file in Firebase Storage
-      const fileRef = ref(storage, `profile-pictures/${fileName}`);
-
-      // Upload the file
+      const fileRef = ref(storage, `profile-pictures/${user.uid}/${fileName}`);
+  
+      // Delete old profile picture if it exists
+      if (profileData.photoURL) {
+        try {
+          const oldFileRef = ref(storage, profileData.photoURL);
+          await deleteObject(oldFileRef);
+        } catch (error) {
+          // Ignore error if old file doesn't exist
+          console.log('No old file to delete');
+        }
+      }
+  
+      // Upload the new file
       await uploadBytes(fileRef, file);
-
-      // Get the download URL
       const downloadURL = await getDownloadURL(fileRef);
-
-      // Update profile data state
+  
+      // Update profile
+      await updateProfile(auth.currentUser, {
+        photoURL: downloadURL
+      });
+  
+      // Store only the storage path in Firestore
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        photoURL: downloadURL,
+        profilePicturePath: `profile-pictures/${user.uid}/${fileName}` // Store the path instead of URL
+      });
+  
       setProfileData(prev => ({
         ...prev,
         photoURL: downloadURL
       }));
-
-      // Update profile immediately
-      await updateProfile(auth.currentUser, {
-        photoURL: downloadURL
-      });
-
-      // Update in Firestore
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        photoURL: downloadURL
-      });
-
+  
       setSuccess('Profile picture updated successfully!');
     } catch (error) {
       setError('Error uploading image: ' + error.message);
@@ -202,46 +211,48 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Profile Picture
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={profileData.photoURL}
-                      onChange={(e) => setProfileData({ ...profileData, photoURL: e.target.value })}
-                      className="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
-                      placeholder="Image URL"
-                    />
-                    <div className="relative">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                        id="photo-upload"
-                      />
-                      <Button 
-                        variant="outline" 
-                        className="flex gap-2"
-                        onClick={() => document.getElementById('photo-upload').click()}
-                        disabled={isLoading}
-                      >
-                        <Camera className="h-4 w-4" />
-                        {isLoading ? 'Uploading...' : 'Upload'}
-                      </Button>
-                    </div>
-                  </div>
-                  {profileData.photoURL && (
-                    <div className="mt-2">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Profile Picture
+                </label>
+                <div className="flex items-center gap-4">
+                  {/* Profile Picture Preview */}
+                  <div className="relative w-20 h-20">
+                    {profileData.photoURL ? (
                       <img
                         src={profileData.photoURL}
                         alt="Profile Preview"
                         className="w-20 h-20 rounded-full object-cover border-2 border-gray-800"
                       />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center border-2 border-gray-700">
+                        <User2 className="w-10 h-10 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload Control */}
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="photo-upload"
+                    />
+                    <Button 
+                      variant="outline" 
+                      className="inline-flex items-center gap-2 px-3 py-1 text-sm text-white bg-transparent border border-gray-700 hover:bg-gray-800"
+                      onClick={() => document.getElementById('photo-upload').click()}
+                      disabled={isLoading}
+                    >
+                      <Camera className="h-4 w-4" />
+                      <span className="text-white">
+                        {isLoading ? 'Uploading...' : 'Upload Profile Picture'}
+                      </span>
+                    </Button>
+                  </div>
                 </div>
+              </div>
                 <Button
                   onClick={handleProfileUpdate}
                   disabled={isLoading}
