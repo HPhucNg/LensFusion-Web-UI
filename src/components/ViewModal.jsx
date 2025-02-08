@@ -22,7 +22,7 @@ function ViewModal({ closeModal, image}) {  // Accept the 'image' prop
                         <div>
                                 {/* Render the selected image */}
                                 {image ? (
-                                    <img src={image} alt="Selected" className="object-cover w-full h-full rounded-xl" />
+                                    <img src={image.img_data} alt="Selected" className="object-cover w-full h-full rounded-xl" />
                                 ) : (
                                     <p>No image selected</p>
                                 )}
@@ -41,10 +41,10 @@ function ViewModal({ closeModal, image}) {  // Accept the 'image' prop
                         </div>
                     </div>
 
-                    <div className="midsection items-start ">
-                        <div>Title</div>
-                        <div>Description</div>
-                        <div>Created By:</div>
+                    <div className="midsection">
+                        <div>Title: {image.title}</div>
+                        <div>Description: {image.description}</div>
+                        <div>Created By: {image.created_by}</div>
                         <div>Like</div>
                         <div>Comment</div>
                     </div>

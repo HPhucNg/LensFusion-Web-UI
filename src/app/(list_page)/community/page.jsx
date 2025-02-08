@@ -59,7 +59,7 @@ function Page() {
         <div className="pin_container">
           {/* Display each post using the Pin component */}
           {posts.map((post) => (
-            <div key={post.id} onClick={() => handleImageClick(post.img_data)} className="cursor-pointer">
+            <div key={post.id} onClick={() => handleImageClick(post)} className="cursor-pointer">
               <Pin pinDetails={post} />
             </div>
           ))}
