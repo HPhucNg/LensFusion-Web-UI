@@ -198,42 +198,6 @@
     color:rgb(138, 138, 138);
   }
 
-.cards {     /*holds 3 card flex items*/
-    display: flex;
-    justify-content: space-around;
-}
-
-.card {     /*each card is being built*/
-    width: 24%;
-    padding-top: 3%;
-    border-radius: 3%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-
-/*card content styling*/
-.card h3 {     
-    font-weight: bold;
-    text-align: center;
-}
-.card p {
-    text-align: center;
-
-}
-.price {
-    font-size: 200%;
-    font-weight: bold;
-}
-.period {
-    font-size: 80%;
-    font-weight: lighter;
-}
-.card ul {
-    padding: 5% 0 10% 20%;
-    list-style-type: disc;
-}
 
 button {
     background-color: rgb(141, 90, 237);
@@ -260,6 +224,9 @@ button:hover {
     font-size: 25px;
     margin-bottom: 3%;
 }
+
+
+
 
 
 
