@@ -2,114 +2,287 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from "next/image";
-import { Settings, User2, Share2, Moon, Check } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Settings, User2, Share2, Moon, Check, Lock, Bell, Shield, X, Camera, Smartphone, AlertTriangle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { 
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { useRouter } from 'next/navigation';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { auth, db } from '@/firebase/FirebaseConfig';
-import { doc, setDoc, getDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { deleteUser } from 'firebase/auth';
+import { auth, db, storage } from '@/firebase/FirebaseConfig';
+import { 
+  doc, 
+  setDoc, 
+  getDoc, 
+  deleteDoc, 
+  updateDoc,
+  serverTimestamp 
+} from 'firebase/firestore';
+import { 
+  deleteUser, 
+  updateProfile
+} from 'firebase/auth';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-const AccountDeletionDialog = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+// Account Management Dialog Component
+const AccountManagementDialog = ({ isOpen, onClose, user }) => {
+  const [activeTab, setActiveTab] = useState('profile');
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const router = useRouter();
 
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true);
+  // Form States
+  const [profileData, setProfileData] = useState({
+    displayName: user?.displayName || '',
+    photoURL: user?.photoURL || '',
+  });
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setIsLoading(true);
     setError('');
-    
+
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        throw new Error('No user found');
-      }
+      // Create a unique file name
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `${user.uid}_${Date.now()}.${fileExtension}`;
+      
+      // Create a reference to the file in Firebase Storage
+      const fileRef = ref(storage, `profile-pictures/${fileName}`);
 
-      // Delete user data from Firestore
-      await deleteDoc(doc(db, 'users', user.uid));
+      // Upload the file
+      await uploadBytes(fileRef, file);
 
-      // Delete the user account
-      await deleteUser(user);
+      // Get the download URL
+      const downloadURL = await getDownloadURL(fileRef);
 
-      setIsOpen(false);
-      router.push('/');
+      // Update profile data state
+      setProfileData(prev => ({
+        ...prev,
+        photoURL: downloadURL
+      }));
+
+      // Update profile immediately
+      await updateProfile(auth.currentUser, {
+        photoURL: downloadURL
+      });
+
+      // Update in Firestore
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        photoURL: downloadURL
+      });
+
+      setSuccess('Profile picture updated successfully!');
     } catch (error) {
-      console.error('Error deleting account:', error);
-      setError(error.message || 'Failed to delete account. Please try again.');
+      setError('Error uploading image: ' + error.message);
     } finally {
-      setIsDeleting(false);
+      setIsLoading(false);
     }
   };
 
+  const handleProfileUpdate = async () => {
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await updateProfile(auth.currentUser, {
+        displayName: profileData.displayName,
+        photoURL: profileData.photoURL,
+      });
+
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        name: profileData.displayName,
+        photoURL: profileData.photoURL,
+      });
+
+      setSuccess('Profile updated successfully!');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await deleteDoc(doc(db, 'users', user.uid));
+      await deleteUser(user);
+      onClose();
+      router.push('/');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white"
-        >
-          <Settings className="mr-3 h-5 w-5 text-white" />
-          <span className="text-lg">Manage Account</span>
-        </Button>
-      </DialogTrigger>
-      
-      <DialogContent className="bg-[#0D161F] border border-gray-800">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-white">Delete Account</DialogTitle>
-          <DialogDescription className="text-gray-400">
-            Are you sure you want to delete your account? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-
-        {error && (
-          <div className="text-red-500 text-sm mt-2 p-2 bg-red-500/10 rounded">
-            {error}
-          </div>
-        )}
-
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
+      <div className="bg-[#0D161F] border border-gray-800 rounded-lg w-full max-w-4xl m-4">
+        {/* Header */}
+        <div className="border-b border-gray-800 p-4 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-white">Account Management</h2>
           <Button
             variant="ghost"
-            onClick={() => setIsOpen(false)}
-            className="text-white hover:text-gray-300 hover:bg-gray-800"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white"
           >
-            Cancel
+            <X className="h-5 w-5" />
           </Button>
-          <Button
-            variant="destructive"
-            onClick={handleDeleteAccount}
-            disabled={isDeleting}
-            className="bg-red-600 hover:bg-red-700 text-white"
-          >
-            {isDeleting ? 'Deleting...' : 'Delete Account'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+
+        {/* Content */}
+        <div className="flex h-[600px]">
+          {/* Sidebar */}
+          <div className="w-64 border-r border-gray-800">
+            <nav className="space-y-1 p-4">
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                  activeTab === 'profile' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                }`}
+              >
+                <User2 className="h-5 w-5" />
+                <span>Profile</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('danger')}
+                className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                  activeTab === 'danger' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                }`}
+              >
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+                <span className="text-red-500">Danger Zone</span>
+              </button>
+            </nav>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 p-6 overflow-y-auto">
+            {error && (
+              <div className="mb-4 p-2 bg-red-500/10 border border-red-500 rounded text-red-500">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="mb-4 p-2 bg-green-500/10 border border-green-500 rounded text-green-500">
+                {success}
+              </div>
+            )}
+
+            {/* Profile Tab */}
+            {activeTab === 'profile' && (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    Display Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profileData.displayName}
+                    onChange={(e) => setProfileData({ ...profileData, displayName: e.target.value })}
+                    className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    Profile Picture
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={profileData.photoURL}
+                      onChange={(e) => setProfileData({ ...profileData, photoURL: e.target.value })}
+                      className="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
+                      placeholder="Image URL"
+                    />
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="photo-upload"
+                      />
+                      <Button 
+                        variant="outline" 
+                        className="flex gap-2"
+                        onClick={() => document.getElementById('photo-upload').click()}
+                        disabled={isLoading}
+                      >
+                        <Camera className="h-4 w-4" />
+                        {isLoading ? 'Uploading...' : 'Upload'}
+                      </Button>
+                    </div>
+                  </div>
+                  {profileData.photoURL && (
+                    <div className="mt-2">
+                      <img
+                        src={profileData.photoURL}
+                        alt="Profile Preview"
+                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-800"
+                      />
+                    </div>
+                  )}
+                </div>
+                <Button
+                  onClick={handleProfileUpdate}
+                  disabled={isLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {isLoading ? 'Saving...' : 'Save Profile'}
+                </Button>
+              </div>
+            )}
+
+            {/* Danger Zone Tab */}
+            {activeTab === 'danger' && (
+              <div className="space-y-4">
+                <div className="p-4 border border-red-500/50 rounded-lg bg-red-500/10">
+                  <h3 className="text-lg font-medium text-red-500 mb-2">Delete Account</h3>
+                  <p className="text-gray-400 mb-4">
+                    Once you delete your account, there is no going back. Please be certain.
+                  </p>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteAccount}
+                    disabled={isLoading}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {isLoading ? 'Deleting...' : 'Delete Account'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
+// Main UserProfile Component
 export default function UserProfile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -209,7 +382,14 @@ export default function UserProfile() {
                 {user?.email || "No email provided"}
               </p>
               <div className="w-full space-y-3">
-                <AccountDeletionDialog />
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsManageAccountOpen(true)}
+                  className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white"
+                >
+                  <Settings className="mr-3 h-5 w-5 text-white" />
+                  <span className="text-lg">Manage Account</span>
+                </Button>
                 <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
                   <User2 className="mr-3 h-5 w-5 text-white" />
                   <span className="text-lg">Manage Subscription</span>
@@ -281,7 +461,11 @@ export default function UserProfile() {
                   <Button
                     key={page}
                     variant="outline"
-                    className={`w-10 h-10 text-lg font-medium ${page === 1 ? 'bg-white text-black hover:bg-gray-200' : 'border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700'} shadow-lg transition-all duration-300`}
+                    className={`w-10 h-10 text-lg font-medium ${
+                      page === 1 
+                        ? 'bg-white text-black hover:bg-gray-200' 
+                        : 'border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700'
+                    } shadow-lg transition-all duration-300`}
                   >
                     {page}
                   </Button>
@@ -291,6 +475,13 @@ export default function UserProfile() {
           </div>
         </div>
       </main>
+
+      {/* Account Management Dialog */}
+      <AccountManagementDialog 
+        isOpen={isManageAccountOpen}
+        onClose={() => setIsManageAccountOpen(false)}
+        user={user}
+      />
 
       <Footer />
     </div>
