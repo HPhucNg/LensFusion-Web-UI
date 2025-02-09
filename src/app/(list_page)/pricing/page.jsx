@@ -101,11 +101,11 @@ function PricingPage() {
 
 
         {/* Pricing Cards */}
-        <section className="flex justify-evenly">
+        <section className="flex flex-wrap justify-center gap-6 px-4">
           {PricingPlans.map((plan, index) => (
             <div
             key={plan.title}
-            className={`rounded-lg p-6 shadow-lg w-64 h-full flex flex-col justify-center items-center text-center ${
+            className={`rounded-lg p-6 shadow-lg w-full sm:w-80 md:w-72 lg:w-64 h-full flex flex-col justify-center items-center text-center ${
               index === 1 ? 'bg-white text-black' : 'bg-[var(--card-background)]'
             }`}
           >
@@ -119,27 +119,27 @@ function PricingPage() {
               </span>
             </div>
             <ul className="mb-4 space-y-1 list-disc list-inside text-left w-full">
-              {plan.features.map((feature, idx) => (
-                <li key={idx} className="text-sm">
+              {plan.features.map((feature, index) => (
+                <li key={index} className="text-sm">
                   {feature}
                 </li>
               ))}
             </ul>
             <button
-              className={`cardbutton w-full py-2 rounded-lg mb-0 `}
+              className={`cardbutton w-full py-2 rounded-lg mb-0
+              `}
               onClick={() =>
                 handleSubscription(
                   pricingType === 'monthly' ? plan.linkMonthly : plan.linkYearly
                 )
               }
             >
-              Button
+              {`Get ${plan.title}`}
             </button>
           </div>
           
           ))}
         </section>
-
          
 
           {/* FAQ Accordion */}
