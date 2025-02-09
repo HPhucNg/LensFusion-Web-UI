@@ -155,7 +155,7 @@
   .form-container input[type=submit] {
     width: 70%;
     background-color: rgb(141, 90, 237);
-    color:  #ccc;
+    color:  #ffffff;
     padding: 7px 20px;
     margin: 8px 0;
     border: none;
@@ -196,18 +196,19 @@
     background: transparent;
     border: none !important;
     color:rgb(138, 138, 138);
+    margin: 10px 10px 30px 10px;
   }
 
 
-button {
+.cardbutton  {
     background-color: rgb(141, 90, 237);
     color: white;
     border-radius: 10px;
     padding: 5px 0 5px 0;
-    margin: 0 1em 1em 1em;
+
 }
 
-button:hover {
+.cardbutton:hover {
     background-color: rgb(182, 154, 239);
     color: white;
   }

@@ -126,7 +126,7 @@ function PricingPage() {
               ))}
             </ul>
             <button
-              className={`w-full py-2 rounded-lg mb-0 `}
+              className={`cardbutton w-full py-2 rounded-lg mb-0 `}
               onClick={() =>
                 handleSubscription(
                   pricingType === 'monthly' ? plan.linkMonthly : plan.linkYearly
