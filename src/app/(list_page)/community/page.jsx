@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import { useState, useEffect } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/FirebaseConfig'; // Firebase config import
@@ -6,7 +6,7 @@ import Pin from '@/components/Pin'; // Pin is the component to render each post
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ViewModal from '@/components/ViewModal';
-import '../style.css';
+import '../style.css'; 
 
 function Page() {
   const [posts, setPosts] = useState([]);  // State to hold fetched posts
@@ -18,7 +18,7 @@ function Page() {
     // Fetch community posts from the correct Firestore collection
     const fetchPosts = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'pins')); 
+        const querySnapshot = await getDocs(collection(db, 'pins'));
         const postsArray = [];
         querySnapshot.forEach((doc) => {
           postsArray.push({ id: doc.id, ...doc.data() });
@@ -44,7 +44,6 @@ function Page() {
     setShowModal(false);  // Hide modal
     setSelectedImage(null); // Reset selected image
 }
-  
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -68,14 +67,15 @@ function Page() {
       
       <Footer />
       {showModal && (
-                <ViewModal
-                    closeModal={closeModal}
-                    image={selectedImage}
-                />
-            )}
+        <ViewModal
+            closeModal={closeModal}
+            image={selectedImage}
+        />
+      )}
     </main>
   );
 }
 
 export default Page;
+
 

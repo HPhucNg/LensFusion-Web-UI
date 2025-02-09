@@ -276,21 +276,20 @@
 .pin_container {
     margin: 0;
     padding: 0;
+    column-count: 4; /* You can adjust the number of columns based on screen size */
+    column-gap: 16px; /* Space between columns */
     width: 100%;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, 250px); /* Makes the grid responsive */
-    grid-gap: 16px; /* Adjust the gap between cards */
-    justify-content: center;  /* Center the grid items */
-    justify-items: center;  /* Align grid items properly */
 }
 
+/* Card styling (Pin) */
 .card {
-    width: 100%; /* Ensure card takes full width of grid item */
-    padding: 0;
-    border-radius: 16px;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.3s ease;
+    width: 100%; /* Make sure the card takes full width of the column */
+    margin-bottom: 16px; /* Space between cards in the same column */
+    border-radius: 16px; /* Rounded corners for the cards */
+    /*box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Optional shadow for depth */
+    overflow: hidden; /* Hide any overflow from images */
+    background-color: #fff; /* Card background */
+    break-inside: avoid; /* Prevent the card from breaking inside columns */
 }
 
 .card_large {
