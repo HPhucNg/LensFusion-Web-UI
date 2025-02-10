@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/hover-card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import GalleryModal from '@/components/GalleryModal';
+import Modal from '@/components/Modal';
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import { 
   doc, 
@@ -346,7 +348,7 @@ export default function UserProfile() {
           tokens: tokensToAdd, 
           customerId: customerId || null, 
           subscriptionStatus: subscriptionStatus,
-          currentPlan: currentPlan,
+          currentPlan: currentPlan ,
         };
         await setDoc(userRef, newUser);
         console.log("New user created in Firebase");
