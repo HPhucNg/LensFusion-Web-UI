@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '../../../../firebase/FirebaseConfig';
-
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDocs, setDoc, serverTimestamp, query, where } from 'firebase/firestore';
 
 const getPSTTime = (utcTimestamp) => {
     return new Date(utcTimestamp).toLocaleString('en-US', {
@@ -28,8 +27,125 @@ const subscriptionPlans = {
     [process.env.NEXT_PUBLIC_STRIPE_YEARLY_BASIC_PRICE_ID]: 'Yearly Basic Plan',
     [process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRO_PRICE_ID]: 'Yearly Pro Plan',
     [process.env.NEXT_PUBLIC_STRIPE_YEARLY_EXPERTISE_PRICE_ID]: 'Yearly Expertise Plan',
+};
+
+const includedTokensInSubscriptions = {
+    [process.env.NEXT_PUBLIC_STRIPE_BASIC_PRICE_ID]: 50,
+    [process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID]: 100,
+    [process.env.NEXT_PUBLIC_STRIPE_EXPERTISE_PRICE_ID]: 200,
+
+    [process.env.NEXT_PUBLIC_STRIPE_YEARLY_BASIC_PRICE_ID]: 600,
+    [process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRO_PRICE_ID]: 1200,
+    [process.env.NEXT_PUBLIC_STRIPE_YEARLY_EXPERTISE_PRICE_ID]: 2400,
+};
 
 
+const updateUserTokens = async (email, customerId, tokensToAdd) => {
+    try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0]; //gets the user doc (only 1 matching doc)
+            const userId = userDoc.id; //userId is assigned to the users document ID that is stored in Firebase
+
+            const currentTokens = userDoc.data().tokens || 0;//finds 'tokens' from users documents and update current token
+            const newTokenBalance = currentTokens + tokensToAdd;
+
+            const userRef = doc(db, "users", userId); // once we know the user doc ID reference it
+            await setDoc( 
+                userRef, { 
+                    customerId,
+                    tokens: newTokenBalance, //updates tokens if the users added tokens
+                }, { merge: true });
+
+            console.log(`Tokens updated for customerId: ${customerId}. New balance: ${newTokenBalance}`);
+        } else {
+            console.error(`No user found for customerId: ${customerId}`);
+        }
+    } catch (error) {
+        console.error("Error updating user tokens:", error);
+    }
+};
+
+const updateSubscriptionStatus = async (email, customerId, subscriptionPlan) => {
+    try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0]; 
+            const userId = userDoc.id; 
+
+            const newSubscriptionStatus = "active"
+
+            const userRef = doc(db, "users", userId); 
+            await setDoc( 
+                userRef, { 
+                    customerId,
+                    subscriptionStatus: newSubscriptionStatus, 
+                }, { merge: true });
+
+            console.log(`Subscription status updated for customerId: ${customerId}. New stats: ${newSubscriptionStatus}`);
+        } else {
+            console.error(`No user found for customerId: ${customerId}`);
+        }
+    } catch (error) {
+        console.error("Error updating user subscription:", error);
+    }
+    
+  };
+  
+
+const getUserByEmail = async (email) => {
+    try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) { 
+            const userDoc = querySnapshot.docs[0];
+            return userDoc.data();
+        } else {
+            console.error(`No user found with this email: ${email}`);
+            return null;
+        }
+    } catch (error) {
+        console.error("Error fetching user by email:", error);
+        return null;
+    }
+};
+
+const saveUserToFirebase = async (userData, tokensToAdd, customerId, subscriptionStatus, currentPlan) => {
+    try {
+
+        if (!userData || !userData.uid) {
+            console.error("User data is missing");
+            return;
+          }
+        const userId = userData.uid; 
+        const userDataDoc = doc(db, "users", userId); 
+        const currentTokens = userData.tokens || 0;
+        const updatedTokens = currentTokens + tokensToAdd;
+
+        await setDoc(
+            userDataDoc, 
+            {
+                subscriptionStatus, 
+                currentPlan,
+                customerId,
+                tokens: updatedTokens,
+                lastSubscriptionUpdate: serverTimestamp(),
+            }, 
+            { merge: true } 
+        );
+        
+        console.log(`User subscription status and plan updated for email: ${userRef.data().email}`);
+    } catch (error) {
+        console.error("Error  saving user subscription status to Firebase:", error);
+    }
 };
 
 export async function POST(req) {
@@ -52,32 +168,33 @@ export async function POST(req) {
     try {
         switch (eventType) {
             case 'checkout.session.completed': {
-                // Retrieve session details
                 const session = await stripe.checkout.sessions.retrieve(data.object.id, {
                     expand: ['line_items'],
                 });
 
-                const customerId = session.customer; // Stripe customer ID
-                const customerEmail = session.customer_email; // Email used during checkout
-
-                if (!customerId && !customerEmail) {
-                    console.error('No customer ID or email found in session.');
-                    break;
-                }
-
-                let customer = null;
-                if (customerId) {
-                    try {
-                        customer = await stripe.customers.retrieve(customerId);
-                    } catch (error) {
-                        console.error(`Error retrieving customer: ${error.message}`);
-                    }
-                }
-
-                const email = customer?.email || customerEmail;
+                const customerId = session.customer; //stripe customerID (ex. cus_RVvAGOMBFcQXSn)
+                const planId = session.line_items.data[0].price.id;
+                const email = session.customer_email || session.customer_details?.email;
                 const priceId = session.line_items?.data[0]?.price.id;
-                const subscriptionPlan = subscriptionPlans[priceId];
 
+
+                if (!customerId || !email || !priceId) {
+                    console.error("Missing customerId, email, or priceId");
+                    return NextResponse.json({ error: "Missing customerId, email, or priceId" }, { status: 400 });
+                }
+
+                const subscriptionStatus = 'active';
+                const currentPlan = subscriptionPlans[planId]
+                const subscriptionPlan = currentPlan || 'defaultPlan';
+               
+                const tokensToAdd = includedTokensInSubscriptions[priceId] || 0;
+                await updateUserTokens(email, customerId, tokensToAdd);
+                await updateSubscriptionStatus(email, customerId, subscriptionPlan)
+                const userRef = await getUserByEmail(email);
+                if (userRef) {
+                    console.log('User Data:', userRef);
+                    await saveUserToFirebase(userRef, tokensToAdd, customerId, subscriptionStatus, currentPlan);
+                }
                 
                 const subscription = session.subscription
                     ? await stripe.subscriptions.retrieve(session.subscription)
@@ -90,28 +207,50 @@ export async function POST(req) {
                     ? new Date(subscription.current_period_end * 1000).toISOString()
                     : null;
 
-                if (!email || !priceId) {
-                    console.error('No valid email or price ID found.');
-                    break;
+                // if there the user is already subscribed they cannont subscribe again unil the next subscription date
+                const existingSubscriptionQuery = query(
+                    collection(db, 'subscriptions'),
+                    where('email', '==', email)
+                );
+                const existingSubscriptions = await getDocs(existingSubscriptionQuery);
+
+                if (!existingSubscriptions.empty) {
+                    const subscriptionDoc = existingSubscriptions.docs[0];
+                    const subscriptionData = subscriptionDoc.data();
+                    const currentTimestamp = Date.now();
+                    const subscriptionEndTimestamp = new Date(subscriptionData.subscriptionEndDate).getTime();
+                
+                    if (currentTimestamp < subscriptionEndTimestamp) {
+                        console.warn(
+                            `Subscription for email: ${email} is still active until ${subscriptionData.subscriptionEndDate}`
+                        );
+                        return NextResponse.json(
+                            { error: "User already has an active subscription. Try again after the current period ends." },
+                            { status: 400 }
+                        );
+                    }
                 }
 
                 // Firestore operation
                 try {
                     console.log('Attempting Firestore write...');
-                    const docRef = await addDoc(collection(db, 'subscriptions'), {
-                        email: email,
+                    await addDoc(collection(db, 'subscriptions'), {
                         customerId: customerId,
+                        email: email,
                         priceId: priceId,
                         hasAccess: true,
-                        subscriptionPlan: subscriptionPlan,
+                        subscriptionPlan: currentPlan,
                         subscriptionStartDate: getPSTTime(subscriptionStartDate),
                         subscriptionEndDate: getPSTTime(subscriptionEndDate),
-                    });
-                    console.log(`Document written with ID: ${docRef.id}`);
+                        includedTokensInSubscription: tokensToAdd,
+                        createdAt: serverTimestamp(),
+                      });
+                      console.log(`Subscription recorded for customerId: ${customerId}`);
+
                 } catch (error) {
                     console.error('Firestore write failed:', error.message);
                 }
-                break;
+                    break;
             }
 
             default:

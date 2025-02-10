@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import '../style.css';
 import Footer from '../../../components/Footer';
@@ -119,7 +119,7 @@ function PricingPage() {
               </span>
             </div>
             <ul className="mb-4 space-y-1 list-disc list-inside text-left w-full">
-              {plan.features.map((feature, index) => (
+              {plan.features[pricingType].map((feature, index) => (
                 <li key={index} className="text-sm">
                   {feature}
                 </li>

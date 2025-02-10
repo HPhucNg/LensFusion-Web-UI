@@ -7,7 +7,10 @@ export const PricingPlans = [
     linkYearly: process.env.NEXT_PUBLIC_STRIPE_BASIC_YEARLY_LINK,
     priceIdMonthly: process.env.NEXT_PUBLIC_STRIPE_BASIC_PRICE_ID,
     priceIdYearly: process.env.NEXT_PUBLIC_STRIPE_YEARLY_BASIC_PRICE_ID,
-    features: ['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4'],
+    features: {
+      monthly: ['Feature 1', 'Feature 2', '50 tokens included'],
+      yearly: ['Feature 1', 'Feature 2', '120 tokens included']
+    },
 
   },
   {
@@ -18,8 +21,10 @@ export const PricingPlans = [
     linkYearly: process.env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_LINK,
     priceIdMonthly: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
     priceIdYearly: process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRO_PRICE_ID,
-    features: ['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4'],
-
+    features: {
+      monthly: ['Feature 1', 'Feature 2', '100 tokens included'],
+      yearly: ['Feature 1', 'Feature 2', '1200 tokens included']
+    },
   },
   {
     title: 'Expertise Plan',
@@ -29,7 +34,9 @@ export const PricingPlans = [
     linkYearly: process.env.NEXT_PUBLIC_STRIPE_EXPERTISE_YEARLY_LINK,
     priceIdMonthly: process.env.NEXT_PUBLIC_STRIPE_EXPERTISE_PRICE_ID,
     priceIdYearly: process.env.NEXT_PUBLIC_STRIPE_YEARLY_EXPERTISE_PRICE_ID,
-    features: ['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4'],
-
+    features: {
+      monthly: ['Feature 1', 'Feature 2', '200 tokens included'],
+      yearly: ['Feature 1', 'Feature 2', '2400 tokens included']
+    },
   },
 ];

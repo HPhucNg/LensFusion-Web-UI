@@ -7,7 +7,7 @@ import { Menu, UserCircle2, CircleUser, X } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import Branding from "./Branding";
 import { auth } from '@/firebase/FirebaseConfig';
-import { signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,19 +26,7 @@ export default function Navbar() {
     });
   
     return () => unsubscribe();
-  }, [router]);
-
-  const handleLogin = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      if (result.user) {
-        router.push('/dashboard/profile');
-      }
-    } catch (error) {
-      console.error("Error signing in:", error);
-    }
-  };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -50,6 +38,7 @@ export default function Navbar() {
   };
 
   const authenticatedLinks = [
+    { href: '/dashboard', label: 'Dashboard' },
     { href: '/resources', label: 'Resources' },
     { href: '/community', label: 'Community' },
     { href: '/contact', label: 'Contact' },
@@ -128,15 +117,13 @@ export default function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <>
-              <Button
-                variant="outline"
-                onClick={handleLogin}
-                className="hidden bg-white text-black md:inline-flex border-slate-700 hover:bg-slate-400 transition-colors"
-              >
-                Sign in with Google
-              </Button>
-            </>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/login')}
+              className="hidden bg-white text-black md:inline-flex border-slate-700 hover:bg-slate-400 transition-colors"
+            >
+              Sign In
+            </Button>
           )}
         </div>
       </nav>
@@ -157,10 +144,10 @@ export default function Navbar() {
           {!user && (
             <Button
               variant="outline"
-              onClick={handleLogin}
+              onClick={() => router.push('/login')}
               className="w-full mt-4 bg-white text-black border-slate-700 hover:bg-slate-400 transition-colors"
             >
-              Sign in with Google
+              Sign In
             </Button>
           )}
         </div>

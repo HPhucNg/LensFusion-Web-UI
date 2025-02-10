@@ -11,10 +11,17 @@ import Image from 'next/image'
 
 export default function Home() {
   const [displayText, setDisplayText] = useState("");
+  const [isClient, setIsClient] = useState(false);
   const phrases = ["Sell More", "Save Time", "Reduce Cost"];
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
     const currentPhrase = phrases[currentPhraseIndex];
     let charIndex = 0;
 
@@ -35,7 +42,7 @@ export default function Home() {
     return () => {
       clearInterval(typingInterval);
     };
-  }, [currentPhraseIndex]);
+  }, [currentPhraseIndex, isClient]);
 
   return (
     <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans'>
@@ -52,9 +59,11 @@ export default function Home() {
             
             {/* Animated Text */}
             <div className="h-16 sm:h-20 lg:h-24">
-              <div className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 text-4xl sm:text-5xl lg:text-7xl font-bold">
-                <span>{displayText}</span>
-              </div>
+              {isClient && (
+                <div className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 text-4xl sm:text-5xl lg:text-7xl font-bold">
+                  <span>{displayText}</span>
+                </div>
+              )}
             </div>
 
             {/* CTA Buttons */}
@@ -73,15 +82,17 @@ export default function Home() {
             {/* Hero Video */}
             <div className="mt-16 max-w-5xl mx-auto">
               <div className="relative rounded-xl bg-[#0D161F] p-4 shadow-2xl">
-                <video 
-                  className="rounded-lg w-full"
-                  autoPlay 
-                  loop 
-                  muted 
-                  playsInline
-                >
-                  <source src="/hero-video.mp4" type="video/mp4" />
-                </video>
+                {isClient && (
+                  <video 
+                    className="rounded-lg w-full"
+                    autoPlay={true}
+                    loop={true}
+                    muted={true}
+                    playsInline={true}
+                  >
+                    <source src="/hero-video.mp4" type="video/mp4" />
+                  </video>
+                )}
               </div>
             </div>
           </div>
