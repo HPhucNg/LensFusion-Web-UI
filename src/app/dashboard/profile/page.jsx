@@ -323,7 +323,7 @@ export default function UserProfile() {
           photoURL: userData.photoURL,
           lastLogin: serverTimestamp(),
           tokens: tokensToAdd, 
-          customerId: customerId,
+          customerId: customerId || null, 
           subscriptionStatus: subscriptionStatus,
           currentPlan: currentPlan,
         };
@@ -337,7 +337,7 @@ export default function UserProfile() {
           photoURL: userData.photoURL,
           lastLogin: serverTimestamp(),
           tokens: (existingData.tokens || 0) + tokensToAdd,
-          customerId: customerId || existingData.customerId,
+          customerId: customerId || existingData.customerId || null, 
           subscriptionStatus: subscriptionStatus || existingData.subscriptionStatus,
           currentPlan: currentPlan || existingData.currentPlan,
         };
