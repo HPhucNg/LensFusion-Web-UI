@@ -3,35 +3,36 @@ let Client;
 
 async function getClient() {
   if (!Client) {
-    const module = await import('@gradio/client');
-    Client = module.Client;
+    const { Client: ImportedClient } = await import('@gradio/client');
+    Client = ImportedClient;
   }
   return Client;
 }
 
-export async function processImage(imageFile, options = {}) {
+export async function processImage(imageFile, params = {}) {
   try {
     const ClientClass = await getClient();
+    
     const client = await ClientClass.connect("lllyasviel/iclight-v2");
 
-    const params = {
-      bg_source: "Right Light",
-      prompt: "professional advertising design of a product. golden time. a modern living room with a fireplace in the background.",
-      image_height: 1152,
-      num_samples: 1,
-      seed: Math.floor(Math.random() * 1000000),
-      steps: 30,
-      n_prompt: "low quality, out of frame, illustration, 3d, sepia, painting, cartoons, sketch, watermark, text, Logo, advertisement",
-      cfg: 1,
-      gs: 5,
-      rs: 1,
-      init_denoise: 0.999,
-      ...options
+    // Merge default parameters with provided params
+    const processParams = {
+      bg_source: params.bgSource || "None",
+      prompt: params.prompt || "",
+      image_height: params.imageHeight || 1152,
+      num_samples: params.numSamples || 1,
+      seed: params.seed ? parseInt(params.seed) : Math.floor(Math.random() * 1000000),
+      steps: params.steps || 40,
+      n_prompt: params.negativePrompt || DEFAULT_PARAMS.negativePrompt,
+      cfg: params.cfg || 1,
+      gs: params.gs || 5,
+      rs: params.rs || 1,
+      init_denoise: params.initDenoise || 0.999
     };
 
     const result = await client.predict("/process", {
       input_fg: imageFile,
-      ...params
+      ...processParams
     });
 
     return result.data;
