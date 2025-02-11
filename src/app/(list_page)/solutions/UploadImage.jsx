@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { storage } from '@/firebase/FirebaseConfig';  // Firebase storage import
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';  // Firebase Storage methods
-import { v4 as uuidv4 } from 'uuid';  // To generate a unique filename
+import { storage, db } from '@/firebase/FirebaseConfig'  // Import Firebase config
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Firebase Storage methods
+import { collection, addDoc } from 'firebase/firestore'; // Firestore methods
+import { v4 as uuidv4 } from 'uuid';  // For generating unique filenames
 
-function UploadImage({ onUploadComplete }) {
+function UploadImage({ userID }) {
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(false);
 
+    // Handle file input change
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -14,32 +16,53 @@ function UploadImage({ onUploadComplete }) {
         }
     };
 
+    // Upload image to Firebase Storage and save URL to Firestore
     const uploadImage = async () => {
-        if (!image) return;  // Ensure there's an image
-
+        if (!image) return;  // If no image is selected, return
+        if (!userID) {
+            alert('User ID is required');
+            return;
+        }
+    
         setLoading(true);
-        const storageRef = ref(storage, `images/${uuidv4()}_${image.name}`);
+        
+        // Create a unique reference for the file in Firebase Storage
+        const storageRef = ref(storage, `user_images/${uuidv4()}_${image.name}`);
+    
         try {
-            // Upload file
+            // Upload image to Firebase Storage
             await uploadBytes(storageRef, image);
+    
+            // Get the download URL of the uploaded image
             const downloadURL = await getDownloadURL(storageRef);
-
-            // Once the upload is complete, pass the download URL back to the parent component
-            onUploadComplete(downloadURL);
+    
+            // Save image URL to Firestore (in user_images collection)
+            const imageRef = await addDoc(collection(db, 'user_images'), {
+                userID: userID,  // Reference to the user who uploaded the image
+                img_data: downloadURL,  // Image URL
+                createdAt: new Date(),  // Timestamp
+            });
+    
+            console.log('Image uploaded successfully, document created with ID:', imageRef.id);
+            alert('Image uploaded successfully!');
         } catch (error) {
-            console.error("Error uploading image:", error);
+            console.error('Error uploading image:', error);
+            alert('Error uploading image.');
         } finally {
             setLoading(false);
         }
     };
+    
 
     return (
         <div>
             <input type="file" onChange={handleFileChange} />
-            <button onClick={uploadImage} disabled={loading}>Upload</button>
-            {loading && <p>Uploading...</p>}
+            <button onClick={uploadImage} disabled={loading}>
+                {loading ? 'Uploading...' : 'Upload Image'}
+            </button>
         </div>
     );
 }
 
 export default UploadImage;
+

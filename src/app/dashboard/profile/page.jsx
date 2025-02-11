@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from "next/image";
 import { useRouter } from 'next/navigation';
-import { Settings, User2, Share2, Moon, Check, Lock, Bell, Shield, X, Camera, Smartphone, AlertTriangle } from 'lucide-react';
+import { Settings, User2, Share2, Moon, Sun, Check, Lock, Bell, Shield, X, Camera, Smartphone, AlertTriangle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import GalleryModal from '@/components/GalleryModal';
+import UploadImage from '../../(list_page)/solutions/UploadImage';  // Import the UploadImage component
 import Modal from '@/components/Modal';
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import { 
@@ -557,6 +558,9 @@ export default function UserProfile() {
                     createdBy={user?.displayName}
                 />
       )}
+      {/*This is for testing */}
+      console.log(user.uid)
+      <UploadImage userID={user.uid}/> {/* Pass user ID as a prop */}
     </div>
   );
 }
