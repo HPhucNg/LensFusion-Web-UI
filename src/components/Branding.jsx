@@ -17,7 +17,7 @@ function Branding() {
           className="object-contain w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 transform scale-100"
         />  
       </div>
-      <span className="font-semibold italic text-xl text-white md:text-2xl lg:text-2xl">
+      <span className="font-semibold italic text-xl md:text-2xl lg:text-2xl">
         LensFusion
       </span>
     </Link>
