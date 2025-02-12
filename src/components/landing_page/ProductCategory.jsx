@@ -69,7 +69,7 @@ const ProductCategory = () => {
   const [selectedCategory, setSelectedCategory] = useState('skincare');
 
   return (
-    <div className="px-4 mt-[-1rem] text-white min-h-screen">
+    <div className="px-4 mt-[-1rem] min-h-screen">
       <div className="max-w-6xl mx-auto">
         <h2 className="text-2xl md:text-2xl lg:text-5xl font-bold text-center mb-12">
           Beautiful product photography for every category

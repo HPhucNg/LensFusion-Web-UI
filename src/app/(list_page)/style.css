@@ -154,8 +154,8 @@
   /* Styling for the submit button */
   .form-container input[type=submit] {
     width: 70%;
-    background-color: #fffc56; ;
-    color:  #ccc;
+    background-color: rgb(141, 90, 237);
+    color:  #ffffff;
     padding: 7px 20px;
     margin: 8px 0;
     border: none;
@@ -163,7 +163,7 @@
     cursor: pointer;
   }
   .form-container input[type=submit]:hover {
-    background-color: rgb(255, 225, 52);
+    background-color: rgb(182, 154, 239);
     color: white;
   }
 
@@ -184,6 +184,7 @@
 .termFees {
     text-align: center;
 }
+
 .termFees button.selected {
     background-color: rgb(80, 79, 79); /*background when selected */
     color: white;
@@ -194,55 +195,23 @@
 .termFees button{
     background: transparent;
     border: none !important;
-    color: white;
+    color:rgb(138, 138, 138);
+    margin: 10px 10px 30px 10px;
   }
 
-.cards {     /*holds 3 card flex items*/
-    display: flex;
-    justify-content: space-around;
-}
 
-.card {     /*each card is being built*/
-    width: 24%;
-    padding-top: 3%;
-    border-radius: 3%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-.cardmiddle{     /*each card is being built*/
-    background-color: whitesmoke;
-    color: rgb(45, 42, 42);
-}
-/*card content styling*/
-.card h3 {     
-    font-weight: bold;
-    text-align: center;
-}
-.card p {
-    text-align: center;
-
-}
-.price {
-    font-size: 200%;
-    font-weight: bold;
-}
-.period {
-    font-size: 80%;
-    font-weight: lighter;
-}
-.card ul {
-    padding: 5% 0 10% 20%;
-    list-style-type: disc;
-}
-
-button {
-    background-color: white;
-    color: black;
+.cardbutton  {
+    background-color: rgb(141, 90, 237);
+    color: white;
     border-radius: 10px;
     padding: 5px 0 5px 0;
-    margin: 0 1em 1em 1em;
+
 }
+
+.cardbutton:hover {
+    background-color: rgb(182, 154, 239);
+    color: white;
+  }
 
 .faqItem {
     text-align: center;
@@ -256,6 +225,9 @@ button {
     font-size: 25px;
     margin-bottom: 3%;
 }
+
+
+
 
 
 
@@ -298,4 +270,36 @@ button {
 .h1payment h1{
     font-weight: bolder;
     font-size: 30px;
+}
+
+/*community styling*/
+.pin_container {
+    margin: 0;
+    padding: 0;
+    column-count: 4; /* You can adjust the number of columns based on screen size */
+    column-gap: 16px; /* Space between columns */
+    width: 100%;
+}
+
+/* Card styling (Pin) */
+.card {
+    width: 100%; /* Make sure the card takes full width of the column */
+    margin-bottom: 16px; /* Space between cards in the same column */
+    border-radius: 16px; /* Rounded corners for the cards */
+    /*box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Optional shadow for depth */
+    overflow: hidden; /* Hide any overflow from images */
+    background-color: #fff; /* Card background */
+    break-inside: avoid; /* Prevent the card from breaking inside columns */
+}
+
+.card_large {
+    grid-row-end: span 45;
+}
+
+.card_medium {
+    grid-row-end: span 33;
+}
+
+.card_small {
+    grid-row-end: span 26;
 }

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from "next/image";
 import { useRouter } from 'next/navigation';
-import { Settings, User2, Share2, Moon, Check, Lock, Bell, Shield, X, Camera, Smartphone, AlertTriangle } from 'lucide-react';
+import { Settings, User2, Share2, Moon, Sun, Check, Lock, Bell, Shield, X, Camera, Smartphone, AlertTriangle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/hover-card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import GalleryModal from '@/components/GalleryModal';
+import UploadImage from '../../(list_page)/solutions/UploadImage';  // Import the UploadImage component
+import Modal from '@/components/Modal';
 import { useSubscription } from '@/context/subscriptionContext';
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import { 
@@ -293,6 +296,28 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
 // Main UserProfile Component
 export default function UserProfile() {
   const [user, setUser] = useState(null);
+  const [isloading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);  // To control modal visibility
+  const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
+  const [showPostModal, setShowPostModal] = useState(false); // For Post Modal
+  const [theme, setTheme] = useState("dark");
+
+  // Check for saved theme in localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  // Toggle theme function
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
+    document.documentElement.classList.remove("dark", "light");
+    document.documentElement.classList.add(newTheme);
+  };
   const { tokens, loading } = useSubscription();
   const [isLoading, setIsLoading] = useState(true);
   const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
@@ -320,9 +345,9 @@ export default function UserProfile() {
           photoURL: userData.photoURL,
           lastLogin: serverTimestamp(),
           tokens: tokensToAdd, 
-          customerId: customerId,
+          customerId: customerId || null, 
           subscriptionStatus: subscriptionStatus,
-          currentPlan: currentPlan,
+          currentPlan: currentPlan ,
         };
         await setDoc(userRef, newUser);
         console.log("New user created in Firebase");
@@ -334,7 +359,7 @@ export default function UserProfile() {
           photoURL: userData.photoURL,
           lastLogin: serverTimestamp(),
           tokens: (existingData.tokens || 0) + tokensToAdd,
-          customerId: customerId || existingData.customerId,
+          customerId: customerId || existingData.customerId || null, 
           subscriptionStatus: subscriptionStatus || existingData.subscriptionStatus,
           currentPlan: currentPlan || existingData.currentPlan,
         };
@@ -346,6 +371,26 @@ export default function UserProfile() {
       console.error("Error saving user data:", error);
     }
   };
+
+  // Function to handle image click
+  const handleImageClick = (index) => {
+    setSelectedImage(`https://picsum.photos/400/400?random=${index}`);
+    setShowModal(true);  // Show the modal
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+}
+  const openPostModal = () => {
+    setShowModal(false);  // Close Gallery Modal
+    setShowPostModal(true);  // Open Post Modal
+  };
+
+  const closePostModal = () => {
+    setShowPostModal(false);  // Close Post Modal
+  };
+
+
 
   if (loading) {
     return (
@@ -364,22 +409,21 @@ export default function UserProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white">
-      <Navbar />
-      
+    <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
+      <Navbar /> 
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Left Column - Profile */}
           <div className="flex-shrink-0 w-full lg:w-1/4">
-            <div className="flex flex-col items-center bg-[#0D161F] p-8 rounded-2xl shadow-2xl border border-gray-800">
+            <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl  border border-[var(--border-gray)]">
               {user?.photoURL ? (
                 <img
                   src={user.photoURL}
                   alt={user.displayName}
-                  className="w-40 h-40 rounded-full shadow-2xl border-4 border-gray-800 mb-6"
+                  className="w-40 h-40 rounded-full  border-4 border-[var(--border-gray)] mb-6"
                 />
               ) : (
-                <div className="w-40 h-40 bg-gray-800 rounded-full flex items-center justify-center mb-6 shadow-2xl border-4 border-gray-700">
+                <div className="w-40 h-40 bg-gray-800 rounded-full flex items-center justify-center mb-6 border-4 border-[var(--border-gray)]">
                   <User2 className="w-20 h-20 text-gray-400" />
                 </div>
               )}
@@ -395,26 +439,27 @@ export default function UserProfile() {
                 </h3>
               </div>
               <div className="w-full space-y-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsManageAccountOpen(true)}
-                  className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white"
-                >
-                  <Settings className="mr-3 h-5 w-5 text-white" />
+                <Button variant="outline" onClick={() => setIsManageAccountOpen(true)} className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
+                  <Settings className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Account</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
-                  <User2 className="mr-3 h-5 w-5 text-white" />
+                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
+                  <User2 className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Subscription</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
-                  <Share2 className="mr-3 h-5 w-5 text-white" />
+                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
+                  <Share2 className="mr-3 h-5 w-5" />
                   <span className="text-lg">Share</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
-                  <Moon className="mr-3 h-5 w-5 text-white" />
-                  <span className="text-lg">Dark Mode</span>
-                </Button>
+                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white" onClick={toggleTheme}>
+                  {theme === "dark" ? (
+                  <Sun className="mr-3 h-5 w-5 " />
+                ) : (
+                  <Moon className="mr-3 h-5 w-5 " />
+                )}
+                  <span className="text-lg">{theme === "dark" ? "Light" : "Dark"} Mode</span>
+              </Button>
+
               </div>
             </div>
           </div>
@@ -423,25 +468,26 @@ export default function UserProfile() {
           <div className="flex-grow">
             <div className="mb-8">
               {/* Milestone Tracker */}
-              <Card className="bg-[#0D161F] border-gray-800 shadow-2xl">
+              <Card className="bg-[var(--card-background)] border-[var(--border-gray)]">
                 <CardHeader>
-                  <h3 className="text-2xl font-bold text-white">Milestone Tracker</h3>
+                  <h3 className="text-2xl font-bold">Milestone tracker</h3>
                 </CardHeader>
                 <CardContent>
-                  <Progress value={35} className="h-3 rounded-lg bg-gray-800" />
+                  <Progress value={35} className="h-3 rounded-lg" />
                   <p className="mt-2 text-gray-400">35% Complete</p>
                 </CardContent>
               </Card>
             </div>
 
             {/* Gallery Section */}
-            <div className="bg-[#0D161F] p-6 rounded-2xl shadow-2xl border border-gray-800">
+            <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
               <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((index) => (
                   <HoverCard key={index}>
                     <HoverCardTrigger asChild>
-                      <div className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-all duration-300 hover:scale-105">
+                      <div className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-all duration-300 hover:scale-105"
+                      onClick={() => handleImageClick(index)}>
                         <Image
                           src={`https://picsum.photos/400/400?random=${index}`}
                           alt={`Gallery item ${index}`}
@@ -458,7 +504,7 @@ export default function UserProfile() {
                         </div>
                       </div>
                     </HoverCardTrigger>
-                    <HoverCardContent className="w-80 bg-[#0D161F] border-gray-800 shadow-2xl">
+                    <HoverCardContent className="w-80 bg-[var(--card-background)] border-[var(--border-gray)]">
                       <div className="space-y-2">
                         <h4 className="text-lg font-semibold">Image Details</h4>
                         <p className="text-gray-400">Gallery item {index}</p>
@@ -497,6 +543,27 @@ export default function UserProfile() {
       />
 
       <Footer />
+      {/* Gallery Modal */}
+      {showModal && (
+                <GalleryModal
+                    closeModal={closeModal}
+                    image={selectedImage}
+                    openPostModal={openPostModal}  // Pass openPostModal function
+                />
+            )}
+
+            {/* Post Modal */}
+            {showPostModal && (
+                <Modal
+                    closeModal={closePostModal}
+                    add_pin={() => {}}
+                    selectedImage={selectedImage}
+                    createdBy={user?.displayName}
+                />
+      )}
+      {/*This is for testing */}
+      console.log(user.uid)
+      <UploadImage userID={user.uid}/> {/* Pass user ID as a prop */}
     </div>
   );
 }
