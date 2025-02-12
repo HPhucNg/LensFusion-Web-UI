@@ -1,6 +1,7 @@
 "use client";
 
 import { Auth0Provider } from "@auth0/auth0-react";
+import { SubscriptionProvider } from "@/context/subscriptionContext";
 
 export default function ClientProvider({ children }) {
   const domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN;
@@ -14,7 +15,9 @@ export default function ClientProvider({ children }) {
         redirect_uri: `${window.location.origin}/login/callback`,
       }}
     >
-      {children}
+       <SubscriptionProvider>
+        {children}
+      </SubscriptionProvider>
     </Auth0Provider>
   );
 }

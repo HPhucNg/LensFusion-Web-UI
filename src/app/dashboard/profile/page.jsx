@@ -17,6 +17,7 @@ import Footer from "@/components/Footer";
 import GalleryModal from '@/components/GalleryModal';
 import UploadImage from '../../(list_page)/solutions/UploadImage';  // Import the UploadImage component
 import Modal from '@/components/Modal';
+import { useSubscription } from '@/context/subscriptionContext';
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import { 
   doc, 
@@ -30,7 +31,7 @@ import {
   deleteUser, 
   updateProfile
 } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Account Management Dialog Component
 const AccountManagementDialog = ({ isOpen, onClose, user }) => {
@@ -295,7 +296,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
 // Main UserProfile Component
 export default function UserProfile() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isloading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);  // To control modal visibility
   const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
   const [showPostModal, setShowPostModal] = useState(false); // For Post Modal
@@ -317,17 +318,14 @@ export default function UserProfile() {
     document.documentElement.classList.remove("dark", "light");
     document.documentElement.classList.add(newTheme);
   };
+  const { tokens, loading } = useSubscription();
+  const [isLoading, setIsLoading] = useState(true);
   const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setUser(user);
-      setLoading(false);
-      if (user) {
-        saveUserToFirebase(user);
-      }
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -435,6 +433,11 @@ export default function UserProfile() {
               <p className="text-gray-400 text-lg mb-4">
                 {user?.email || "No email provided"}
               </p>
+              <div className="w-full justify-start text-center py-3 border-2 border-white bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-8 mb-6">
+                <h3 className="text- font-semibold text-white truncate">
+                  Credits: {tokens}
+                </h3>
+              </div>
               <div className="w-full space-y-3">
                 <Button variant="outline" onClick={() => setIsManageAccountOpen(true)} className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
                   <Settings className="mr-3 h-5 w-5 " />
