@@ -11,6 +11,7 @@ import Image from "next/image";
 import { auth, db } from "@/firebase/FirebaseConfig";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 
 export default function Page() {
   const [user, setUser] = useState(null);
@@ -20,22 +21,35 @@ export default function Page() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
         if (currentUser) {
+          setUser(currentUser); 
             const userRef = doc(db, "users", currentUser.uid);
-            const userDoc = await getDoc(userRef);
-            if (userDoc.exists()) {
+            const unsubscribeSnapshot = onSnapshot(userRef, (userDoc) => {
+              if (userDoc.exists()) {
                 setTokens(userDoc.data().tokens || 0);
-            }
-            setUser(currentUser);
+                setLoading(false);
+              }
+            });
+            return () => unsubscribeSnapshot();
+          } else {
+            setUser(null); 
+            setLoading(false);
+          }
+        });
+      
+        return () => unsubscribe();
+      }, []);
+
+      const router = useRouter();
+
+      const handleTokens = (paymentPageLink) => {
+        if (!user) {
+          router.push('/login');
+        } else if (paymentPageLink) {
+          router.push('/pricing');
+        } else {
+          console.error('No payment page link provided.');
         }
-        setLoading(false);
-    });
-
-    return () => unsubscribe();
-}, []);
-
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">...Loading page...</div>;
-  }
+      };
 
   return (
     <div className="min-h-screen">
@@ -49,13 +63,20 @@ export default function Page() {
                 <SidebarTrigger className="fixed z-50" />
               </div>
               <div className="ml-auto">
-                {!user ? (
-                  <span className="text-lg font-medium">Please log in to view your tokens.</span>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <span className="text-lg font-medium">Tokens: {tokens}</span>
-                  </div>
-                )}
+              <div className="flex items-center gap-4">
+                  {loading ? (
+                    <span className="text-lg font-medium">...Loading...</span>
+                  ) : !user ? (
+                    <span className="text-lg font-medium">Please log in to view your tokens.</span>
+                  ) : (
+                    <span
+                      className="text-center py-1 border-2 mr-4 border-white bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-10 whitespace-nowrap overflow-hidden cursor-pointer"
+                      onClick={() => handleTokens('/payment')}
+                    >
+                      Tokens: {tokens}
+                    </span>
+                  )}
+                </div>
               </div>
             </header>
           
