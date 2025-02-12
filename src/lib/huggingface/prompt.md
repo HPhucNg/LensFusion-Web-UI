@@ -1,0 +1,21 @@
+List of Selective Prompt:
+
+1: professional advertising design of this product is placed in a dense forest, surrounded by various plants such as pink roses, lemons, and pink moss. The whole picture is in pink tones, with reflections and water ripples, which increase the depth and texture of the picture. The bottle is focused in the center of the picture, and the surrounding environment including plants and water are blurred. Natural light source, bright and transparent, commercial shooting, product photography, minimalism, matte texture, 32K
+
+2: professional advertising design of this product with accurate color, do not change the color of the product. The background that has a white square cashmere mat is placed under this item on a white table. Four white books are piled up next to it. A piece of blue and white striped cloth is placed on it. There is also a glass of milk, a white coffee cup, a light blue basket. Korean ins style, small and fresh, exquisite, detailed, advanced, simple, clean, fresh, warm
+
+3: poster design; product photography; poster; chocolate; marble reflection; high-end; flowers; background; bubbles; texture, 32K
+
+4: Luxury product photography of this item, natural window lighting, 8k, photorealistic. Square glass bottle with golden liquid and black cap, central composition. Fresh jasmine flowers with green leaves, whole lime fruit. White reflective surface with soft window light shadows. Morning sunlight creating gentle shadow patterns. Professional fragrance photography style, bright clean aesthetic. Warm beige background gradient. Sharp focus on bottle label, transparent glass reflections. Soft shadows and highlights preserving product details
+
+5: Bouquet of flowers made of felt, studio lighting, mockup for this item advertising campaign, beautiful lighting, light colors, Morandi color palette
+
+6: Product photography of this item, surrounded by walnuts and natural elements. Artistic still life composition with moss, dried flowering branches, and fresh green stems with white flowers. Warm brown background, professional studio lighting, soft shadows, high-end commercial photography style. Sharp focus, high resolution, color palette of browns, greens, and golden tones. Minimalist zen aesthetic, 8k, photorealistic.
+
+7: Product photography of this item, placed on fresh green moss. Surrounded by delicate white jasmine flowers in bloom. Light blue sky with soft white clouds in background. Natural daylight, shallow depth of field, water reflection beneath. Dreamy spring atmosphere, soft ethereal lighting, commercial beverage photography style. High resolution, 8k, photorealistic, clean and crisp details. Color palette of cream, sky blue, white, and fresh green.
+
+8: Product photography of this item on draped black silk fabric. Dramatic moody lighting, 8k, photorealistic. Deep folds in fabric creating swirling pattern around centered bottle. Studio lighting highlighting fabric texture and glass transparency. Close-up shot with sharp focus on bottle label, soft front fill light for label legibility highlight the text . Professional product photography style, high contrast black and white tones with amber accent. Luxury cosmetic brand aesthetic
+
+9: Mid-Autumn Festival poster of this item, small osmanthus, moon, reflection, luxury, artistic conception, minimalism
+
+10: Luxury product photography of this item, centered on black river rocks, 8k, photorealistic. Large circular warm-toned backlight creating dramatic halo effect. Vibrant yellow osmanthus flowers with green leaves arranged organically around bottle. Professional studio lighting with water reflections beneath rocks. Sharp focus on bottle showing translucent amber liquid and delicate leaf illustration on label. Minimalist zen composition with neutral beige background. Color palette combining deep blacks, warm ambers, and bright yellow florals. High-end fragrance photography style with moody atmospheric lighting. Deep shadows and gentle highlights preserving glass transparency and product details. 32K resolution, professional commercial aesthetic.

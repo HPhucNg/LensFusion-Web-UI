@@ -9,7 +9,8 @@ import {
 import ScrollToTop from "@/components/ScrollToTop";
 import Image from "next/image";
 import { auth, db } from "@/firebase/FirebaseConfig";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import Link from "next/link";
 import { useRouter } from 'next/navigation';
 
 export default function Page() {
@@ -121,7 +122,7 @@ export default function Page() {
               <div className="space-y-12 mt-12">
                 {[
                   { title: "LensFusion's AI Tools", items: [
-                    { src: "https://i.pinimg.com/736x/d6/31/ea/d631eaf3e64c2744e44230f25c456d98.jpg", title: "Background Generation" },
+                    { src: "https://i.pinimg.com/736x/d6/31/ea/d631eaf3e64c2744e44230f25c456d98.jpg", title: "Background Generation", link: "/workspace/backgroundgeneration" },
                     { src: "https://i.pinimg.com/236x/45/13/a8/4513a815c4134c94384ca72e13e98e12.jpg", title: "Object Swap" },
                     { src: "https://i.pinimg.com/236x/34/51/ba/3451ba07e3c79263075365a92a41ee17.jpg", title: "Image Upscale" },
                     { src: "https://i.pinimg.com/236x/f2/b2/50/f2b2505f4dfe13e74d6d445a093a1025.jpg", title: "Image Editing" }
@@ -153,17 +154,30 @@ export default function Page() {
                           key={index} 
                           className="aspect-square rounded-lg overflow-hidden shadow-md relative group"
                         >
-                          <Image
-                            src={item.src}
-                            alt={item.title}
-                            layout="responsive"
-                            width={300}
-                            height={300}
-                            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-stone-800 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
-                            <span className="text-white text-lg font-semibold">{item.title}</span>
-                          </div>
+                          {item.link ? (
+                            <Link href={item.link}>
+                              <Image
+                                src={item.src}
+                                alt={item.title}
+                                layout="responsive"
+                                width={300}
+                                height={300}
+                                className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-stone-800 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
+                                <span className="text-white text-lg font-semibold">{item.title}</span>
+                              </div>
+                            </Link>
+                          ) : (
+                            <Image
+                              src={item.src}
+                              alt={item.title}
+                              layout="responsive"
+                              width={300}
+                              height={300}
+                              className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
+                            />
+                          )}
                         </div>
                       ))}
                     </div>
