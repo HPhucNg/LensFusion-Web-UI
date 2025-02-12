@@ -1,26 +1,45 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import '../style.css';
 import Footer from '../../../components/Footer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { createCheckoutSession } from '../../../../stripe/createCheckoutSession';
-import { loadStripe } from '@stripe/stripe-js';
 import { PricingPlans } from '../pricing/plans';
+import { auth } from "@/firebase/FirebaseConfig";
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { useSubscription } from '@/context/subscriptionContext';
+import { createCheckoutSession } from '../../../../stripe/createCheckoutSession';
 
 
 function PricingPage() {
 
   // State to toggle between monthly and yearly pricing
   const [pricingType, setPricingType] = useState('monthly');
+  const [user, setUser] = useState(null);
+  //subscription info of the user
+  const { status: subscriptionStatus, currentPlan, planCycle, loading: isLoading } = useSubscription();
 
 
-  const handleSubscription = (link) => {
-    //redirect to stripe payment
-    if (link) {
-      window.location.href = link; 
-    } else {
-      console.error('No payment link provided.');
+  //check user authentication
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  //navigate to corresponding subscription plan
+  const handleSubscription = async (priceId) => {
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
+    try {
+      await createCheckoutSession(priceId);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Payment cannot be processed. Please try again.');
     }
   };
   
@@ -28,32 +47,6 @@ function PricingPage() {
   //handle the toggle
   const togglePricing = (type) => {
     setPricingType(type);
-  };
-  /*Handle plan select
-  const handlePlanSelect = (plan) => {
-    navigate('/payment', { state: { plan, pricingType } });
-  };*/
-
-
-  // price based on the selected pricing type
-  const formatPrice = (price, type) => {
-    let priceText = `$${price}`;
-    let periodText = '';
-
-    if (type === 'monthly') {
-      periodText = '/mo';
-    } else {
-      priceText = `$${price}`;
-      periodText = '/yr';
-    }
-
-    // for styling
-    return (
-      <>
-        <span className="price">{priceText}</span>
-        <span className="period">{periodText}</span>
-      </>
-    );
   };
 
   // dynamic rendering
@@ -72,13 +65,6 @@ function PricingPage() {
     }
   ];
 
-  // dynamic rendering
-  const pricingPlans = [
-    { title: 'Basic Plan', monthly: 5, yearly: 50 },
-    { title: 'Pro Plan', monthly: 10, yearly: 100 },
-    { title: 'Enterprise Plan', monthly: 20, yearly: 200 },
-  ];
-
   return (
     <>
     <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden'>
@@ -86,28 +72,46 @@ function PricingPage() {
       <h1 className="priceh1">How much is your time worth?</h1>
       <main className="containerPrice">
         <div className="termFees">
-          <button 
-            className={pricingType === 'monthly' ? 'selected' : ''} 
-            onClick={() => togglePricing('monthly')}
-          >
-            Monthly
-          </button>
-          <button
-            className={pricingType === 'yearly' ? 'selected' : ''}
-            onClick={() => togglePricing('yearly')}
-          >
-            Yearly
-          </button>
+        <button 
+          className={`px-6 py-2 rounded-md transition-all border ${
+            pricingType === 'monthly'
+              ? 'selected' 
+              : 'bg-gray-800  hover:bg-gray-700 hover:text-white'
+          }`} 
+          onClick={() => togglePricing('monthly')}
+        >
+          Monthly
+        </button>
+        <button
+          className={`px-6 py-2 rounded-md transition-all border ${
+            pricingType === 'yearly'
+              ? 'selected' 
+              : 'bg-gray-800 hover:bg-gray-700 hover:text-white'
+          }`}
+          onClick={() => togglePricing('yearly')}
+        >
+          Yearly
+        </button>
+          <Link href="/pricing/credits">
+            <Button>
+              Buy Credits
+            </Button>
+          </Link>
         </div>
 
 
         {/* Pricing Cards */}
-        <section className="flex flex-wrap justify-center gap-6 px-4">
-          {PricingPlans.map((plan, index) => (
-            <div
+      {isLoading ? (
+        <div className="w-full text-center py-8">
+          <div className="text-lg font-medium">Loading...</div>
+        </div>
+      ) : (
+      <section className="flex flex-wrap justify-center gap-6 px-4">
+        {PricingPlans.map((plan, index) => (
+          <div
             key={plan.title}
-            className={`rounded-lg p-6 shadow-lg w-full sm:w-80 md:w-72 lg:w-64 h-full flex flex-col justify-center items-center text-center ${
-              index === 1 ? 'bg-white text-black' : 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white'
+            className={`rounded-lg p-6 shadow-lg w-full sm:w-80 md:w-72 lg:w-64 h-full flex flex-col justify-center items-center text-center border-2  ${
+              index === 1 ? 'bg-white text-black border-4 border-double border-purple-600' : 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white'
             }`}
           >
             <h3 className="text-l font-bold mb-1">{plan.title}</h3>
@@ -116,7 +120,7 @@ function PricingPage() {
                 {pricingType === 'monthly' ? `$${plan.priceMonthly}` : `$${plan.priceYearly}`}
               </span>
               <span className="text-sm ml-1">
-                /{pricingType === 'monthly' ? 'mo' : 'yr'}
+                {pricingType === 'monthly' ? 'mo' : 'yr'}
               </span>
             </div>
             <ul className="mb-4 space-y-1 list-disc list-inside text-left w-full">
@@ -128,16 +132,28 @@ function PricingPage() {
             </ul>
             <button
               className={`w-full px-4 py-2 rounded-lg ${
-                index === 1 ? 'bg-black text-white' : 'bg-white text-black'
+                subscriptionStatus === 'active' && currentPlan === plan.title && planCycle === pricingType
+                  ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                  : index === 1
+                  ? 'bg-black text-white hover:bg-gray-600'
+                  : 'bg-white text-black hover:bg-gray-500'
               }`}
-              onClick={() => handleSubscription(pricingType === 'monthly' ? plan.linkMonthly : plan.linkYearly)}
+              onClick={() => {
+                const priceId = pricingType === 'monthly' 
+                  ? plan.priceIdMonthly 
+                  : plan.priceIdYearly;
+                handleSubscription(priceId);
+              }}
+              disabled={subscriptionStatus === 'active' && currentPlan === plan.title && planCycle === pricingType}
             >
-              {`Get ${plan.title}`}
+              {subscriptionStatus === 'active' && currentPlan === plan.title && planCycle === pricingType
+                ? 'Subscribed'
+                : `Get ${plan.title}`}
             </button>
-          </div>
-          
-          ))}
-        </section>
+        </div>
+        ))}
+      </section>
+      )}
 
          
 

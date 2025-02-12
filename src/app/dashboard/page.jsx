@@ -9,7 +9,8 @@ import {
 import ScrollToTop from "@/components/ScrollToTop";
 import Image from "next/image";
 import { auth, db } from "@/firebase/FirebaseConfig";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
+import { useRouter } from 'next/navigation';
 
 export default function Page() {
   const [user, setUser] = useState(null);
@@ -24,6 +25,7 @@ export default function Page() {
             const unsubscribeSnapshot = onSnapshot(userRef, (userDoc) => {
               if (userDoc.exists()) {
                 setTokens(userDoc.data().tokens || 0);
+                setLoading(false);
               }
             });
             return () => unsubscribeSnapshot();
@@ -36,6 +38,17 @@ export default function Page() {
         return () => unsubscribe();
       }, []);
 
+      const router = useRouter();
+
+      const handleTokens = (paymentPageLink) => {
+        if (!user) {
+          router.push('/login');
+        } else if (paymentPageLink) {
+          router.push('/pricing');
+        } else {
+          console.error('No payment page link provided.');
+        }
+      };
 
   return (
     <div className="min-h-screen">
@@ -49,13 +62,20 @@ export default function Page() {
                 <SidebarTrigger className="fixed z-50" />
               </div>
               <div className="ml-auto">
-                {!user ? (
-                  <span className="text-lg font-medium">Please log in to view your tokens.</span>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <span className="text-lg font-medium">Tokens: {tokens}</span>
-                  </div>
-                )}
+              <div className="flex items-center gap-4">
+                  {loading ? (
+                    <span className="text-lg font-medium">...Loading...</span>
+                  ) : !user ? (
+                    <span className="text-lg font-medium">Please log in to view your tokens.</span>
+                  ) : (
+                    <span
+                      className="text-center py-1 border-2 mr-4 border-white bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-10 whitespace-nowrap overflow-hidden cursor-pointer"
+                      onClick={() => handleTokens('/payment')}
+                    >
+                      Tokens: {tokens}
+                    </span>
+                  )}
+                </div>
               </div>
             </header>
           

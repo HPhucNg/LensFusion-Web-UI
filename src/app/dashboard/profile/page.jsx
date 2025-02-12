@@ -13,24 +13,18 @@ import {
 } from "@/components/ui/hover-card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { auth, db } from '@/firebase/FirebaseConfig';
-import { saveUserToFirebase } from '@/firebase/firebaseUtils';
+import { auth } from '@/firebase/FirebaseConfig';
+import { useSubscription } from '@/context/subscriptionContext';
 
 export default function UserProfile() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { tokens, loading } = useSubscription();
+
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      console.log("User state changed:", user);
-      setUser(user);
-      setLoading(false);
-      if (user) {
-        console.log("Saving data to firebase:", user);
-        saveUserToFirebase(user);
-      }
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -60,6 +54,11 @@ export default function UserProfile() {
               <p className="text-gray-400 text-lg mb-4">
                 {user?.email || "default text box"}
               </p>
+              <div className="w-full justify-start text-center py-3 border-2 border-white bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-8 mb-6">
+                <h3 className="text- font-semibold text-white truncate">
+                  Credits: {tokens}
+                </h3>
+              </div>
               <div className="w-full space-y-3">
                 <Button variant="outline" className="w-full justify-start py-6 border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg transition-all duration-300 text-white">
                   <Settings className="mr-3 h-5 w-5 text-white" />
