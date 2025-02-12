@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/hover-card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useSubscription } from '@/context/subscriptionContext';
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import { 
   doc, 
@@ -27,7 +28,7 @@ import {
   deleteUser, 
   updateProfile
 } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Account Management Dialog Component
 const AccountManagementDialog = ({ isOpen, onClose, user }) => {
@@ -292,18 +293,14 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
 // Main UserProfile Component
 export default function UserProfile() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { tokens, loading } = useSubscription();
+  const [isLoading, setIsLoading] = useState(true);
   const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setUser(user);
-      setLoading(false);
-      if (user) {
-        saveUserToFirebase(user);
-      }
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -392,6 +389,11 @@ export default function UserProfile() {
               <p className="text-gray-400 text-lg mb-4">
                 {user?.email || "No email provided"}
               </p>
+              <div className="w-full justify-start text-center py-3 border-2 border-white bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-8 mb-6">
+                <h3 className="text- font-semibold text-white truncate">
+                  Credits: {tokens}
+                </h3>
+              </div>
               <div className="w-full space-y-3">
                 <Button 
                   variant="outline" 
