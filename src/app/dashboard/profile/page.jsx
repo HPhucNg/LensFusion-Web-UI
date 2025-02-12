@@ -15,7 +15,6 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import GalleryModal from '@/components/GalleryModal';
-import UploadImage from '../../(list_page)/solutions/UploadImage';  // Import the UploadImage component
 import Modal from '@/components/Modal';
 import { useSubscription } from '@/context/subscriptionContext';
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
@@ -32,6 +31,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 // Account Management Dialog Component
 const AccountManagementDialog = ({ isOpen, onClose, user }) => {
@@ -297,6 +297,8 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
 export default function UserProfile() {
   const [user, setUser] = useState(null);
   const [isloading, setLoading] = useState(true);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [userImages, setUserImages] = useState([]); // State to store user images
   const [showModal, setShowModal] = useState(false);  // To control modal visibility
   const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
   const [showPostModal, setShowPostModal] = useState(false); // For Post Modal
@@ -328,6 +330,30 @@ export default function UserProfile() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Function to fetch user images from Firestore
+  const fetchUserImages = async (user) => {
+    setIsLoadingImages(true); // Set loading state for images
+    try {
+      const userImagesRef = collection(db, 'user_images');
+      const q = query(userImagesRef, where('userID', '==', user.uid)); // Filter by userID
+      const querySnapshot = await getDocs(q);
+      const images = querySnapshot.docs.map((doc) => doc.data().img_data); // Extract image data
+      setUserImages(images); // Set images in state
+    } catch (error) {
+      console.error('Error fetching user images:', error);
+    } finally {
+      setIsLoadingImages(false); // Reset loading state regardless of success or failure
+    }
+  };
+  
+  // Fetch user images when user changes
+  useEffect(() => {
+    if (user) {
+      fetchUserImages(user);
+    }
+  }, [user]);
+  
 
   const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId = null, subscriptionStatus = 'inactive', currentPlan = null) => {
     try {
@@ -372,11 +398,20 @@ export default function UserProfile() {
     }
   };
 
-  // Function to handle image click
-  const handleImageClick = (index) => {
-    setSelectedImage(`https://picsum.photos/400/400?random=${index}`);
-    setShowModal(true);  // Show the modal
+  // Handle image click to open gallery modal
+  const handleImageClick = (imageUrl) => {
+    setSelectedImage(imageUrl);
+    setShowModal(true);
   };
+
+  // Show loading spinner while fetching data
+  if (isLoadingImages) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+      </div>
+    );
+  }
 
   const closeModal = () => {
     setShowModal(false);
@@ -483,36 +518,44 @@ export default function UserProfile() {
             <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
               <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((index) => (
-                  <HoverCard key={index}>
-                    <HoverCardTrigger asChild>
-                      <div className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-all duration-300 hover:scale-105"
-                      onClick={() => handleImageClick(index)}>
-                        <Image
-                          src={`https://picsum.photos/400/400?random=${index}`}
-                          alt={`Gallery item ${index}`}
-                          width={400}
-                          height={400}
-                          className="object-cover"
-                          placeholder="blur"
-                          blurDataURL={`data:image/svg+xml;base64,...`}
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          <div className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                            <Check className="w-5 h-5 text-white" />
-                          </div>
+                {userImages.length > 0 ? (
+                  userImages.map((image, index) => (
+                <HoverCard key={index}>
+                  <HoverCardTrigger asChild>
+                    <div
+                      className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-all duration-300 hover:scale-105"
+                      onClick={() => handleImageClick(image)} // Pass the image URL to the modal
+                    >
+                      <Image
+                        src={image}  // Directly use the img_data (image URL)
+                        alt={`Gallery item ${index}`}
+                        width={400}
+                        height={400}
+                        className="object-cover"
+                        placeholder="blur"
+                        blurDataURL={`data:image/svg+xml;base64,...`}  // Optional for blur effect
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                        <div className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <Check className="w-5 h-5 text-white" />
                         </div>
                       </div>
-                    </HoverCardTrigger>
-                    <HoverCardContent className="w-80 bg-[var(--card-background)] border-[var(--border-gray)]">
-                      <div className="space-y-2">
-                        <h4 className="text-lg font-semibold">Image Details</h4>
-                        <p className="text-gray-400">Gallery item {index}</p>
-                      </div>
-                    </HoverCardContent>
-                  </HoverCard>
-                ))}
-              </div>
+                    </div>
+                  </HoverCardTrigger>
+                <HoverCardContent className="w-80 bg-[var(--card-background)] border-[var(--border-gray)]">
+                  <div className="space-y-2">
+                    <h4 className="text-lg font-semibold">Image Details</h4>
+                    <p className="text-gray-400">Gallery item {index + 1}</p>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+      ))
+    ) : (
+      <p className="text-gray-400">No images available.</p>
+    )}
+  </div>
+             
+           
 
               {/* Pagination */}
               <div className="flex justify-center items-center gap-3 mt-8">
@@ -561,9 +604,6 @@ export default function UserProfile() {
                     createdBy={user?.displayName}
                 />
       )}
-      {/*This is for testing */}
-      console.log(user.uid)
-      <UploadImage userID={user.uid}/> {/* Pass user ID as a prop */}
     </div>
   );
 }

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { storage, db } from '@/firebase/FirebaseConfig'  // Import Firebase config
+import React, { useState, useEffect} from 'react';
+import { auth, storage, db } from '@/firebase/FirebaseConfig'  // Import Firebase config
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Firebase Storage methods
 import { collection, addDoc } from 'firebase/firestore'; // Firestore methods
 import { v4 as uuidv4 } from 'uuid';  // For generating unique filenames
 
-function UploadImage({ userID }) {
+function UploadImage() {
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -18,11 +18,16 @@ function UploadImage({ userID }) {
 
     // Upload image to Firebase Storage and save URL to Firestore
     const uploadImage = async () => {
-        if (!image) return;  // If no image is selected, return
-        if (!userID) {
-            alert('User ID is required');
+        const user = auth.currentUser;  // Access the current authenticated user directly
+        
+        if (!user) {
+            alert("No user is authenticated.");
             return;
         }
+
+        const userID = user.uid;
+        
+        if (!image) return;  // If no image is selected, return
     
         setLoading(true);
         
