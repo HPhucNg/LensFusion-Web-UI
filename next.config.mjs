@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
-      domains: ['picsum.photos', 'pebblely.com', 'i.pinimg.com'], // Allow picsum.photos as a valid image domain
+      domains: ['picsum.photos', 'pebblely.com', 'i.pinimg.com','firebasestorage.googleapis.com', 'api.remove.bg'], // Allow picsum.photos as a valid image domain
     },
   };
   
