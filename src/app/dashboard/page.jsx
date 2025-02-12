@@ -10,6 +10,8 @@ import ScrollToTop from "@/components/ScrollToTop";
 import Image from "next/image";
 import { auth, db } from "@/firebase/FirebaseConfig";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import Link from "next/link";
+import { useRouter } from 'next/navigation';
 
 export default function Page() {
   const [user, setUser] = useState(null);
@@ -19,22 +21,35 @@ export default function Page() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
         if (currentUser) {
+          setUser(currentUser); 
             const userRef = doc(db, "users", currentUser.uid);
-            const userDoc = await getDoc(userRef);
-            if (userDoc.exists()) {
+            const unsubscribeSnapshot = onSnapshot(userRef, (userDoc) => {
+              if (userDoc.exists()) {
                 setTokens(userDoc.data().tokens || 0);
-            }
-            setUser(currentUser);
+                setLoading(false);
+              }
+            });
+            return () => unsubscribeSnapshot();
+          } else {
+            setUser(null); 
+            setLoading(false);
+          }
+        });
+      
+        return () => unsubscribe();
+      }, []);
+
+      const router = useRouter();
+
+      const handleTokens = (paymentPageLink) => {
+        if (!user) {
+          router.push('/login');
+        } else if (paymentPageLink) {
+          router.push('/pricing');
+        } else {
+          console.error('No payment page link provided.');
         }
-        setLoading(false);
-    });
-
-    return () => unsubscribe();
-}, []);
-
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">...Loading page...</div>;
-  }
+      };
 
   return (
     <div className="min-h-screen">
@@ -48,13 +63,20 @@ export default function Page() {
                 <SidebarTrigger className="fixed z-50" />
               </div>
               <div className="ml-auto">
-                {!user ? (
-                  <span className="text-lg font-medium">Please log in to view your tokens.</span>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <span className="text-lg font-medium">Tokens: {tokens}</span>
-                  </div>
-                )}
+              <div className="flex items-center gap-4">
+                  {loading ? (
+                    <span className="text-lg font-medium">...Loading...</span>
+                  ) : !user ? (
+                    <span className="text-lg font-medium">Please log in to view your tokens.</span>
+                  ) : (
+                    <span
+                      className="text-center py-1 border-2 mr-4 border-white bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-10 whitespace-nowrap overflow-hidden cursor-pointer"
+                      onClick={() => handleTokens('/payment')}
+                    >
+                      Tokens: {tokens}
+                    </span>
+                  )}
+                </div>
               </div>
             </header>
           
@@ -100,7 +122,7 @@ export default function Page() {
               <div className="space-y-12 mt-12">
                 {[
                   { title: "LensFusion's AI Tools", items: [
-                    { src: "https://i.pinimg.com/736x/d6/31/ea/d631eaf3e64c2744e44230f25c456d98.jpg", title: "Background Generation" },
+                    { src: "https://i.pinimg.com/736x/d6/31/ea/d631eaf3e64c2744e44230f25c456d98.jpg", title: "Background Generation", link: "/workspace/backgroundgeneration" },
                     { src: "https://i.pinimg.com/236x/45/13/a8/4513a815c4134c94384ca72e13e98e12.jpg", title: "Object Swap" },
                     { src: "https://i.pinimg.com/236x/34/51/ba/3451ba07e3c79263075365a92a41ee17.jpg", title: "Image Upscale" },
                     { src: "https://i.pinimg.com/236x/f2/b2/50/f2b2505f4dfe13e74d6d445a093a1025.jpg", title: "Image Editing" }
@@ -132,17 +154,30 @@ export default function Page() {
                           key={index} 
                           className="aspect-square rounded-lg overflow-hidden shadow-md relative group"
                         >
-                          <Image
-                            src={item.src}
-                            alt={item.title}
-                            layout="responsive"
-                            width={300}
-                            height={300}
-                            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-stone-800 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
-                            <span className="text-white text-lg font-semibold">{item.title}</span>
-                          </div>
+                          {item.link ? (
+                            <Link href={item.link}>
+                              <Image
+                                src={item.src}
+                                alt={item.title}
+                                layout="responsive"
+                                width={300}
+                                height={300}
+                                className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-stone-800 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
+                                <span className="text-white text-lg font-semibold">{item.title}</span>
+                              </div>
+                            </Link>
+                          ) : (
+                            <Image
+                              src={item.src}
+                              alt={item.title}
+                              layout="responsive"
+                              width={300}
+                              height={300}
+                              className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
+                            />
+                          )}
                         </div>
                       ))}
                     </div>
