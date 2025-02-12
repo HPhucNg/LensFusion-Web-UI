@@ -123,7 +123,7 @@ export default function Page() {
                 {[
                   { title: "LensFusion's AI Tools", items: [
                     { src: "https://i.pinimg.com/736x/d6/31/ea/d631eaf3e64c2744e44230f25c456d98.jpg", title: "Background Generation", link: "/workspace/backgroundgeneration" },
-                    { src: "https://i.pinimg.com/736x/33/23/2e/33232e1609d70bcedd5f10260671ef17.jpg", title: "Background Removal", link: "/dashboard/tools/background-remover" },
+                    { src: "https://i.pinimg.com/736x/e1/30/18/e1301863d4a6c3ca747db7ed9ce3beb4.jpg", title: "Background Removal", link: "/dashboard/tools/background-remover" },
                     { src: "https://i.pinimg.com/236x/45/13/a8/4513a815c4134c94384ca72e13e98e12.jpg", title: "Object Swap" },
                     { src: "https://i.pinimg.com/236x/34/51/ba/3451ba07e3c79263075365a92a41ee17.jpg", title: "Image Upscale" },
                     { src: "https://i.pinimg.com/236x/f2/b2/50/f2b2505f4dfe13e74d6d445a093a1025.jpg", title: "Image Editing" }
