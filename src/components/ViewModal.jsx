@@ -48,26 +48,36 @@ function ViewModal({ closeModal, image }) {
 
     const handleCommentSubmit = async (e) => {
         e.preventDefault();
-
+    
         if (newComment.trim() === '') {
             return;
         }
-
+    
         try {
             const commentsRef = collection(db, 'community', image.id, 'comments');
-            await addDoc(commentsRef, {
+            const docRef = await addDoc(commentsRef, {
                 commentText: newComment,
                 createdBy: userName,
                 createdByUID: user.uid,  // Storing the UID here
                 createdAt: new Date(),
             });
-
+    
+            // Now that the comment has been added, we get the Firestore-generated ID
+            const newCommentWithId = {
+                id: docRef.id, // Use the Firestore-generated ID
+                commentText: newComment,
+                createdBy: userName,
+                createdByUID: user.uid
+            };
+    
             setNewComment('');  // Clear the input field
-            setComments([...comments, { commentText: newComment, createdBy: userName, createdByUID: user.uid}]); // Optimistic update
+            setComments([...comments, newCommentWithId]); // Optimistic update with the Firestore-generated ID
         } catch (e) {
             console.error("Error adding comment: ", e);
         }
     };
+    
+
 
     const handleEditComment = (commentId, currentText) => {
         setEditingCommentId(commentId);
@@ -89,7 +99,7 @@ function ViewModal({ closeModal, image }) {
             // Make sure the comment exists before attempting to update it
             const commentRef = doc(db, 'community', image.id, 'comments', commentId);
             await updateDoc(commentRef, { commentText: editedCommentText });
-    
+            
             // Make sure to update the state properly by checking if the comment exists
             setComments((prevComments) =>
                 prevComments.map((comment) => 
@@ -100,6 +110,7 @@ function ViewModal({ closeModal, image }) {
             );
             setEditingCommentId(null); // Reset editing mode
             setEditedCommentText(''); // Clear edited text field
+
         } catch (e) {
             console.error("Error updating comment: ", e);
         }
@@ -118,7 +129,6 @@ function ViewModal({ closeModal, image }) {
             console.error("Error deleting comment: ", e);
         }
     };
-
     return (
         <div className='add_pin_modal'>
             <div className='add_pin_container'>
@@ -143,7 +153,7 @@ function ViewModal({ closeModal, image }) {
                         </div>
                     </div>
 
-                    <div className="midsection">
+                    <div className="midsection mt-9 md:ml-4">
                         <div>Title: {image.title}</div>
                         <div>Description: {image.description}</div>
                         <div>Created By: {image.created_by}</div>
@@ -152,7 +162,7 @@ function ViewModal({ closeModal, image }) {
                             <h3>Comments:</h3>
                             <div className="comments-list">
                                 {comments.map((comment) => (
-                                    <div key={comment.uid} className="comment">
+                                    <div key={comment.id} className="comment">
                                     <div><strong>{comment.createdBy}</strong></div>
                                     {editingCommentId === comment.id ? (
                                         <div>
