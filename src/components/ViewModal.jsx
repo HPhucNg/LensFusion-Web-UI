@@ -152,7 +152,7 @@ function ViewModal({ closeModal, image }) {
                             <h3>Comments:</h3>
                             <div className="comments-list">
                                 {comments.map((comment) => (
-                                    <div key={comment.id} className="comment">
+                                    <div key={comment.uid} className="comment">
                                     <div><strong>{comment.createdBy}</strong></div>
                                     {editingCommentId === comment.id ? (
                                         <div>
