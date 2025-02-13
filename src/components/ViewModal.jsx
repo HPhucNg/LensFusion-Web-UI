@@ -1,22 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { db } from '@/firebase/FirebaseConfig';
+import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db, auth } from '@/firebase/FirebaseConfig';
 import '../styles/modal_styles.css';
 
 function ViewModal({ closeModal, image }) {
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState('');
+    const [userName, setUserName] = useState('');
+    const [editingCommentId, setEditingCommentId] = useState(null);  // Track comment being edited
+    const [editedCommentText, setEditedCommentText] = useState('');
+
+    const user = auth.currentUser;
+
+    useEffect(() => {
+        if (user) {
+            setUserName(user.displayName || user.email || 'Anonymous');
+        } else {
+            alert("No user is authenticated.");
+        }
+    }, [user]);
 
     useEffect(() => {
         // Fetch comments when the image (post) changes
         const fetchComments = async () => {
             try {
-                const commentsRef = collection(db, 'pins', image.id, 'comments');
+                const commentsRef = collection(db, 'community', image.id, 'comments');
                 const q = query(commentsRef, orderBy('createdAt', 'asc')); // Sort by createdAt
                 const querySnapshot = await getDocs(q);
                 const fetchedComments = [];
                 querySnapshot.forEach((doc) => {
-                    fetchedComments.push(doc.data());
+                    fetchedComments.push({ id: doc.id, ...doc.data() });
                 });
                 setComments(fetchedComments);
             } catch (e) {
@@ -41,17 +54,68 @@ function ViewModal({ closeModal, image }) {
         }
 
         try {
-            const commentsRef = collection(db, 'pins', image.id, 'comments');
+            const commentsRef = collection(db, 'community', image.id, 'comments');
             await addDoc(commentsRef, {
                 commentText: newComment,
-                createdBy: 'User1', // Replace with actual logged-in user
+                createdBy: userName,
+                createdByUID: user.uid,  // Storing the UID here
                 createdAt: new Date(),
             });
 
             setNewComment('');  // Clear the input field
-            setComments([...comments, { commentText: newComment, createdBy: 'User1' }]); // Optimistic update
+            setComments([...comments, { commentText: newComment, createdBy: userName, createdByUID: user.uid}]); // Optimistic update
         } catch (e) {
             console.error("Error adding comment: ", e);
+        }
+    };
+
+    const handleEditComment = (commentId, currentText) => {
+        setEditingCommentId(commentId);
+        setEditedCommentText(currentText);
+    };
+
+    const handleEditChange = (e) => {
+        setEditedCommentText(e.target.value);
+    };
+
+    const handleSaveEdit = async (e, commentId) => {
+        e.preventDefault();
+    
+        if (editedCommentText.trim() === '') {
+            return;
+        }
+    
+        try {
+            // Make sure the comment exists before attempting to update it
+            const commentRef = doc(db, 'community', image.id, 'comments', commentId);
+            await updateDoc(commentRef, { commentText: editedCommentText });
+    
+            // Make sure to update the state properly by checking if the comment exists
+            setComments((prevComments) =>
+                prevComments.map((comment) => 
+                    comment.id === commentId
+                        ? { ...comment, commentText: editedCommentText } // Update the comment text
+                        : comment
+                )
+            );
+            setEditingCommentId(null); // Reset editing mode
+            setEditedCommentText(''); // Clear edited text field
+        } catch (e) {
+            console.error("Error updating comment: ", e);
+        }
+    };
+    
+
+    const handleDeleteComment = async (commentId) => {
+        try {
+            const commentRef = doc(db, 'community', image.id, 'comments', commentId);
+            await deleteDoc(commentRef);
+
+            setComments((prevComments) =>
+                prevComments.filter((comment) => comment.id !== commentId)
+            );
+        } catch (e) {
+            console.error("Error deleting comment: ", e);
         }
     };
 
@@ -87,11 +151,36 @@ function ViewModal({ closeModal, image }) {
                         <div className="comments-section">
                             <h3>Comments:</h3>
                             <div className="comments-list">
-                                {comments.map((comment, index) => (
-                                    <div key={index} className="comment">
-                                        <div><strong>{comment.createdBy}</strong></div>
+                                {comments.map((comment) => (
+                                    <div key={comment.id} className="comment">
+                                    <div><strong>{comment.createdBy}</strong></div>
+                                    {editingCommentId === comment.id ? (
+                                        <div>
+                                            <textarea
+                                                value={editedCommentText}
+                                                onChange={handleEditChange}
+                                                rows="3"
+                                            />
+                                            <button onClick={(e) => handleSaveEdit(e, comment.id)}>
+                                                Save
+                                            </button>
+                                        </div>
+                                    ) : (
                                         <div>{comment.commentText}</div>
-                                    </div>
+                                    )}
+                                
+                                    {comment.createdByUID === user.uid && !editingCommentId && (
+                                        <div>
+                                            <button onClick={() => handleEditComment(comment.id, comment.commentText)}>
+                                                Edit
+                                            </button>
+                                            <button onClick={() => handleDeleteComment(comment.id)}>
+                                                Delete
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                
                                 ))}
                             </div>
 
@@ -113,3 +202,4 @@ function ViewModal({ closeModal, image }) {
 }
 
 export default ViewModal;
+
