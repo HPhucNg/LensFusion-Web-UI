@@ -2,14 +2,15 @@
 import React, { useState } from 'react';
 import '../styles/modal_styles.css';
 
-function GalleryModal({ closeModal, image, openPostModal }) {  // Accept the 'image' prop
+function GalleryModal({ closeModal, image, openCommunityModal }) {  // Accept the 'image' prop
     const [showModalPin, setShowModalPin] = useState(false);
 
     // Trigger Post Modal when "Post to Community" is clicked
-    const handlePostToCommunityClick = () => {
-        openPostModal();  // This will open the Post Modal in UserProfile
+    const handleCommunityClick = () => {
+        openCommunityModal();  // This will open the CommunityModal in UserProfile
         closeModal();     // Close the Gallery Modal
     };
+    const postButtonText = image.communityPost ? "Manage Post to Community" : "Post to Community";
 
     return (
         <div className='add_pin_modal'>
@@ -23,7 +24,7 @@ function GalleryModal({ closeModal, image, openPostModal }) {  // Accept the 'im
                         <div>
                                 {/* Render the selected image */}
                                 {image ? (
-                                    <img src={image} alt="Selected" className="object-cover w-full h-full rounded-xl" />
+                                    <img src={image.img_data} alt="Selected" className="object-cover w-full h-full rounded-xl" />
                                 ) : (
                                     <p>No image selected</p>
                                 )}
@@ -44,7 +45,7 @@ function GalleryModal({ closeModal, image, openPostModal }) {  // Accept the 'im
 
                     <div className="midsection items-center">
                         <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100">Open Workflow</button>
-                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100" onClick={handlePostToCommunityClick} >Post to Community</button>
+                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100" onClick={handleCommunityClick} >{postButtonText}</button>
                         <button className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100">Delete</button> 
                     </div>
                 </div>

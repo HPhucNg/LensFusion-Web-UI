@@ -301,7 +301,7 @@ export default function UserProfile() {
   const [userImages, setUserImages] = useState([]); // State to store user images
   const [showModal, setShowModal] = useState(false);  // To control modal visibility
   const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
-  const [showPostModal, setShowPostModal] = useState(false); // For Post Modal
+  const [showCommunityModal, setShowCommunityModal] = useState(false); // For Community Modal
   const [theme, setTheme] = useState("dark");
 
   // Check for saved theme in localStorage
@@ -338,7 +338,11 @@ export default function UserProfile() {
       const userImagesRef = collection(db, 'user_images');
       const q = query(userImagesRef, where('userID', '==', user.uid)); // Filter by userID
       const querySnapshot = await getDocs(q);
-      const images = querySnapshot.docs.map((doc) => doc.data().img_data); // Extract image data
+      //const images = querySnapshot.docs.map((doc) => doc.data()); // Extract image data
+      const images = querySnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        uid: doc.id  // Assuming the document ID is used as the UID
+      }));
       setUserImages(images); // Set images in state
     } catch (error) {
       console.error('Error fetching user images:', error);
@@ -399,8 +403,8 @@ export default function UserProfile() {
   };
 
   // Handle image click to open gallery modal
-  const handleImageClick = (imageUrl) => {
-    setSelectedImage(imageUrl);
+  const handleImageClick = (image) => {
+    setSelectedImage(image);
     setShowModal(true);
   };
 
@@ -416,13 +420,13 @@ export default function UserProfile() {
   const closeModal = () => {
     setShowModal(false);
 }
-  const openPostModal = () => {
+  const openCommunityModal = () => {
     setShowModal(false);  // Close Gallery Modal
-    setShowPostModal(true);  // Open Post Modal
+    setShowCommunityModal(true);  // Open Community Modal
   };
 
-  const closePostModal = () => {
-    setShowPostModal(false);  // Close Post Modal
+  const closeCommunityModal = () => {
+    setShowCommunityModal(false);  // Close Community Modal
   };
 
 
@@ -527,7 +531,7 @@ export default function UserProfile() {
                       onClick={() => handleImageClick(image)} // Pass the image URL to the modal
                     >
                       <Image
-                        src={image}  // Directly use the img_data (image URL)
+                        src={image.img_data}  // Directly use the img_data (image URL)
                         alt={`Gallery item ${index}`}
                         width={400}
                         height={400}
@@ -591,15 +595,15 @@ export default function UserProfile() {
                 <GalleryModal
                     closeModal={closeModal}
                     image={selectedImage}
-                    openPostModal={openPostModal}  // Pass openPostModal function
+                    openCommunityModal={openCommunityModal}  // Pass openCommunityModal function
                 />
             )}
 
-            {/* Post Modal */}
-            {showPostModal && (
+            {/* Community Modal */}
+            {showCommunityModal && (
                 <Modal
-                    closeModal={closePostModal}
-                    add_pin={() => {}}
+                    closeModal={closeCommunityModal}
+                    add_community={() => {}}
                     selectedImage={selectedImage}
                     createdBy={user?.displayName}
                 />

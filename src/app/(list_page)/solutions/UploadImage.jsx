@@ -46,6 +46,8 @@ function UploadImage() {
                 userID: userID,  // Reference to the user who uploaded the image
                 img_data: downloadURL,  // Image URL
                 createdAt: new Date(),  // Timestamp
+                prompt: '',
+                communityPost: false // Whether this image has been posted to community page
             });
     
             console.log('Image uploaded successfully, document created with ID:', imageRef.id);
