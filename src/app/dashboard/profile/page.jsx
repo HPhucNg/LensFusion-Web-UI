@@ -472,8 +472,8 @@ export default function UserProfile() {
               <p className="text-gray-400 text-lg mb-4">
                 {user?.email || "No email provided"}
               </p>
-              <div className="w-full justify-start text-center py-3 border-2 border-white bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-8 mb-6">
-                <h3 className="text- font-semibold text-white truncate">
+              <div className="w-full justify-start text-center py-3 border-2 border-purple-400 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-8 mb-6">
+                <h3 className="text- font-semibold truncate">
                   Credits: {tokens}
                 </h3>
               </div>

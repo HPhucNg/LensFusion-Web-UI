@@ -131,7 +131,7 @@ function ViewModal({ closeModal, image }) {
     };
     return (
         <div className='add_pin_modal'>
-            <div className='add_pin_container'>
+            <div className='add_pin_container_view'>
                 <div className="side" id="left_side">
                     <div className="topsection">
                         <div className="post_to">Viewing Image</div>

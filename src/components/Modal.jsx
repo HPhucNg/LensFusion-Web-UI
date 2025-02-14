@@ -56,6 +56,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                     title: users_data.title,
                     description: users_data.description,
                     img_data: users_data.img_data,
+                    userImageId: selectedImage.uid,
                     createdAt: new Date(), // Timestamp
                     userId: auth.currentUser?.uid,  // Add the user ID here
                 });
@@ -120,7 +121,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                     </div>
 
                     <div className="midsection">
-                        <div className='text-2xl'>Title</div>
+                        <div className='text-3xl'>Title</div>
                         <input
                             placeholder="Add your Title"
                             type="text"
@@ -129,7 +130,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                             value={pinDetails.title}
                             onChange={(e) => setPinDetails({ ...pinDetails, title: e.target.value })}
                         />
-                        <div className='text-2xl'>Description</div>
+                        <div className='text-3xl'>Description</div>
                         <input
                             placeholder="Caption your image"
                             type="text"
@@ -139,7 +140,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                             onChange={(e) => setPinDetails({ ...pinDetails, description: e.target.value })}
                         />
 
-                        Created By: {pinDetails.created_by}
+                        <div className='text-xl'>Created By: {pinDetails.created_by}</div>
                     </div>
 
                     <div className="bottomsection">
