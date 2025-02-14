@@ -9,7 +9,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
     const [pinDetails, setPinDetails] = useState({
         created_by: createdBy,
         title: '',
-        description: '',
+        prompt: selectedImage.prompt,
         img_data: selectedImage.img_data,
     });
     
@@ -30,7 +30,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                     setPinDetails({
                         created_by: createdBy,
                         title: communityPostData.title || '',
-                        description: communityPostData.description || '',
+                        prompt: communityPostData.prompt || '',
                         img_data: selectedImage.img_data, // Keep the selected image data
                     });
                     setIsEditing(true); // Set to editing mode
@@ -45,7 +45,6 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
         const users_data = {
             ...pinDetails,
             title: document.querySelector('#community_title').value,
-            description: document.querySelector('#community_description').value,
         };
 
         try {
@@ -54,7 +53,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                 const communityRef = await addDoc(collection(db, 'community'), {
                     created_by: users_data.created_by,
                     title: users_data.title,
-                    description: users_data.description,
+                    prompt: users_data.prompt,
                     img_data: users_data.img_data,
                     userImageId: selectedImage.uid,
                     createdAt: new Date(), // Timestamp
@@ -76,8 +75,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                 // If communityPost is true, update the existing post
                 const communityPostRef = doc(db, 'community', selectedImage.communityPostId); // Reference to the post
                 await updateDoc(communityPostRef, {
-                    title: users_data.title,
-                    description: users_data.description,
+                    title: users_data.title
                 });
 
                 console.log('Community Post updated with ID: ', selectedImage.communityPostId);
@@ -115,7 +113,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
 
                 <div className="side" id="right_side">
                     <div className="topsection">
-                        <div onClick={closeModal} className="icon_close">
+                        <div onClick={closeModal} className="w-10">
                             <img src="/Vector.png" alt="close_pin" />
                         </div>
                     </div>
@@ -123,24 +121,17 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                     <div className="midsection">
                         <div className='text-3xl'>Title</div>
                         <input
-                            placeholder="Add your Title"
+                            placeholder="Add your Title Here"
                             type="text"
-                            className="new_pin_input"
+                            className="new_pin_input placeholder-gray-500"
                             id="community_title"
                             value={pinDetails.title}
                             onChange={(e) => setPinDetails({ ...pinDetails, title: e.target.value })}
                         />
-                        <div className='text-3xl'>Description</div>
-                        <input
-                            placeholder="Caption your image"
-                            type="text"
-                            className="new_pin_input"
-                            id="community_description"
-                            value={pinDetails.description}
-                            onChange={(e) => setPinDetails({ ...pinDetails, description: e.target.value })}
-                        />
-
-                        <div className='text-xl'>Created By: {pinDetails.created_by}</div>
+                        <div className='text-3xl mb-2'>Prompt</div>
+                        <div className='mb-4'>{pinDetails.prompt}</div>
+                          
+                        <div className='text-xl overflow-hidden'>Created By: {pinDetails.created_by}</div>
                     </div>
 
                     <div className="bottomsection">

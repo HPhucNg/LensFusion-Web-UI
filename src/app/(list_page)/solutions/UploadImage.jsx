@@ -46,7 +46,7 @@ function UploadImage() {
                 userID: userID,  // Reference to the user who uploaded the image
                 img_data: downloadURL,  // Image URL
                 createdAt: new Date(),  // Timestamp
-                prompt: '',
+                prompt: 'This will be the prompt that generated the AI image.',
                 communityPost: false // Whether this image has been posted to community page
             });
     

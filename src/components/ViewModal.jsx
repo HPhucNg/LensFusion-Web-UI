@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, getDoc, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '@/firebase/FirebaseConfig';
 import '../styles/modal_styles.css';
 
@@ -9,10 +9,51 @@ function ViewModal({ closeModal, image }) {
     const [userName, setUserName] = useState('');
     const [editingCommentId, setEditingCommentId] = useState(null);  // Track comment being edited
     const [editedCommentText, setEditedCommentText] = useState('');
+    const [userProfileImage, setUserProfileImage] = useState(null);
 
     const user = auth.currentUser;
 
     const formattedDate = new Date(image.createdAt.seconds * 1000).toLocaleString();
+
+    useEffect(() => {
+        const fetchUserProfileImage = async () => {
+            try {
+                // Fetch community document to get the userId
+                const communityRef = doc(db, 'community', image.id); // Community document ID
+                const communityDoc = await getDoc(communityRef);
+                if (!communityDoc.exists()) {
+                    console.error("Community document not found.");
+                    return;
+                }
+    
+                const communityData = communityDoc.data();
+                const userId = communityData?.userId;  // This is the userId (not a reference, just the ID string)
+                if (!userId) {
+                    console.error("userId is not found in the community document.");
+                    return;
+                }
+    
+                // Query the users collection using the userId
+                const userRef = doc(db, 'users', userId);  // Reference the user document by userId
+                const userDoc = await getDoc(userRef);
+    
+                if (userDoc.exists()) {
+                    // Set the photoURL of the user
+                    setUserProfileImage(userDoc.data().photoURL);
+                } else {
+                    console.error("User document not found.");
+                }
+            } catch (error) {
+                console.error("Error fetching user photoURL:", error);
+            }
+        };
+    
+        if (image) {
+            fetchUserProfileImage();
+        }
+    }, [image]);  // Re-run when `image` changes
+    
+    
 
     useEffect(() => {
         if (user) {
@@ -133,24 +174,30 @@ function ViewModal({ closeModal, image }) {
     };
     return (
         <div className='flex w-full h-full fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[99999] bg-black/50'>
-            <div className='flex w-[calc(100%-70px)] h-[calc(100%-30px)] fixed top-1/2 left-1/2 transform -translate-x-[calc(50%+20px)] -translate-y-1/2 flex bg-[var(--modal-background)] backdrop-blur-lg rounded-xl border-2 border-transparent overflow-hidden text-white'>
-                <div className='mt-2 ml-2 mb-2 w-1/2'>
+            <div className='flex w-[calc(100%-70px)] h-[calc(100%-30px)] fixed top-1/2 left-1/2 transform -translate-x-[calc(50%+20px)] -translate-y-1/2 flex backdrop-blur-lg rounded-xl overflow-hidden text-white' style={{ background: 'var(--modal-background)' }}>
+                <div className='mt-4 ml-2 mb-2 w-1/2'>
                     {image ? (
-                        <img src={image.img_data} alt="Selected" className="object-cover w-full h-full rounded-xl" />
+                        <img src={image.img_data} alt="Selected" className="object-cover w-full h-[calc(100%-40px)] rounded-xl" />
                         ) : (
                         <p>No image selected</p>
                     )}
                 </div>
                 <div className='w-1/3 ml-20'>
-                    <div className='mt-2 mb-2'>
-                        Created by: {image.created_by}
+                    <div className='mt-4 mb-4 flex items-center'>
+                        {userProfileImage ? (
+                            <img src={userProfileImage} alt="User Photo" className="w-8 h-8 rounded-full mr-2" />
+                        ) : (
+                            <div className="w-8 h-8 bg-gray-500 rounded-full mr-2"></div>  // Fallback if no photo
+                        )}
+                        <span>{image.created_by}</span>
                     </div>
-                    <div className='mt-2'> {image.title} </div>
-                    <div className='mb-4'> {formattedDate} </div>
+
+                    <div className='mt-4 font-bold'> {image.title} </div>
+                    <div className='mb-4 text-gray-400 text-sm'> {formattedDate} </div>
                     
-                    <div className='mt-2 h-32 mr-3 bg-[var(--card-background)] backdrop-blur-lg rounded-xl'>
-                        <div className='prompt-description text-black'>
-                            Prompt Description <p>{image.description}</p>
+                    <div className='mt-2 h-32 mr-3 bg-[var(--card-background)] p-3 rounded-xl'>
+                        <div className='text-gray-400 text-sm pb-2'>
+                            Prompt Description <p className='text-gray-500 text-base pt-2'>{image.prompt}</p>
                         </div>
                     </div>
                     <div className="comments-section">
@@ -164,7 +211,7 @@ function ViewModal({ closeModal, image }) {
                                             <textarea
                                                 value={editedCommentText}
                                                 onChange={handleEditChange}
-                                                rows="3"
+                                                rows="2"
                                             />
                                             <button onClick={(e) => handleSaveEdit(e, comment.id)}>
                                                 Save

@@ -55,6 +55,7 @@ function GalleryModal({ closeModal, image, openCommunityModal }) {  // Accept th
                 console.log("Deleting image from user_images...");
                 deleteImageFromUserImages(image.id);
                 alert("Image deleted.");
+                closeModal();
             } else {
                 console.log("Deletion canceled.");
             }
@@ -89,7 +90,7 @@ function GalleryModal({ closeModal, image, openCommunityModal }) {  // Accept th
 
                 <div className="side" id="right_side">
                     <div className="topsection">
-                        <div onClick={closeModal} className="icon_close">
+                        <div onClick={closeModal} className="w-10">
                             <img src="/Vector.png" alt="close_pin" />
                         </div>
                     </div>
