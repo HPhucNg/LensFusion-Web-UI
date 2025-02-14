@@ -8,6 +8,9 @@ import Footer from '@/components/Footer'
 import { auth } from '@/firebase/FirebaseConfig'
 import { useRouter } from 'next/navigation'
 import { useSubscription } from '@/context/subscriptionContext'
+import { createCreditCheckout } from '../../../../../stripe/createCheckoutSession'
+
+//this page handles the credit payments
 
 function Credits() {
   const [tokens, setTokens] = useState(300)
@@ -26,9 +29,24 @@ function Credits() {
     return () => unsubscribe()
   }, [])
 
+  //shadcn component (slider) - updates the token amount
   const handleSliderChange = (value) => {
     setTokens(value[0])
   }
+
+  // handles purchasing the credits
+  const handlePurchase = async () => {
+    try {
+      if (tokens === 0) {
+        alert('Select valid number of credits');
+        return;
+      }
+      await createCreditCheckout(tokens, pricePerToken);
+    } catch (error) {
+      console.error('Purchase failed:', error);
+      alert('Unable to process purchase. Please try again');
+    }
+  };
 
   //show card that prompts user to log in before purchasing credits
   if (!loading && !user) {
@@ -113,9 +131,8 @@ function Credits() {
           </CardContent>
 
           <CardFooter>
-            <Button className="w-full" disabled={tokens === 0}>
+            <Button className="w-full" disabled={tokens === 0} onClick={handlePurchase}>
               Purchase {tokens} tokens for ${(tokens * pricePerToken).toFixed(2)}
-              {/* will add purchase implementation later */}
             </Button>
           </CardFooter>
         </Card>
