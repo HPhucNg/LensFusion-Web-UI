@@ -26,23 +26,6 @@
     backdrop-filter: var(--modal-backdrop);
 }
 
-.add_pin_container_view{
-    width: 95%;
-    height: 90%;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 99999;
-    display: flex;
-    overflow: hidden;
-    color: white;
-    border: solid 2px transparent;
-    border-radius: 25px;
-    background: var(--modal-background);
-    backdrop-filter: var(--modal-backdrop);
-}
-
 .side {
     width: 50%;
     height: 1005;
@@ -100,7 +83,7 @@
 
 
 .icon_close {
-    width: 10%;
+    width: 5%;
 }
 
 .icon_close:hover{

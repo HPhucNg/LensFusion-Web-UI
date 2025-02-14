@@ -12,6 +12,8 @@ function ViewModal({ closeModal, image }) {
 
     const user = auth.currentUser;
 
+    const formattedDate = new Date(image.createdAt.seconds * 1000).toLocaleString();
+
     useEffect(() => {
         if (user) {
             setUserName(user.displayName || user.email || 'Anonymous');
@@ -130,35 +132,28 @@ function ViewModal({ closeModal, image }) {
         }
     };
     return (
-        <div className='add_pin_modal'>
-            <div className='add_pin_container_view'>
-                <div className="side" id="left_side">
-                    <div className="topsection">
-                        <div className="post_to">Viewing Image</div>
-                    </div>
-
-                    <div className="midsection">
-                        {image ? (
-                            <img src={image.img_data} alt="Selected" className="object-cover w-full h-full rounded-xl" />
+        <div className='flex w-full h-full fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[99999] bg-black/50'>
+            <div className='flex w-[calc(100%-70px)] h-[calc(100%-30px)] fixed top-1/2 left-1/2 transform -translate-x-[calc(50%+20px)] -translate-y-1/2 flex bg-[var(--modal-background)] backdrop-blur-lg rounded-xl border-2 border-transparent overflow-hidden text-white'>
+                <div className='mt-2 ml-2 mb-2 w-1/2'>
+                    {image ? (
+                        <img src={image.img_data} alt="Selected" className="object-cover w-full h-full rounded-xl" />
                         ) : (
-                            <p>No image selected</p>
-                        )}
-                    </div>
+                        <p>No image selected</p>
+                    )}
                 </div>
-
-                <div className="side" id="right_side">
-                    <div className="topsection">
-                        <div onClick={closeModal} className="icon_close">
-                            <img src="/Vector.png" alt="close_pin" />
+                <div className='w-1/3 ml-20'>
+                    <div className='mt-2 mb-2'>
+                        Created by: {image.created_by}
+                    </div>
+                    <div className='mt-2'> {image.title} </div>
+                    <div className='mb-4'> {formattedDate} </div>
+                    
+                    <div className='mt-2 h-32 mr-3 bg-[var(--card-background)] backdrop-blur-lg rounded-xl'>
+                        <div className='prompt-description text-black'>
+                            Prompt Description <p>{image.description}</p>
                         </div>
                     </div>
-
-                    <div className="midsection mt-9 md:ml-4">
-                        <div>Title: {image.title}</div>
-                        <div>Description: {image.description}</div>
-                        <div>Created By: {image.created_by}</div>
-
-                        <div className="comments-section">
+                    <div className="comments-section">
                             <h3>Comments:</h3>
                             <div className="comments-list">
                                 {comments.map((comment) => (
@@ -193,7 +188,6 @@ function ViewModal({ closeModal, image }) {
                                 
                                 ))}
                             </div>
-
                             <form onSubmit={handleCommentSubmit} className="comment-form">
                                 <textarea
                                     value={newComment}
@@ -204,9 +198,16 @@ function ViewModal({ closeModal, image }) {
                                 <button type="submit" className="submit-comment-btn">Post Comment</button>
                             </form>
                         </div>
-                    </div>
+                    
+
+
                 </div>
             </div>
+            <div onClick={closeModal} className="icon_close absolute right-0 top-0 p-2">
+                <img src="/Vector.png" alt="close_pin" />
+            </div>
+                
+            
         </div>
     );
 }
