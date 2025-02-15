@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, getDocs, getDoc, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, setDoc, getDoc, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '@/firebase/FirebaseConfig';
 import '../styles/modal_styles.css';
 
@@ -10,6 +10,8 @@ function ViewModal({ closeModal, image }) {
     const [editingCommentId, setEditingCommentId] = useState(null);  // Track comment being edited
     const [editedCommentText, setEditedCommentText] = useState('');
     const [userProfileImage, setUserProfileImage] = useState(null);
+    const [likes, setLikes] = useState([]);
+    const [hasLiked, setHasLiked] = useState(false);
 
     const user = auth.currentUser;
 
@@ -84,6 +86,64 @@ function ViewModal({ closeModal, image }) {
             fetchComments();
         }
     }, [image]);
+
+    useEffect(() => {
+        const fetchLikes = async () => {
+            try {
+                console.log(image.id)
+                const likesRef = collection(db, 'community', image.id, 'likes');
+                const querySnapshot = await getDocs(likesRef);
+                const fetchedLikes = querySnapshot.docs.map(doc => doc.id);
+                setLikes(fetchedLikes);
+
+                // Check if the current user has liked the image
+                if (fetchedLikes.includes(user?.uid)) {
+                    setHasLiked(true);
+                } else {
+                    setHasLiked(false);
+                }
+            } catch (e) {
+                console.error("Error fetching likes: ", e);
+            }
+        };
+
+        if (image && user) {
+            fetchLikes();
+        }
+    }, [image, user]);
+
+    const handleLikeToggle = async () => {
+        try {
+            const likesRef = doc(db, 'community', image.id, 'likes', user.uid);
+
+            if (hasLiked) {
+                // Remove like
+                await deleteDocFromLikes(likesRef);
+                setLikes((prevLikes) => prevLikes.filter((id) => id !== user.uid));
+                setHasLiked(false);
+            } else {
+               // Add like
+                await setDoc(likesRef, { userId: user.uid });
+                setLikes((prevLikes) => [...prevLikes, user.uid]);
+                setHasLiked(true);
+            }
+        } catch (e) {
+            console.error("Error toggling like: ", e);
+        }
+    };
+
+    const deleteDocFromLikes = async (imageId, userId) => {
+        try {
+            // Reference to the like document in the 'likes' subcollection
+            const likeRef = doc(db, 'community', imageId, 'likes', userId);
+    
+            // Delete the like document
+            await deleteDoc(likeRef);
+            console.log(`Like by user ${userId} deleted successfully.`);
+        } catch (error) {
+            console.error("Error deleting like:", error);
+        }
+    };
 
     const handleCommentChange = (e) => {
         setNewComment(e.target.value);
@@ -242,9 +302,16 @@ function ViewModal({ closeModal, image }) {
                                     placeholder="Add a comment..."
                                     rows="3"
                                 />
-                                <button type="submit" className="submit-comment-btn">Post Comment</button>
+                                
+                                <div className="buttons-container">
+                                    <button type="submit" className="submit-comment-btn">Post Comment</button>
+                                    <button onClick={handleLikeToggle} className={`like-btn ${hasLiked ? 'liked' : ''}`}>
+                                        ♡ {likes.length}
+                                    </button>
+                                </div>
                             </form>
-                        </div>
+                        
+                    </div>
                     
 
 
