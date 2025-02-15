@@ -1,19 +1,15 @@
-//** @type {import('next').NextConfig} */
-/*const nextConfig = {
-    images: {
-      domains: ['picsum.photos', 
-        'pebblely.com', 
-        'i.pinimg.com', 
-        'firebasestorage.googleapis.com'// Add Firebase Storage domain
-      ], // Allow picsum.photos as a valid image domain
-    },
-  };
-  
-  export default nextConfig;*/
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    domains: ['picsum.photos', 'pebblely.com', 'i.pinimg.com','firebasestorage.googleapis.com', 'api.remove.bg'], // Allow picsum.photos as a valid image domain
+  },
+};
+
+export default nextConfig;
 
 /* ⚠ The "images.domains" configuration is deprecated. Please use "images.remotePatterns" configuration instead.*/
 
-  /** @type {import('next').NextConfig} */
+  /** @type {import('next').NextConfig} 
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -38,5 +34,5 @@ const nextConfig = {
 };
 
 export default nextConfig;
-
+*/
   
