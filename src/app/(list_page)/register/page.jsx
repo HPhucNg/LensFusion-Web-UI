@@ -13,27 +13,29 @@ export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = React.useState('');
 
+  // Handles Google sign-up process
   const handleGoogleSignUp = async () => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
-        router.push('/profile');
+        router.push('/profile'); // Redirects to profile page on success
       }
     } catch (error) {
-      setError(error.message);
+      setError(error.message); // Stores error message in state
     }
   };
 
+  // Handles GitHub sign-up process
   const handleGithubSignUp = async () => {
     try {
       const provider = new GithubAuthProvider();
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
-        router.push('/profile');
+        router.push('/profile'); // Redirects to profile page on success
       }
     } catch (error) {
-      setError(error.message);
+      setError(error.message); // Stores error message in state
     }
   };
 
@@ -67,7 +69,7 @@ export default function RegisterPage() {
             </Button>
 
             {error && (
-              <p className="text-red-500 text-sm mt-2">{error}</p>
+              <p className="text-red-500 text-sm mt-2">{error}</p> // Displays error message if sign-up fails
             )}
           </div>
         </div>
