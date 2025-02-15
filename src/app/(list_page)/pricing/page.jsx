@@ -111,7 +111,7 @@ function PricingPage() {
           <div
             key={plan.title}
             className={`rounded-lg p-6 shadow-lg w-full sm:w-80 md:w-72 lg:w-64 h-full flex flex-col justify-center items-center text-center border-2  ${
-              index === 1 ? 'bg-white text-black border-4 border-double border-purple-600' : 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white'
+              index === 1 ? 'bg-white text-black border-4 border-double border-purple-600' : 'bg-[var(--card-background)]'
             }`}
           >
             <h3 className="text-l font-bold mb-1">{plan.title}</h3>
