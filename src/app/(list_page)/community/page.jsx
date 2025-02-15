@@ -18,14 +18,14 @@ function Page() {
     // Fetch community posts from the correct Firestore collection
     const fetchPosts = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'pins'));
+        const querySnapshot = await getDocs(collection(db, 'community'));
         const postsArray = [];
         querySnapshot.forEach((doc) => {
           postsArray.push({ id: doc.id, ...doc.data() });
         });
         setPosts(postsArray);  // Set posts to state
       } catch (e) {
-        console.error("Error fetching posts: ", e);
+        console.error("Error fetching community posts: ", e);
       } finally {
         setLoading(false);  // Set loading to false after fetching
       }

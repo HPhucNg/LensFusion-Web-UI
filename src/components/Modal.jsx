@@ -1,53 +1,98 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/modal_styles.css';
 import { auth, db } from '@/firebase/FirebaseConfig'; // Firebase config import
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 
-
-function Modal({ closeModal, add_pin, selectedImage, createdBy }) {
+function Modal({ closeModal, add_community, selectedImage, createdBy }) {
     const [pinDetails, setPinDetails] = useState({
         created_by: createdBy,
         title: '',
-        description: '',
-        img_data: selectedImage,
+        prompt: selectedImage.prompt,
+        img_data: selectedImage.img_data,
     });
+    
+    const [isEditing, setIsEditing] = useState(false); // Track if user is editing an existing post
 
-    const save_pin = async () => {
+    // Check if the post is being managed or new (based on communityPost flag)
+    const headingText = selectedImage.communityPost ? "Manage Post to Community" : "Post to Community";
+
+    // Fetch post data if communityPost is true
+    useEffect(() => {
+        const fetchCommunityPost = async () => {
+            if (selectedImage.communityPost) {
+                const communityPostRef = doc(db, 'community', selectedImage.communityPostId);
+                const communityPostDoc = await getDoc(communityPostRef);
+                
+                if (communityPostDoc.exists()) {
+                    const communityPostData = communityPostDoc.data();
+                    setPinDetails({
+                        created_by: createdBy,
+                        title: communityPostData.title || '',
+                        prompt: communityPostData.prompt || '',
+                        img_data: selectedImage.img_data, // Keep the selected image data
+                    });
+                    setIsEditing(true); // Set to editing mode
+                }
+            }
+        };
+
+        fetchCommunityPost();
+    }, [selectedImage, createdBy]);
+
+    const save_community = async () => {
         const users_data = {
             ...pinDetails,
-            title: document.querySelector('#pin_title').value,
-            description: document.querySelector('#pin_description').value,
+            title: document.querySelector('#community_title').value,
         };
-    
+
         try {
-            // Add the pin data to Firestore
-            const pinRef = await addDoc(collection(db, 'pins'), {
-                created_by: users_data.created_by,
-                title: users_data.title,
-                description: users_data.description,
-                img_data: users_data.img_data,
-                createdAt: new Date(), // Timestamp
-                userId: auth.currentUser?.uid  // Add the user ID here
-            });
-    
-            console.log('Pin saved with ID: ', pinRef.id);
-            add_pin(users_data); // Pass the final pin data to the parent component
-            closeModal(); // Close the modal after saving the pin
+            // If communityPost is false, save as a new post
+            if (!selectedImage.communityPost) {
+                const communityRef = await addDoc(collection(db, 'community'), {
+                    created_by: users_data.created_by,
+                    title: users_data.title,
+                    prompt: users_data.prompt,
+                    img_data: users_data.img_data,
+                    userImageId: selectedImage.uid,
+                    createdAt: new Date(), // Timestamp
+                    userId: auth.currentUser?.uid,  // Add the user ID here
+                });
+
+                console.log('Community Post saved with ID: ', communityRef.id);
+
+                // Update the user's image document to set communityPost to true
+                const userImageRef = doc(db, 'user_images', selectedImage.uid);
+                await updateDoc(userImageRef, {
+                    communityPost: true,  // Set communityPost to true
+                    communityPostId: communityRef.id, // Store the community post ID for reference
+                });
+
+                add_community(users_data); // Pass the final pin data to the parent component
+                closeModal(); // Close the modal after saving the pin
+            } else {
+                // If communityPost is true, update the existing post
+                const communityPostRef = doc(db, 'community', selectedImage.communityPostId); // Reference to the post
+                await updateDoc(communityPostRef, {
+                    title: users_data.title
+                });
+
+                console.log('Community Post updated with ID: ', selectedImage.communityPostId);
+                add_community(users_data); // Pass the updated pin data to the parent component
+                closeModal(); // Close the modal after updating the pin
+            }
         } catch (e) {
-            console.error('Error adding document: ', e);
+            console.error('Error adding/updating document: ', e);
         }
     };
-    
-    
 
     return (
         <div className="add_pin_modal">
             <div className="add_pin_container">
                 <div className="side" id="left_side">
                     <div className="topsection">
-                        <div className="post_to">Post to Community</div>
+                        <div className="post_to">{headingText}</div>
                     </div>
 
                     <div className="midsection">
@@ -68,36 +113,33 @@ function Modal({ closeModal, add_pin, selectedImage, createdBy }) {
 
                 <div className="side" id="right_side">
                     <div className="topsection">
-                        <div onClick={closeModal} className="icon_close">
+                        <div onClick={closeModal} className="w-10">
                             <img src="/Vector.png" alt="close_pin" />
                         </div>
                     </div>
 
                     <div className="midsection">
-                        <div className='text-2xl'>Title</div>
+                        <div className='text-3xl'>Title</div>
                         <input
-                            placeholder="Add your Title"
+                            placeholder="Add your Title Here"
                             type="text"
-                            className="new_pin_input"
-                            id="pin_title"
+                            className="new_pin_input placeholder-gray-500"
+                            id="community_title"
+                            value={pinDetails.title}
+                            onChange={(e) => setPinDetails({ ...pinDetails, title: e.target.value })}
                         />
-                        <div className='text-2xl'>Description</div>
-                        <input
-                            placeholder="Caption your image"
-                            type="text"
-                            className="new_pin_input"
-                            id="pin_description"
-                        />
-
-                        Created By: {pinDetails.created_by}
+                        <div className='text-3xl mb-2'>Prompt</div>
+                        <div className='mb-4'>{pinDetails.prompt}</div>
+                          
+                        <div className='text-xl overflow-hidden'>Created By: {pinDetails.created_by}</div>
                     </div>
 
                     <div className="bottomsection">
                         <div
-                            onClick={save_pin}  // Calls the save_pin function
+                            onClick={save_community}  // Calls the save_pin function
                             className="publish_pin"
                         >
-                            Publish
+                            {isEditing ? 'Update' : 'Publish'}
                         </div>
                     </div>
                 </div>
@@ -107,3 +149,4 @@ function Modal({ closeModal, add_pin, selectedImage, createdBy }) {
 }
 
 export default Modal;
+
