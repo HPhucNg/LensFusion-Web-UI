@@ -206,8 +206,12 @@
     transform: scale(1.1);  /* Slightly scales up */
 }
 
-.like-btn .liked {
+.liked {
     background-color: rgb(240, 150, 204);
+}
+
+.liked:hover {
+    background-color: rgb(220, 120, 180);  /* Optional hover effect for liked state */
 }
 
 /* Container for the buttons */

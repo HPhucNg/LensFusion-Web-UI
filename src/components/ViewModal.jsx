@@ -90,12 +90,16 @@ function ViewModal({ closeModal, image }) {
     useEffect(() => {
         const fetchLikes = async () => {
             try {
-                console.log(image.id)
+                console.log(image.id);
                 const likesRef = collection(db, 'community', image.id, 'likes');
                 const querySnapshot = await getDocs(likesRef);
+                
+                // Ensure likes is always an array
                 const fetchedLikes = querySnapshot.docs.map(doc => doc.id);
+    
+                // Always ensure likes is an array
                 setLikes(fetchedLikes);
-
+    
                 // Check if the current user has liked the image
                 if (fetchedLikes.includes(user?.uid)) {
                     setHasLiked(true);
@@ -106,37 +110,39 @@ function ViewModal({ closeModal, image }) {
                 console.error("Error fetching likes: ", e);
             }
         };
-
+    
         if (image && user) {
             fetchLikes();
         }
     }, [image, user]);
+    
 
     const handleLikeToggle = async () => {
         try {
             const likesRef = doc(db, 'community', image.id, 'likes', user.uid);
-
+    
             if (hasLiked) {
                 // Remove like
-                await deleteDocFromLikes(likesRef);
-                setLikes((prevLikes) => prevLikes.filter((id) => id !== user.uid));
+                await deleteDocFromLikes(image.id, user.uid);  // Pass both parameters
+                setLikes((prevLikes) => prevLikes.filter((id) => id !== user.uid)); // Update likes correctly
                 setHasLiked(false);
             } else {
-               // Add like
+                // Add like
                 await setDoc(likesRef, { userId: user.uid });
-                setLikes((prevLikes) => [...prevLikes, user.uid]);
+                setLikes((prevLikes) => [...prevLikes, user.uid]); // Add new like to array
                 setHasLiked(true);
             }
         } catch (e) {
             console.error("Error toggling like: ", e);
         }
     };
-
+    
+    
     const deleteDocFromLikes = async (imageId, userId) => {
         try {
             // Reference to the like document in the 'likes' subcollection
             const likeRef = doc(db, 'community', imageId, 'likes', userId);
-    
+        
             // Delete the like document
             await deleteDoc(likeRef);
             console.log(`Like by user ${userId} deleted successfully.`);
@@ -144,6 +150,7 @@ function ViewModal({ closeModal, image }) {
             console.error("Error deleting like:", error);
         }
     };
+    
 
     const handleCommentChange = (e) => {
         setNewComment(e.target.value);
