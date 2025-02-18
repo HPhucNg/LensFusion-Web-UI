@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { processImage } from '@/lib/huggingface/client';
 import { defaultParams, parameterDefinitions } from '@/lib/huggingface/clientConfig';
+import { saveAs } from 'file-saver';
 
 export default function ImageProcessor() {
   // State management for the component
@@ -336,14 +337,7 @@ export default function ImageProcessor() {
                     />
                     <div className="p-4 bg-gray-900/30">
                       <button
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = outputImage; // URL of the image
-                          link.download = 'generated-image.png'; // Default filename
-                          document.body.appendChild(link); // Append to body
-                          link.click(); // Trigger the download
-                          document.body.removeChild(link); // Clean up
-                        }}
+                        onClick={() => saveAs(outputImage, 'generated-image.png')}
                         className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 
                                   text-white rounded-lg transition-colors"
                       >
