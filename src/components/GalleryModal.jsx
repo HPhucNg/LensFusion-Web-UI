@@ -1,6 +1,7 @@
 'use client'
 import React, { useState } from 'react';
 import '../styles/modal_styles.css';
+import Image from 'next/image';  // Import Image component from next/image
 import { getFirestore, collection, doc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/FirebaseConfig';
 
@@ -74,12 +75,20 @@ function GalleryModal({ closeModal, image, openCommunityModal }) {  // Accept th
                 
                     <div className="midsection">
                         <div>
-                                {/* Render the selected image */}
-                                {image ? (
-                                    <img src={image.img_data} alt="Selected" className="object-cover w-full max-h-[calc(100%-50px) rounded-xl" />
-                                ) : (
-                                    <p>No image selected</p>
-                                )}
+                            {/* Render the selected image using Next.js Image component */}
+                            {image ? (
+                                <div className='image-container'>  
+                                    <Image 
+                                        src={image.img_data}  // Image URL
+                                        alt="Selected"  // Image alt text
+                                        width={800}  // Specify the width
+                                        height={800}  // Specify the height
+                                        className="object-cover w-full h-full rounded-xl"  // Optional class for styling
+                                    />
+                                </div>
+                            ) : (
+                                <p>No image selected</p>
+                            )}
                         </div>
 
                         <div className="modals_pin" style={{ display: showModalPin ? 'block' : 'none' }}>

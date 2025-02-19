@@ -221,3 +221,17 @@
     align-items: center; /* Vertically align the buttons */
     margin-top: 10px; /* Optional: space above the buttons */
 }
+
+.image-container {
+    width: 300px; /* Fixed width for all images */
+    height: 300px; /* Fixed height for all images */
+    overflow: hidden; /* Ensure images are clipped if they exceed the container size */
+}
+
+.object-cover {
+    object-fit: cover; /* Ensures that the image covers the entire container */
+}
+
+.object-contain {
+    object-fit: contain; /* Ensures the entire image fits within the container without cropping */
+}

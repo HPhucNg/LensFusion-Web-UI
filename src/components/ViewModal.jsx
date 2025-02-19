@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, setDoc, getDoc, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '@/firebase/FirebaseConfig';
 import '../styles/modal_styles.css';
+import Image from 'next/image';  // Import Image component from next/image
+
 
 function ViewModal({ closeModal, image }) {
     const [comments, setComments] = useState([]);
@@ -244,7 +246,15 @@ function ViewModal({ closeModal, image }) {
             <div className='flex w-[calc(100%-70px)] h-[calc(100%-30px)] fixed top-1/2 left-1/2 transform -translate-x-[calc(50%+20px)] -translate-y-1/2 flex backdrop-blur-lg rounded-xl overflow-hidden text-white' style={{ background: 'var(--modal-background)' }}>
                 <div className='mt-4 ml-2 mb-2 w-1/2'>
                     {image ? (
-                        <img src={image.img_data} alt="Selected" className="object-cover w-full h-[calc(100%-40px)] rounded-xl" />
+                        <div className='w-full h-full'>  
+                            <Image 
+                                src={image.img_data}  // Image URL
+                                alt="Selected"  // Image alt text
+                                width={800}  // Specify the width
+                                height={800}  // Specify the height
+                                className="object-cover w-full h-full rounded-xl"  // Optional class for styling
+                                />
+                        </div>
                         ) : (
                         <p>No image selected</p>
                     )}

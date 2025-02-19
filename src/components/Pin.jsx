@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';  // Import Image component from next/image
 import '../styles/pin_styles.css';
 
 function Pin({ pinDetails }) {
@@ -10,11 +11,16 @@ function Pin({ pinDetails }) {
     return (
         <div className={`card ${cardSizeClass}`}>
             <div className="pin_image">
-                <img src={pinDetails.img_data} alt={pinDetails.title} />
+                <Image 
+                    src={pinDetails.img_data}  // Image URL
+                    alt={pinDetails.title}  // Image alt text
+                    width={400}  // Specify the width
+                    height={400}  // Specify the height
+                    className="object-cover"  // Optional class for styling
+                />
             </div>
         </div>
     );
 }
 
 export default Pin;
-

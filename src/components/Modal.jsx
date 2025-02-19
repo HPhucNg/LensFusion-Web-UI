@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import '../styles/modal_styles.css';
+import Image from 'next/image';  // Import Image component from next/image
 import { auth, db } from '@/firebase/FirebaseConfig'; // Firebase config import
 import { collection, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+
 
 function Modal({ closeModal, add_community, selectedImage, createdBy }) {
     const [pinDetails, setPinDetails] = useState({
@@ -99,12 +101,14 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                         {/* Display the image passed from the GalleryModal */}
                         {pinDetails.img_data && (
                             <div className="upload_img_container">
-                                <div>
-                                    <img
-                                        src={pinDetails.img_data}
-                                        alt="Selected"
-                                        className="object-cover w-full h-full rounded-xl"
-                                    />
+                                <div className='image-container'>  
+                                    <Image 
+                                        src={pinDetails.img_data}  // Image URL
+                                        alt="Selected"  // Image alt text
+                                        width={800}  // Specify the width
+                                        height={800}  // Specify the height
+                                        className="object-cover w-full h-full rounded-xl"  // Optional class for styling
+                                        />
                                 </div>
                             </div>
                         )}
