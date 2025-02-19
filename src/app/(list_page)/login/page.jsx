@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 export default function LoginPage() {
   const router = useRouter();
 
+  // Handles Google sign-in process
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
@@ -24,6 +25,7 @@ export default function LoginPage() {
     }
   };
 
+  // Handles GitHub sign-in process
   const handleGithubLogin = async () => {
     try {
       const provider = new GithubAuthProvider();
@@ -43,6 +45,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md bg-[#0D161F] p-8 rounded-2xl shadow-2xl border border-gray-800">
           <h2 className="text-3xl font-bold text-center mb-8">Welcome Back</h2>
           <div className="space-y-4">
+            {/* Google Sign-In Button */}
             <Button
               variant="outline"
               onClick={handleGoogleLogin}
@@ -52,6 +55,7 @@ export default function LoginPage() {
               <span className="text-lg">Continue with Google</span>
             </Button>
             
+            {/* GitHub Sign-In Button */}
             <Button
               variant="outline"
               onClick={handleGithubLogin}
@@ -61,6 +65,7 @@ export default function LoginPage() {
               <span className="text-lg">Continue with GitHub</span>
             </Button>
 
+            {/* Divider */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-700"></div>
@@ -70,6 +75,7 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Sign-up Redirect */}
             <p className="text-center text-gray-400">
               Don't have an account?{" "}
               <button onClick={() => router.push('/register')} className="text-blue-500 hover:text-blue-400">
