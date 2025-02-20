@@ -117,7 +117,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
 
                 <div className="side" id="right_side">
                     <div className="topsection">
-                        <div onClick={closeModal} className="w-10">
+                        <div onClick={closeModal} className="w-10 transform hover:scale-90">
                             <img src="/Vector.png" alt="close_pin" />
                         </div>
                     </div>

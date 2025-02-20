@@ -296,7 +296,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
 // Main UserProfile Component
 export default function UserProfile() {
   const [user, setUser] = useState(null);
-  const [isloading, setLoading] = useState(true);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
   const [userImages, setUserImages] = useState([]); // State to store user images
   const [showModal, setShowModal] = useState(false);  // To control modal visibility
@@ -304,13 +303,6 @@ export default function UserProfile() {
   const [showCommunityModal, setShowCommunityModal] = useState(false); // For Community Modal
   const [theme, setTheme] = useState("dark");
 
-  // Check for saved theme in localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
 
   // Toggle theme function
   const toggleTheme = () => {
@@ -325,6 +317,11 @@ export default function UserProfile() {
   const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
 
   useEffect(() => {
+    // Check for saved theme
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);
     });
