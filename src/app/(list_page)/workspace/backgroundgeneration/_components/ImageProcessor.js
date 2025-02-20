@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { processImage } from '@/lib/huggingface/client';
 import { defaultParams, parameterDefinitions } from '@/lib/huggingface/clientConfig';
 import { saveAs } from 'file-saver';
+import Image from 'next/image';
 
 export default function ImageProcessor() {
   // State management for the component
@@ -108,6 +109,20 @@ export default function ImageProcessor() {
     }
   };
 
+  // Add this new function to clear the image
+  const clearImage = () => {
+    setInputPreview(null);
+    setOutputImage(null);
+    setPreprocessedImage(null);
+    setWebpImage(null);
+    setError(null);
+    setStatus("");
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
   // Renders different types of parameter inputs
   const renderParameter = (param) => {
     switch (param.type) {
@@ -149,16 +164,16 @@ export default function ImageProcessor() {
             </div>
           );
         }
-        // Regular text input
+        // Changed regular text input to textarea
         return (
-          <input
-            type="text"
+          <textarea
             id={param.id}
             placeholder={param.placeholder}
             className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
-                      focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
             value={params[param.id]}
             onChange={(e) => handleParamChange(param.id, e.target.value)}
+            rows={3}
           />
         );
       // Dropdown select input
@@ -186,63 +201,42 @@ export default function ImageProcessor() {
   // Component UI
   return (
     <div className="max-w-7xl mx-auto p-6 text-white">
-      <div className="flex flex-col md:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Column - Input Section */}
-        <div className="md:w-1/2 space-y-6">
+        <div className="lg:w-1/3 space-y-6">
           <div className="bg-gray-800/50 rounded-xl p-6 space-y-6">
-            <h2 className="text-2xl font-bold">Image Generation</h2>
+            <h2 className="text-2xl font-bold mb-4">Image Settings</h2>
 
-            {/* File Upload Section */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">
-                Reference Image
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                disabled={isProcessing}
-                className="block w-full text-sm text-white
-                          file:mr-4 file:py-2 file:px-4
-                          file:rounded-full file:border-0
-                          file:text-sm file:font-semibold
-                          file:bg-blue-600 file:text-white
-                          hover:file:bg-blue-700
-                          cursor-pointer"
-              />
-            </div>
-
-            {/* Parameters Section */}
-            <div className="space-y-4">
-              {/* Positive Prompt */}
+            {/* Prompts Section */}
+            <div className="space-y-6">
               <div className="space-y-2">
-                <label className="block text-sm font-medium">
-                  Positive Prompt
-                </label>
+                <label className="block text-sm font-medium">Positive Prompt</label>
                 <textarea
                   value={params.prompt}
                   onChange={(e) => handleParamChange('prompt', e.target.value)}
                   placeholder="Describe what you want to generate..."
-                  className="w-full h-48 p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
-                            focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
+                            focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                  rows={5}
                 />
               </div>
 
-              {/* Negative Prompt */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium">
-                  Negative Prompt
-                </label>
+                <label className="block text-sm font-medium">Negative Prompt</label>
                 <textarea
                   value={params.negativePrompt}
                   onChange={(e) => handleParamChange('negativePrompt', e.target.value)}
                   placeholder="Describe what you want to avoid..."
-                  className="w-full h-24 p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
-                            focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
+                            focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                  rows={2}
                 />
               </div>
+            </div>
 
-              {/* Image Size and Steps */}
+            {/* Advanced Settings */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Advanced Settings</h3>
               <div className="grid grid-cols-2 gap-4">
                 {parameterDefinitions.slice(2, 4).map(param => (
                   param.type === 'select' && (
@@ -262,9 +256,6 @@ export default function ImageProcessor() {
                   Seed
                 </label>
                 {renderParameter(parameterDefinitions.find(p => p.id === 'seed'))}
-                <p className="text-xs text-gray-400">
-                  Enter a number for consistent results or click the refresh icon for a random seed
-                </p>
               </div>
             </div>
 
@@ -274,30 +265,20 @@ export default function ImageProcessor() {
               disabled={isProcessing || !inputPreview}
               className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600
                         text-white font-semibold rounded-lg shadow-lg
-                        disabled:cursor-not-allowed transition-colors"
+                        disabled:cursor-not-allowed transition-colors mt-4"
             >
-              {isProcessing ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </span>
-              ) : (
-                'Generate Image'
-              )}
+              {isProcessing ? 'Generating...' : 'Generate Image'}
             </button>
 
             {/* Status and Error Messages */}
             {status && (
-              <div className="text-sm text-gray-300">
+              <div className="text-sm text-gray-300 mt-4">
                 Status: {status}
               </div>
             )}
 
             {error && (
-              <div className="text-red-300 bg-red-900/50 p-4 rounded-lg">
+              <div className="text-red-300 bg-red-900/50 p-4 rounded-lg mt-4">
                 {error}
               </div>
             )}
@@ -305,51 +286,99 @@ export default function ImageProcessor() {
         </div>
 
         {/* Right Column - Output Section */}
-        <div className="md:w-1/2 space-y-6">
+        <div className="lg:w-2/3 space-y-6">
           <div className="bg-gray-800/50 rounded-xl p-6 space-y-6">
-            <h2 className="text-2xl font-bold">Results</h2>
+            <h2 className="text-2xl font-bold mb-4">Image Processing</h2>
 
-            {/* Image Display Section */}
-            <div className="space-y-6">
-              {/* Input Preview */}
-              {inputPreview && (
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold">Reference Image</h3>
-                  <div className="border border-gray-700 rounded-lg overflow-hidden">
-                    <img
-                      src={inputPreview}
-                      alt="Input preview"
-                      className="w-full h-auto"
+            {/* Combined Upload and Comparison Section */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-6">
+                {/* Input Section */}
+                <div className="relative rounded-lg overflow-hidden bg-gray-900/20">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={isProcessing}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
-                  </div>
-                </div>
-              )}
-
-              {/* Generated Image */}
-              {outputImage && (
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold">Generated Image</h3>
-                  <div className="border border-gray-700 rounded-lg overflow-hidden">
-                    <img
-                      src={outputImage}
-                      alt="Generated output"
-                      className="w-full h-auto"
-                    />
-                    <div className="p-4 bg-gray-900/30">
-                      <button
-                        onClick={() => saveAs(outputImage, 'generated-image.png')}
-                        className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 
-                                  text-white rounded-lg transition-colors"
-                      >
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    {!inputPreview && (
+                      <>
+                        <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        Download Image
-                      </button>
-                    </div>
+                        <p className="mt-2 text-sm text-gray-400 text-center">
+                          Drag & drop or click to upload
+                        </p>
+                      </>
+                    )}
                   </div>
+                  {inputPreview && (
+                    <>
+                      <div className="w-full h-[500px] flex items-center justify-center">
+                        <Image
+                          src={inputPreview}
+                          alt="Input preview"
+                          width={500}
+                          height={500}
+                          className="max-w-full max-h-full object-contain p-4"
+                          unoptimized={true}
+                        />
+                      </div>
+                      <button
+                        onClick={clearImage}
+                        className="absolute top-3 right-3 p-2 bg-gray-800/80 hover:bg-gray-700/80 rounded-full backdrop-blur-sm border border-gray-600/50 shadow-lg transition-all hover:scale-105"
+                        title="Remove image"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
                 </div>
-              )}
+
+                {/* Output Section */}
+                <div className="rounded-lg overflow-hidden bg-gray-900/20">
+                  {outputImage ? (
+                    <>
+                      <div className="w-full h-[500px] flex items-center justify-center">
+                        <Image
+                          src={outputImage}
+                          alt="Generated output"
+                          width={500}
+                          height={500}
+                          className="max-w-full max-h-full object-contain p-4"
+                          unoptimized={true}
+                        />
+                      </div>
+                      <div className="p-4 bg-gray-900/30 flex justify-end">
+                        <button
+                          onClick={() => saveAs(outputImage, 'generated-image.png')}
+                          className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 
+                                    text-white rounded-lg transition-colors"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Download Image
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="h-[500px] flex items-center justify-center">
+                      <span className="text-gray-400">Generated image will appear here</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Labels */}
+              <div className="grid grid-cols-2 gap-6 text-sm text-gray-400">
+                <div>Input Image</div>
+                <div>Generated Image</div>
+              </div>
             </div>
           </div>
         </div>
