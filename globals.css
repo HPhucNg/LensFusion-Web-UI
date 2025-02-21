@@ -1,0 +1,16 @@
+/* Prevent zooming on input focus */
+@media screen and (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px;
+  }
+}
+
+/* Smooth scrolling for mobile */
+html {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent textarea resizing on mobile */
+textarea {
+  resize: none;
+} 

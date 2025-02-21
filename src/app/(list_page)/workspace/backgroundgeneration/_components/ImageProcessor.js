@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { processImage } from '@/lib/huggingface/client';
 import { defaultParams, parameterDefinitions } from '@/lib/huggingface/clientConfig';
 import { saveAs } from 'file-saver';
 import Image from 'next/image';
+import { templates, getTemplateById } from '@/lib/templates';
 
 export default function ImageProcessor() {
   // State management for the component
@@ -16,6 +17,26 @@ export default function ImageProcessor() {
   const [error, setError] = useState(null);                       // Stores error messages
   const [status, setStatus] = useState("");                       // Stores status messages
   const [params, setParams] = useState(defaultParams);            // Stores all generation parameters
+  const [loadedTemplates, setLoadedTemplates] = useState([]); // Renamed state variable
+
+  // Add state for active tab
+  const [activeSidebar, setActiveSidebar] = useState('settings');
+
+  // Add new state for selected template
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+
+  // Add new state for tracking the file
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  // Add state for fullscreen
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenImage, setFullscreenImage] = useState(null);
+
+  // Fetch templates on component mount
+  useEffect(() => {
+    setLoadedTemplates(templates); // Use the imported templates directly
+    console.log("Loaded templates:", templates); // Verify template loading
+  }, []);
 
   // Creates a preview of the uploaded image
   const createInputPreview = useCallback((file) => {
@@ -91,26 +112,61 @@ export default function ImageProcessor() {
     }
   };
 
-  // Handles file upload
+  // Modified handleImageUpload
   const handleImageUpload = useCallback((e) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       createInputPreview(file);
     }
   }, [createInputPreview]);
 
-  // Handles the generate button click
+  // Modified handleGenerate
   const handleGenerate = async () => {
-    const fileInput = document.querySelector('input[type="file"]');
-    if (fileInput?.files?.[0]) {
-      await processImageWithParams(fileInput.files[0]);
-    } else {
+    if (!selectedFile) {
       setError("Please upload an image first");
+      return;
+    }
+
+    // Reset states
+    setIsProcessing(true);
+    setError(null);
+    setOutputImage(null);
+    setPreprocessedImage(null);
+    setWebpImage(null);
+    setStatus("Starting processing...");
+
+    try {
+      setStatus("Processing with Hugging Face...");
+      const result = await processImage(selectedFile, params);
+      
+      // Handle the response
+      if (Array.isArray(result) && result.length >= 2) {
+        const [imageArray, webpResult] = result;
+        
+        if (Array.isArray(imageArray) && imageArray.length >= 2) {
+          setOutputImage(imageArray[0]?.image?.url || null);
+          setPreprocessedImage(imageArray[1]?.image?.url || null);
+        }
+        
+        if (webpResult?.url) {
+          setWebpImage(webpResult.url);
+        }
+      }
+
+      setStatus("Processing complete!");
+    } catch (error) {
+      console.error("Error processing image:", error);
+      setError(error.message || "Failed to process image");
+      setStatus("Processing failed");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  // Add this new function to clear the image
+  // Modified clearImage
   const clearImage = () => {
+    setSelectedFile(null);
     setInputPreview(null);
     setOutputImage(null);
     setPreprocessedImage(null);
@@ -121,6 +177,18 @@ export default function ImageProcessor() {
     if (fileInput) {
       fileInput.value = '';
     }
+  };
+
+  // Modified template selection handler
+  const handleTemplateSelect = (template) => {
+    handleParamChange('prompt', template.prompt);
+    setSelectedTemplateId(template.id);
+  };
+
+  // Template generate handler
+  const handleTemplateGenerate = (template) => {
+    handleTemplateSelect(template);
+    handleGenerate();
   };
 
   // Renders different types of parameter inputs
@@ -170,7 +238,7 @@ export default function ImageProcessor() {
             id={param.id}
             placeholder={param.placeholder}
             className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
-                      focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                      focus:ring-0 focus:outline-none resize-y"
             value={params[param.id]}
             onChange={(e) => handleParamChange(param.id, e.target.value)}
             rows={3}
@@ -182,7 +250,7 @@ export default function ImageProcessor() {
           <select
             id={param.id}
             className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
-                      focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      focus:ring-0 focus:outline-none"
             value={params[param.id]}
             onChange={(e) => handleParamChange(param.id, e.target.value)}
           >
@@ -198,191 +266,318 @@ export default function ImageProcessor() {
     }
   };
 
+  // Add these utility functions
+  const handleDownload = async (url) => {
+    try {
+      const response = await fetch(url, { mode: 'cors' });
+      if (!response.ok) throw new Error('Failed to fetch image');
+      
+      const blob = await response.blob();
+      const filename = `generated-image-${Date.now()}.${blob.type.split('/')[1] || 'png'}`;
+      
+      saveAs(blob, filename);
+    } catch (error) {
+      console.error('Download failed:', error);
+      setError('Failed to download image. Please try again.');
+    }
+  };
+
+  const openFullscreen = (imageUrl) => {
+    setFullscreenImage(imageUrl);
+    setIsFullscreen(true);
+  };
+
+  const closeFullscreen = () => {
+    setIsFullscreen(false);
+    setFullscreenImage(null);
+  };
+
   // Component UI
   return (
-    <div className="max-w-7xl mx-auto p-6 text-white">
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left Column - Input Section */}
-        <div className="lg:w-1/3 space-y-6">
-          <div className="bg-gray-800/50 rounded-xl p-6 space-y-6">
-            <h2 className="text-2xl font-bold mb-4">Image Settings</h2>
-
-            {/* Prompts Section */}
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Positive Prompt</label>
-                <textarea
-                  value={params.prompt}
-                  onChange={(e) => handleParamChange('prompt', e.target.value)}
-                  placeholder="Describe what you want to generate..."
-                  className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
-                            focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
-                  rows={5}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Negative Prompt</label>
-                <textarea
-                  value={params.negativePrompt}
-                  onChange={(e) => handleParamChange('negativePrompt', e.target.value)}
-                  placeholder="Describe what you want to avoid..."
-                  className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
-                            focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
-                  rows={2}
-                />
-              </div>
-            </div>
-
-            {/* Advanced Settings */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Advanced Settings</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {parameterDefinitions.slice(2, 4).map(param => (
-                  param.type === 'select' && (
-                    <div key={param.id} className="space-y-2">
-                      <label htmlFor={param.id} className="block text-sm font-medium">
-                        {param.label}
-                      </label>
-                      {renderParameter(param)}
-                    </div>
-                  )
-                ))}
-              </div>
-
-              {/* Seed Input */}
-              <div className="space-y-2">
-                <label htmlFor="seed" className="block text-sm font-medium">
-                  Seed
-                </label>
-                {renderParameter(parameterDefinitions.find(p => p.id === 'seed'))}
-              </div>
-            </div>
-
-            {/* Generate Button */}
-            <button
-              onClick={handleGenerate}
-              disabled={isProcessing || !inputPreview}
-              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600
-                        text-white font-semibold rounded-lg shadow-lg
-                        disabled:cursor-not-allowed transition-colors mt-4"
-            >
-              {isProcessing ? 'Generating...' : 'Generate Image'}
-            </button>
-
-            {/* Status and Error Messages */}
-            {status && (
-              <div className="text-sm text-gray-300 mt-4">
-                Status: {status}
-              </div>
-            )}
-
-            {error && (
-              <div className="text-red-300 bg-red-900/50 p-4 rounded-lg mt-4">
-                {error}
-              </div>
-            )}
-          </div>
+    <div className="h-screen flex bg-gray-900 text-white">
+      {/* Combined Sidebar */}
+      <div className="w-80 bg-gray-800/50 p-3 border-r border-gray-700 flex flex-col">
+        {/* Tab Navigation */}
+        <div className="flex mb-3">
+          <button
+            onClick={() => setActiveSidebar('settings')}
+            className={`flex-1 py-1.5 text-sm ${
+              activeSidebar === 'settings' 
+                ? 'bg-gray-700/50 text-white' 
+                : 'bg-gray-800/20 text-gray-400 hover:bg-gray-700/30'
+            } rounded-l-md transition-colors`}
+          >
+            Settings
+          </button>
+          <button
+            onClick={() => setActiveSidebar('templates')}
+            className={`flex-1 py-1.5 text-sm ${
+              activeSidebar === 'templates' 
+                ? 'bg-gray-700/50 text-white' 
+                : 'bg-gray-800/20 text-gray-400 hover:bg-gray-700/30'
+            } rounded-r-md transition-colors`}
+          >
+            Templates
+          </button>
         </div>
 
-        {/* Right Column - Output Section */}
-        <div className="lg:w-2/3 space-y-6">
-          <div className="bg-gray-800/50 rounded-xl p-6 space-y-6">
-            <h2 className="text-2xl font-bold mb-4">Image Processing</h2>
-
-            {/* Combined Upload and Comparison Section */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-6">
-                {/* Input Section */}
-                <div className="relative rounded-lg overflow-hidden bg-gray-900/20">
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={isProcessing}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto pb-4 scrollbar">
+          {activeSidebar === 'settings' ? (
+            <>
+              {/* Settings Content */}
+              <div className="space-y-3">
+                {/* Prompts Section */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-gray-300">Positive Prompt</label>
+                    <textarea
+                      value={params.prompt}
+                      onChange={(e) => handleParamChange('prompt', e.target.value)}
+                      placeholder="Describe what you want to generate..."
+                      className="w-full p-2 text-sm bg-gray-700/10 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[80px]"
                     />
-                    {!inputPreview && (
-                      <>
-                        <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <p className="mt-2 text-sm text-gray-400 text-center">
-                          Drag & drop or click to upload
-                        </p>
-                      </>
-                    )}
                   </div>
-                  {inputPreview && (
-                    <>
-                      <div className="w-full h-[500px] flex items-center justify-center">
-                        <Image
-                          src={inputPreview}
-                          alt="Input preview"
-                          width={500}
-                          height={500}
-                          className="max-w-full max-h-full object-contain p-4"
-                          unoptimized={true}
-                        />
-                      </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-gray-300">Negative Prompt</label>
+                    <textarea
+                      value={params.negativePrompt}
+                      onChange={(e) => handleParamChange('negativePrompt', e.target.value)}
+                      placeholder="Describe what you want to avoid..."
+                      className="w-full p-2 text-sm bg-gray-700/10 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[60px]"
+                    />
+                  </div>
+                </div>
+
+                {/* Advanced Settings */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-300">Advanced Settings</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {parameterDefinitions.slice(2, 4).map(param => (
+                      param.type === 'select' && (
+                        <div key={param.id} className="space-y-1">
+                          <label className="block text-xs font-medium text-gray-300">{param.label}</label>
+                          {renderParameter(param)}
+                        </div>
+                      )
+                    ))}
+                  </div>
+
+                  {/* Seed Input */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-300">Seed</label>
+                    {renderParameter(parameterDefinitions.find(p => p.id === 'seed'))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Status and Error Messages */}
+              {status && (
+                <div className="text-xs text-gray-300 mt-3">
+                  Status: {status}
+                </div>
+              )}
+
+              {error && (
+                <div className="text-xs text-red-300 bg-red-900/50 p-2 rounded-md mt-3">
+                  {error}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 p-1">
+              {loadedTemplates.map((template, index) => (
+                <div
+                  key={template.id}
+                  className={`group relative aspect-square cursor-pointer rounded-xl transition-all ${
+                    selectedTemplateId === template.id
+                      ? 'ring-2 ring-purple-500/80 scale-[0.98] bg-gradient-to-br from-purple-900/20 to-blue-900/10'
+                      : 'hover:scale-95'
+                  }`}
+                  onClick={() => handleTemplateSelect(template)}
+                >
+                  <div className="relative h-full w-full overflow-hidden rounded-xl border border-gray-700/50 bg-gray-900/20">
+                    <Image
+                      src={template.image}
+                      alt={`Template ${index + 1}`}
+                      fill
+                      className={`object-cover transition-opacity ${
+                        selectedTemplateId === template.id ? 'opacity-80' : 'group-hover:opacity-50'
+                      }`}
+                      unoptimized={true}
+                    />
+                    <div className="absolute bottom-2 right-2 rounded-md bg-gray-900/80 px-2 py-1 text-xs font-medium text-gray-300 backdrop-blur-sm">
+                      #{index + 1}
+                    </div>
+                  </div>
+                  {/* Selection glow effect */}
+                  {selectedTemplateId === template.id && (
+                    <div className="absolute inset-0 rounded-xl pointer-events-none border border-purple-500/30 shadow-[0_0_25px_rgba(168,85,247,0.3)]" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Fixed Generate Button Container */}
+        <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-gray-800/90 to-transparent">
+          <button
+            onClick={handleGenerate}
+            disabled={isProcessing || !selectedFile}
+            className="w-full py-1.5 text-sm bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 disabled:bg-gray-600 rounded-md transition-all"
+          >
+            {isProcessing ? 'Generating...' : 'Generate'}
+          </button>
+        </div>
+      </div>
+
+      {/* Image Processing Area */}
+      <div className="flex-1 p-4">
+        <div className="max-w-4xl mx-auto flex flex-col lg:flex-row gap-8 h-full">
+          {/* Input Container */}
+          <div className="group relative flex-1 bg-gradient-to-br from-gray-900/30 to-gray-800/20 rounded-2xl p-1 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <div className="h-full w-full flex flex-col items-center justify-center rounded-xl backdrop-blur-sm">
+              <div className="w-full h-[500px] flex items-center justify-center relative">
+                {inputPreview ? (
+                  <div className="relative w-full h-full rounded-lg overflow-hidden">
+                    <Image
+                      src={inputPreview}
+                      alt="Input preview"
+                      fill
+                      className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105"
+                      style={{ imageRendering: 'auto' }}
+                    />
+                    
+                    {/* Action Buttons */}
+                    <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <button
+                        onClick={() => openFullscreen(inputPreview)}
+                        className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                        title="View fullscreen"
+                      >
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                      </button>
+                      
                       <button
                         onClick={clearImage}
-                        className="absolute top-3 right-3 p-2 bg-gray-800/80 hover:bg-gray-700/80 rounded-full backdrop-blur-sm border border-gray-600/50 shadow-lg transition-all hover:scale-105"
+                        className="p-2 bg-gray-900/80 hover:bg-red-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
                         title="Remove image"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
-                    </>
-                  )}
-                </div>
-
-                {/* Output Section */}
-                <div className="rounded-lg overflow-hidden bg-gray-900/20">
-                  {outputImage ? (
-                    <>
-                      <div className="w-full h-[500px] flex items-center justify-center">
-                        <Image
-                          src={outputImage}
-                          alt="Generated output"
-                          width={500}
-                          height={500}
-                          className="max-w-full max-h-full object-contain p-4"
-                          unoptimized={true}
-                        />
-                      </div>
-                      <div className="p-4 bg-gray-900/30 flex justify-end">
-                        <button
-                          onClick={() => saveAs(outputImage, 'generated-image.png')}
-                          className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 
-                                    text-white rounded-lg transition-colors"
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                          Download Image
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="h-[500px] flex items-center justify-center">
-                      <span className="text-gray-400">Generated image will appear here</span>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-gray-600 hover:border-purple-500 transition-all duration-300">
+                    <div className="text-center p-6 space-y-4">
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                        />
+                        <div className="flex flex-col items-center justify-center space-y-3">
+                          <svg className="w-16 h-16 text-purple-500 group-hover:scale-110 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M7.5 17.5h9M12 6v10m0 0l3.5-3.5M12 13l-3.5-3.5" />
+                            <path d="M20 16.5V19a2 2 0 01-2 2H6a2 2 0 01-2-2v-2.5M12 3.5L8 7.5H5v3h6v-3H8l4-4z" />
+                          </svg>
+                          <p className="text-sm text-gray-400 font-medium">Drag & drop image<br/>or click to upload</p>
+                          <span className="text-xs text-gray-500">Max size: 5MB</span>
+                        </div>
+                      </div>
+                    </div>
+                  </label>
+                )}
               </div>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-900/80 px-4 py-1 rounded-full text-sm text-white font-medium backdrop-blur-sm">
+                Original Image
+              </div>
+            </div>
+          </div>
 
-              {/* Labels */}
-              <div className="grid grid-cols-2 gap-6 text-sm text-gray-400">
-                <div>Input Image</div>
-                <div>Generated Image</div>
+          {/* Output Container */}
+          <div className="group relative flex-1 bg-gradient-to-br from-gray-900/30 to-gray-800/20 rounded-2xl p-1 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <div className="h-full w-full flex flex-col items-center justify-center rounded-xl backdrop-blur-sm">
+              <div className="w-full h-[500px] flex items-center justify-center relative">
+                {outputImage ? (
+                  <div className="relative w-full h-full rounded-lg overflow-hidden">
+                    <Image
+                      src={outputImage}
+                      alt="Generated output"
+                      fill
+                      className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105"
+                      style={{ imageRendering: 'auto' }}
+                    />
+                    
+                    {/* Output Action Buttons */}
+                    <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <button
+                        onClick={() => openFullscreen(outputImage)}
+                        className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                        title="View fullscreen"
+                      >
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                      </button>
+                      
+                      <button
+                        onClick={() => handleDownload(outputImage)}
+                        className="p-2 bg-gray-900/80 hover:bg-blue-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                        title="Download image"
+                      >
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center space-y-4 text-gray-500">
+                    <svg className="w-16 h-16 text-purple-500 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                    <p className="text-sm font-medium">Processing your masterpiece...</p>
+                  </div>
+                )}
+              </div>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-900/80 px-4 py-1 rounded-full text-sm text-white font-medium backdrop-blur-sm">
+                Generated Result
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Add this fullscreen modal at the bottom of your component */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4">
+          <button
+            onClick={closeFullscreen}
+            className="absolute top-4 right-4 p-3 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+          >
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          <div className="relative w-full h-full max-w-6xl flex items-center justify-center">
+            <Image
+              src={fullscreenImage}
+              alt="Fullscreen view"
+              fill
+              className="object-contain"
+              style={{ imageRendering: 'auto' }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
