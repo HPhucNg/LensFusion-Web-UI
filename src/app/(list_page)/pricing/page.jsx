@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useSubscription } from '@/context/subscriptionContext';
 import { createCheckoutSession } from '../../../../stripe/createCheckoutSession';
-
+import { cancelSubscription } from '../../../../stripe/createCheckoutSession';
 
 function PricingPage() {
 
@@ -18,7 +18,7 @@ function PricingPage() {
   const [pricingType, setPricingType] = useState('monthly');
   const [user, setUser] = useState(null);
   //subscription info of the user
-  const { status: subscriptionStatus, currentPlan, planCycle, loading: isLoading } = useSubscription();
+  const { status: subscriptionStatus, currentPlan, planCycle, subscriptionId, cancellationDate, loading: isLoading } = useSubscription();
 
 
   //check user authentication
@@ -43,7 +43,35 @@ function PricingPage() {
     }
   };
   
-  
+  //handles subscription cancelation
+  const handleCancelSubscription = async () => {
+    try {
+      if (!user) {
+        window.location.href = '/login';
+        return;
+      }
+      if (!subscriptionId) {
+        console.error('No active subscription found');
+        alert('No active subscription found to cancel');
+        return;
+      }
+
+      const confirmed = window.confirm('Are you sure you want to cancel your subscription?');
+      
+      if (!confirmed) return;
+
+      const result = await cancelSubscription(subscriptionId);
+    
+      if (result.success) {
+        alert('Your subscription is canceling and will remain active until the end of your billing period');
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      alert('Unable to cancel subscription. Please try again.');
+    }
+  };
+
   //handle the toggle
   const togglePricing = (type) => {
     setPricingType(type);
@@ -110,7 +138,7 @@ function PricingPage() {
         {PricingPlans.map((plan, index) => (
           <div
             key={plan.title}
-            className={`rounded-lg p-6 shadow-lg w-full sm:w-80 md:w-72 lg:w-64 h-full flex flex-col justify-center items-center text-center border-2  ${
+            className={`relative rounded-lg p-6 shadow-lg w-full sm:w-80 md:w-72 lg:w-64 h-full flex flex-col justify-center items-center text-center border-2  ${
               index === 1 ? 'bg-white text-black border-4 border-double border-purple-600' : 'bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white'
             }`}
           >
@@ -132,7 +160,7 @@ function PricingPage() {
             </ul>
             <button
               className={`w-full px-4 py-2 rounded-lg ${
-                subscriptionStatus === 'active' && currentPlan === plan.title && planCycle === pricingType
+                (subscriptionStatus === 'active' || subscriptionStatus === 'canceling') && currentPlan === plan.title && planCycle === pricingType
                   ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
                   : index === 1
                   ? 'bg-black text-white hover:bg-gray-600'
@@ -144,18 +172,40 @@ function PricingPage() {
                   : plan.priceIdYearly;
                 handleSubscription(priceId);
               }}
-              disabled={subscriptionStatus === 'active' && currentPlan === plan.title && planCycle === pricingType}
+              disabled={(subscriptionStatus === 'active' || subscriptionStatus === 'canceling') && currentPlan === plan.title && planCycle === pricingType}
             >
               {subscriptionStatus === 'active' && currentPlan === plan.title && planCycle === pricingType
                 ? 'Subscribed'
+                : subscriptionStatus === 'canceling' && currentPlan === plan.title && planCycle === pricingType
+                ? 'Canceled Subscription'
                 : `Get ${plan.title}`}
             </button>
-        </div>
+
+            {/* if the user is subscribed to one of the plans, show 'cancel subscription' */}
+            {subscriptionStatus === 'active' && currentPlan === plan.title && planCycle === pricingType && (
+              <div className="absolute bottom-0 left-4">
+                <button
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                  onClick={handleCancelSubscription}
+                >
+                  Cancel Subscription
+                </button>
+              </div>
+            )}
+            
+            {/* after the user canceled the plan, show end of users billing period */}
+            {subscriptionStatus === 'canceling' && currentPlan === plan.title &&  planCycle === pricingType && (
+              <div className="absolute bottom-0 left-4">
+                <span className="text-xs text-green-400">
+                Access until {new Date(cancellationDate).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+          </div>
         ))}
       </section>
       )}
 
-         
 
           {/* FAQ Accordion */}
           <section className="faqItem">
