@@ -100,7 +100,7 @@ function PricingPage() {
       <h1 className="priceh1">How much is your time worth?</h1>
       <main className="containerPrice">
         <div className="termFees">
-        <button 
+        <Button 
           className={`px-6 py-2 rounded-md transition-all border ${
             pricingType === 'monthly'
               ? 'selected' 
@@ -109,8 +109,8 @@ function PricingPage() {
           onClick={() => togglePricing('monthly')}
         >
           Monthly
-        </button>
-        <button
+        </Button>
+        <Button
           className={`px-6 py-2 rounded-md transition-all border ${
             pricingType === 'yearly'
               ? 'selected' 
@@ -119,7 +119,7 @@ function PricingPage() {
           onClick={() => togglePricing('yearly')}
         >
           Yearly
-        </button>
+        </Button>
           <Link href="/pricing/credits">
             <Button>
               Buy Credits
