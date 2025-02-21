@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { processImage } from '@/lib/huggingface/client';
 import { defaultParams, parameterDefinitions } from '@/lib/huggingface/clientConfig';
 import { saveAs } from 'file-saver';
 import Image from 'next/image';
 import { templates, getTemplateById } from '@/lib/templates';
+import { CloudUpload, Wand2 } from 'lucide-react';
+import { useClickAway } from 'react-use';
 
 export default function ImageProcessor() {
   // State management for the component
@@ -31,6 +33,17 @@ export default function ImageProcessor() {
   // Add state for fullscreen
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState(null);
+
+  // Add state for mobile sidebar
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const sidebarRef = useRef();
+
+  useClickAway(sidebarRef, () => {
+    if (window.innerWidth < 1024 && isSidebarOpen) {
+      setIsSidebarOpen(false);
+    }
+  });
 
   // Fetch templates on component mount
   useEffect(() => {
@@ -295,8 +308,37 @@ export default function ImageProcessor() {
   // Component UI
   return (
     <div className="h-screen flex bg-gray-900 text-white">
-      {/* Combined Sidebar */}
-      <div className="w-80 bg-gray-800/50 p-3 border-r border-gray-700 flex flex-col">
+      {/* Mobile menu button at bottom right */}
+      {!isSidebarOpen && (
+        <div className="lg:hidden fixed bottom-6 right-6 z-50">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-3 bg-gray-900 border border-gray-700 rounded-lg shadow-xl hover:bg-gray-800 transition-all"
+          >
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Modified sidebar container (solid black background) */}
+      <div
+        ref={sidebarRef}
+        className={`fixed lg:relative inset-y-0 left-0 z-40 w-80 transform ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0 transition-transform duration-300 ease-in-out bg-gray-900 border-r border-gray-700/50`}
+      >
+        {/* Close button inside sidebar */}
+        <button
+          onClick={() => setIsSidebarOpen(false)}
+          className="lg:hidden absolute top-5 right-5 p-2 text-gray-400 hover:text-white transition-colors"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
         {/* Tab Navigation */}
         <div className="flex mb-3">
           <button
@@ -335,7 +377,8 @@ export default function ImageProcessor() {
                       value={params.prompt}
                       onChange={(e) => handleParamChange('prompt', e.target.value)}
                       placeholder="Describe what you want to generate..."
-                      className="w-full p-2 text-sm bg-gray-700/10 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[80px]"
+                      className="w-full p-3 text-sm bg-gray-800/20 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[120px] border border-gray-700"
+                      rows={10}
                     />
                   </div>
                   <div>
@@ -344,7 +387,8 @@ export default function ImageProcessor() {
                       value={params.negativePrompt}
                       onChange={(e) => handleParamChange('negativePrompt', e.target.value)}
                       placeholder="Describe what you want to avoid..."
-                      className="w-full p-2 text-sm bg-gray-700/10 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[60px]"
+                      className="w-full p-3 text-sm bg-gray-800/20 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[50px] border border-gray-700"
+                      rows={4}
                     />
                   </div>
                 </div>
@@ -456,8 +500,8 @@ export default function ImageProcessor() {
                         className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
                         title="View fullscreen"
                       >
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </button>
                       
@@ -466,14 +510,14 @@ export default function ImageProcessor() {
                         className="p-2 bg-gray-900/80 hover:bg-red-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
                         title="Remove image"
                       >
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-gray-600 hover:border-purple-500 transition-all duration-300">
+                  <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-gray-600 hover:border-purple-900 transition-all duration-300">
                     <div className="text-center p-6 space-y-4">
                       <div className="relative">
                         <input
@@ -483,20 +527,25 @@ export default function ImageProcessor() {
                           className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
                         />
                         <div className="flex flex-col items-center justify-center space-y-3">
-                          <svg className="w-16 h-16 text-purple-500 group-hover:scale-110 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M7.5 17.5h9M12 6v10m0 0l3.5-3.5M12 13l-3.5-3.5" />
-                            <path d="M20 16.5V19a2 2 0 01-2 2H6a2 2 0 01-2-2v-2.5M12 3.5L8 7.5H5v3h6v-3H8l4-4z" />
+                          <svg 
+                            className="w-16 h-16 text-white/70 group-hover:scale-110 transition-transform duration-300" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            strokeWidth="2" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round"
+                          >
+                            <path d="M12 13v8" />
+                            <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+                            <path d="m8 17 4-4 4 4" />
                           </svg>
                           <p className="text-sm text-gray-400 font-medium">Drag & drop image<br/>or click to upload</p>
-                          <span className="text-xs text-gray-500">Max size: 5MB</span>
                         </div>
                       </div>
                     </div>
                   </label>
                 )}
-              </div>
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-900/80 px-4 py-1 rounded-full text-sm text-white font-medium backdrop-blur-sm">
-                Original Image
               </div>
             </div>
           </div>
@@ -522,8 +571,8 @@ export default function ImageProcessor() {
                         className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
                         title="View fullscreen"
                       >
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                       </button>
                       
@@ -532,23 +581,30 @@ export default function ImageProcessor() {
                         className="p-2 bg-gray-900/80 hover:bg-blue-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
                         title="Download image"
                       >
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center space-y-4 text-gray-500">
-                    <svg className="w-16 h-16 text-purple-500 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  <div className="flex flex-col items-center justify-center space-y-4 text-white">
+                    <svg 
+                      className="w-16 h-16 text-white/70" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                      <circle cx="9" cy="9" r="2" />
+                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
                     </svg>
-                    <p className="text-sm font-medium">Processing your masterpiece...</p>
+                    <p className="text-sm text-gray-400 font-medium">Generated Image</p>
                   </div>
                 )}
-              </div>
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-900/80 px-4 py-1 rounded-full text-sm text-white font-medium backdrop-blur-sm">
-                Generated Result
               </div>
             </div>
           </div>
@@ -562,8 +618,8 @@ export default function ImageProcessor() {
             onClick={closeFullscreen}
             className="absolute top-4 right-4 p-3 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
           >
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
           
