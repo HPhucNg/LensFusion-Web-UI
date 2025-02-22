@@ -84,8 +84,8 @@ function GalleryModal({ closeModal, image, openCommunityModal }) {  // Accept th
     const postButtonText = image.communityPost ? "Manage Post to Community" : "Post to Community";
 
     return (
-        <div className='add_pin_modal'>
-            <div className='add_pin_container'>
+        <div className='add_pin_modal'> {/* Backdrop */}
+            <div className='add_pin_container'> {/* Card */}
                 <div className="side" id="left_side">
                     <div className="topsection">
                         <div className="post_to">Manage Image</div>

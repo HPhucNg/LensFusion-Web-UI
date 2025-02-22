@@ -6,13 +6,13 @@ import Image from 'next/image';  // Import Image component from next/image
 import { auth, db } from '@/firebase/FirebaseConfig'; // Firebase config import
 import { collection, addDoc, doc, updateDoc, getDoc, getDocs, deleteDoc } from 'firebase/firestore';
 
-
 function Modal({ closeModal, add_community, selectedImage, createdBy }) {
     const [pinDetails, setPinDetails] = useState({
         created_by: createdBy,
         title: '',
         prompt: selectedImage.prompt,
         img_data: selectedImage.img_data,
+        category: '',  // New category field in pin details state
     });
     
     const [isEditing, setIsEditing] = useState(false); // Track if user is editing an existing post
@@ -34,6 +34,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                         title: communityPostData.title || '',
                         prompt: communityPostData.prompt || '',
                         img_data: selectedImage.img_data, // Keep the selected image data
+                        category: communityPostData.category || '',  // Keep the category data
                     });
                     setIsEditing(true); // Set to editing mode
                 }
@@ -60,6 +61,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                     userImageId: selectedImage.uid,
                     createdAt: new Date(), // Timestamp
                     userId: auth.currentUser?.uid,  // Add the user ID here
+                    category: users_data.category, // Save the category when posting
                 });
 
                 console.log('Community Post saved with ID: ', communityRef.id);
@@ -77,7 +79,8 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                 // If communityPost is true, update the existing post
                 const communityPostRef = doc(db, 'community', selectedImage.communityPostId); // Reference to the post
                 await updateDoc(communityPostRef, {
-                    title: users_data.title
+                    title: users_data.title,
+                    category: users_data.category,  // Update the category when editing the post
                 });
 
                 console.log('Community Post updated with ID: ', selectedImage.communityPostId);
@@ -160,7 +163,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                     </div>
 
                     <div className="midsection">
-                        <div className='text-3xl'>Title</div>
+                        <div className='text-xl'>Title</div>
                         <input
                             placeholder="Add your Title Here"
                             type="text"
@@ -169,10 +172,32 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                             value={pinDetails.title}
                             onChange={(e) => setPinDetails({ ...pinDetails, title: e.target.value })}
                         />
-                        <div className='text-3xl mb-2'>Prompt</div>
-                        <div className='mb-4'>{pinDetails.prompt}</div>
+                        
+                        <div className='h-32 mr-3 mb-4 bg-[var(--card-background)] p-3 rounded-xl'>
+                            <div className='text-gray-400 text-sm pb-2'>
+                                Prompt Description <p className='text-gray-500 text-base pt-2'>{pinDetails.prompt}</p>
+                            </div>
+                        </div>
+
+                        {/* Category Dropdown */}
+                        
+                        <div>
+                            {/* Category dropdown */}
+                            <select className='appearance-none w-full mb-2 text-[14px] text-[#727682b1]'
+                                value={pinDetails.category}
+                                onChange={(e) => setPinDetails({ ...pinDetails, category: e.target.value })}
+                            >
+                                <option value="">Select Category</option>
+                                <option value="skincare">Skincare</option>
+                                <option value="candles">Candles</option>
+                                <option value="furniture">Furniture</option>
+                                <option value="jewellery">Jewellery</option>
+                                <option value="bags">Bags</option>
+                                <option value="other">Other</option>
+                            </select> 
+                        </div>
                           
-                        <div className='text-xl overflow-hidden'>Created By: {pinDetails.created_by}</div>
+                        <div className='text-sm overflow-hidden'>Created By: {pinDetails.created_by}</div>
                     </div>
 
                     <div className="bottomsection">
@@ -199,4 +224,6 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
 }
 
 export default Modal;
+
+
 
