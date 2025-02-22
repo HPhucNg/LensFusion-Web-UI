@@ -532,7 +532,7 @@ export default function UserProfile() {
                         alt={`Gallery item ${index}`}
                         width={400}
                         height={400}
-                        className="object-cover"
+                        className="object-cover w-full h-full"
                         placeholder="blur"
                         blurDataURL={`data:image/svg+xml;base64,...`}  // Optional for blur effect
                       />

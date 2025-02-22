@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import '../styles/modal_styles.css';
 import Image from 'next/image';  // Import Image component from next/image
 import { auth, db } from '@/firebase/FirebaseConfig'; // Firebase config import
-import { collection, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, getDoc, getDocs, deleteDoc } from 'firebase/firestore';
 
 
 function Modal({ closeModal, add_community, selectedImage, createdBy }) {
@@ -89,6 +89,43 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
         }
     };
 
+    const removeFromCommunity = async () => {
+        try {
+            // Reference to the community post in the 'community' collection
+            const communityPostRef = doc(db, 'community', selectedImage.communityPostId);
+    
+            // Remove likes subcollection (if it exists)
+            const likesRef = collection(communityPostRef, 'likes');
+            const likesSnapshot = await getDocs(likesRef);
+            likesSnapshot.forEach(async (likeDoc) => {
+                await deleteDoc(doc(likesRef, likeDoc.id));  // Deleting each like document
+            });
+    
+            // Remove comments subcollection (if it exists)
+            const commentsRef = collection(communityPostRef, 'comments');
+            const commentsSnapshot = await getDocs(commentsRef);
+            commentsSnapshot.forEach(async (commentDoc) => {
+                await deleteDoc(doc(commentsRef, commentDoc.id));  // Deleting each comment document
+            });
+    
+            // Now remove the community post itself
+            await deleteDoc(communityPostRef);
+    
+            // Update the user's image document to remove the community post reference
+            const userImageRef = doc(db, 'user_images', selectedImage.uid);
+            await updateDoc(userImageRef, {
+                communityPost: false,
+                communityPostId: null, // Clear the reference to the community post
+            });
+    
+            alert("Image removed from community successfully!");
+            closeModal(); // Close the modal after removal
+        } catch (error) {
+            console.error("Error removing image from community: ", error);
+        }
+    };
+    
+
     return (
         <div className="add_pin_modal">
             <div className="add_pin_container">
@@ -139,12 +176,21 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                     </div>
 
                     <div className="bottomsection">
-                        <div
+                        <button
                             onClick={save_community}  // Calls the save_pin function
                             className="publish_pin"
                         >
                             {isEditing ? 'Update' : 'Publish'}
-                        </div>
+                        </button>
+                        {/* Show the Remove from Community button only if the image is in the community */}
+                        {selectedImage.communityPost && (
+                        <button
+                            onClick={removeFromCommunity}
+                            className="text-gray-400 hover:text-red-500 transition-all text-sm duration-300"
+                        >
+                            Remove from Community?
+                        </button>
+                        )}
                     </div>
                 </div>
             </div>

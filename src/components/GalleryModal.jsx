@@ -15,13 +15,31 @@ function GalleryModal({ closeModal, image, openCommunityModal }) {  // Accept th
         closeModal();     // Close the Gallery Modal
     };
 
+    const deleteSubcollections = async (communityDocId) => {
+        // Delete likes subcollection
+        const likesRef = collection(db, 'community', communityDocId, 'likes');
+        const likesSnapshot = await getDocs(likesRef);
+        likesSnapshot.forEach(async (doc) => {
+            await deleteDoc(doc.ref);
+        });
+
+        // Delete comments subcollection
+        const commentsRef = collection(db, 'community', communityDocId, 'comments');
+        const commentsSnapshot = await getDocs(commentsRef);
+        commentsSnapshot.forEach(async (doc) => {
+            await deleteDoc(doc.ref);
+        });
+    };
+
     const deleteImageFromCommunity = async (imageId) => {
         const communityRef = collection(db, 'community');
         const q = query(communityRef, where('userImageId', '==', imageId));
         const querySnapshot = await getDocs(q);
     
         querySnapshot.forEach(async (docSnap) => {
-            await deleteDoc(doc(db, 'community', docSnap.id)); // Delete the community post
+            const communityDocId = docSnap.id;
+            await deleteSubcollections(communityDocId); // Delete subcollections (likes, comments)
+            await deleteDoc(doc(db, 'community', communityDocId)); // Delete the community post
         });
     };
     
@@ -99,7 +117,7 @@ function GalleryModal({ closeModal, image, openCommunityModal }) {  // Accept th
 
                 <div className="side" id="right_side">
                     <div className="topsection">
-                        <div onClick={closeModal} className="w-10">
+                        <div onClick={closeModal} className="w-10 transform hover:scale-90">
                             <img src="/Vector.png" alt="close_pin" />
                         </div>
                     </div>
