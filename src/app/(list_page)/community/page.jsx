@@ -8,6 +8,9 @@ import Footer from '@/components/Footer';
 import ViewModal from '@/components/ViewModal';
 import '../style.css'; 
 import { cn } from '@/lib/utils';
+import Image from "next/image";
+import Masonry from 'react-responsive-masonry'; // Import Masonry component
+
 
 function Page() {
   const [posts, setPosts] = useState([]);  // State to hold fetched posts
@@ -66,20 +69,16 @@ function Page() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
       <Navbar />
-      
-      <div className="mx-auto px-4 py-8">
-        {/*<h1 className="text-3xl font-bold text-center mb-8">Community Posts</h1>*/}
-        
+      <main>
         <div className="flex justify-center mb-8">
-                  <div className="flex rounded-full bg-black/40 p-1">
-                    {/* Category buttons */}
+          <div className="flex rounded-full bg-black/40 p-1">
+            {/* Category buttons */}
             {categories.map((category) => (
               <button
                 key={category.id}
-                className={cn(
-                  'px-8 py-3 text-lg transition-all rounded-full relative',
+                className={cn('px-8 py-3 text-lg transition-all rounded-full relative',
                   selectedCategory === category.id
                     ? 'bg-[#EBDDF7] text-black'
                     : 'text-gray-400 hover:text-white',
@@ -91,27 +90,33 @@ function Page() {
             ))}
             {/* All Images button */}
             <button
-              className={cn(
-                'px-8 py-3 text-lg transition-all rounded-full relative',
+              className={cn('px-8 py-3 text-lg transition-all rounded-full relative',
                 selectedCategory === null ? 'bg-[#EBDDF7] text-black' : 'text-gray-400 hover:text-white',
               )}
               onClick={() => setSelectedCategory(null)} // Show all posts
             >
               All Images
             </button>
-                  </div>
-                </div>
-         
-        <div className="pin_container">
-          {/* Display each filtered post using the Pin component */}
-          {filteredPosts.map((post) => (
-            <div key={post.id} onClick={() => handleImageClick(post)} className="cursor-pointer">
-              <Pin pinDetails={post} />
-            </div>
-            ))}
+          </div>
         </div>
-      </div>
-      
+
+        <div className="p-4">
+          {/* Masonry grid container */}
+          <Masonry columnsCount={4} gutter="10px">
+            {posts.map((post, i) => (
+              <div key={i} onClick={() => handleImageClick(post)} className='cursor-pointer'>
+                <Image
+                  src={post.img_data} // Image URL
+                  alt={post.title} // Image alt text
+                  width={400} // Specify the width
+                  height={400} // Specify the height
+                  style={{ width: "100%", display: "block", borderRadius: "5%" }} // Ensure the image fills the width of the container
+                />
+              </div>
+            ))}
+          </Masonry>
+        </div>
+      </main>
       <Footer />
       {showModal && (
         <ViewModal
@@ -119,7 +124,10 @@ function Page() {
             image={selectedImage}
         />
       )}
-    </main>
+
+    </div>
+      
+      
   );
 }
 
