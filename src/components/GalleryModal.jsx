@@ -84,42 +84,51 @@ function GalleryModal({ closeModal, image, openCommunityModal }) {  // Accept th
     const postButtonText = image.communityPost ? "Manage Post to Community" : "Post to Community";
 
     return (
-        <div className='fixed inset-0 bg-black bg-opacity-50 z-50 text-white'> {/* Backdrop */} 
-            <div className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col border-2 border-transparent rounded-[50px] w-[880px] h-[550px]' style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
-                <div className='flex justify-between p-6'> {/* Top section - Header and close modal icon */}
-                    <h1 className='font-extrabold text-2xl'>Manage Image</h1>
-                    <div onClick={closeModal} className="w-8 transform hover:scale-90">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 text-white flex justify-center items-center">
+            <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto sm:h-[500px] p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
+                <div className="flex justify-between items-center mb-4">
+                    <h1 className="text-2xl font-extrabold">Manage Image</h1>
+                    <button onClick={closeModal} className="w-8 h-8 transform hover:scale-90">
                         <img src="/Vector.png" alt="close icon" />
-                    </div>
-                </div>
-                <div className='flex flex-grow items-center justify-around'> {/* Main section - left and right side */}
-                     {/* Left side - image */}
-                    {image ? (
-                        <Image 
-                            src={image.img_data}  // Image URL
-                            alt="Selected"  // Image alt text
-                            width={300}  // Specify the width
-                            height={300}  // Specify the height
-                            className="object-cover rounded-xl"  // Optional class for styling
-                        />
-                    
-                ) : (
-                    <p>No image selected</p>
-                )}
-                    
-                    {/*<div className="modals_pin" style={{ display: showModalPin ? 'block' : 'none' }}>
-                    </div>*/}
-
-                    <div className='flex flex-col'> {/* Right side - menu */}
-                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100">Open Workflow</button>
-                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100" onClick={handleCommunityClick} >{postButtonText}</button>
-                        <button className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100" onClick={handleDeleteClick}>Delete</button> 
-                    </div>
-
+                    </button>
                 </div>
 
+                <div className="flex flex-col md:flex-row justify-between pt-20 items-center">
+                    {/* Left side - image */}
+                    <div className="mb-4 md:mb-0">
+                        {image ? (
+                            <Image 
+                                src={image.img_data} 
+                                alt="Selected" 
+                                width={300} 
+                                height={300} 
+                                className="object-cover rounded-xl"
+                            />
+                        ) : (
+                            <p>No image selected</p>
+                        )}
+                    </div>
+
+                    {/* Right side - menu */}
+                    <div className="flex flex-col gap-4">
+                        <button className="w-full p-3 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100">
+                            Open Workflow
+                        </button>
+                        <button
+                            onClick={handleCommunityClick}
+                            className="w-full p-3 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
+                        >
+                            {image?.communityPost ? "Manage Post to Community" : "Post to Community"}
+                        </button>
+                        <button
+                            onClick={handleDeleteClick}
+                            className="w-full p-3 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
             </div>
-
         </div>
     );
 }

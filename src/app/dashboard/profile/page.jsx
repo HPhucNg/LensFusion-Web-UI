@@ -424,6 +424,7 @@ export default function UserProfile() {
 
   const closeCommunityModal = () => {
     setShowCommunityModal(false);  // Close Community Modal
+    setShowModal(true);
   };
 
 

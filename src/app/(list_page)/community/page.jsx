@@ -72,30 +72,30 @@ function Page() {
       <Navbar />
       <main>
         <div className="flex justify-center mb-8">
-          <div className="flex rounded-full bg-black/40 p-1">
+          <div className="flex flex-wrap justify-center sm:justify-start rounded-full bg-black/40 p-1">
             {/* Category buttons */}
             {categories.map((category) => (
               <button
                 key={category.id}
-                className={cn('px-8 py-3 text-lg transition-all rounded-full relative',
+                className={cn('px-6 py-3 text-base sm:text-lg transition-all rounded-full relative', // Adjusted padding and text size for smaller screens
                   selectedCategory === category.id
-                    ? 'bg-[#EBDDF7] text-black'
-                    : 'text-gray-400 hover:text-white',
+                  ? 'bg-[#EBDDF7] text-black'
+                  : 'text-gray-400 hover:text-white'
                 )}
                 onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)} // Toggle category selection
-              > 
+              >
                 {category.label}
               </button>
             ))}
             {/* All Images button */}
-            <button
-              className={cn('px-8 py-3 text-lg transition-all rounded-full relative',
-                selectedCategory === null ? 'bg-[#EBDDF7] text-black' : 'text-gray-400 hover:text-white',
-              )}
-              onClick={() => setSelectedCategory(null)} // Show all posts
-            >
-              All Images
-            </button>
+              <button
+                className={cn('px-6 py-3 text-base sm:text-lg transition-all rounded-full relative', // Adjusted padding and text size for smaller screens
+                  selectedCategory === null ? 'bg-[#EBDDF7] text-black' : 'text-gray-400 hover:text-white'
+                )}
+                onClick={() => setSelectedCategory(null)} // Show all posts
+              >
+                All Images
+              </button>
           </div>
         </div>
 

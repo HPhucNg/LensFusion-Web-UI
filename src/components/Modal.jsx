@@ -127,37 +127,56 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
             console.error("Error removing image from community: ", error);
         }
     };
+
+    const handleRemoveClick = () => {
+        // Ask the user for confirmation
+        const userConfirmed = window.confirm("Are you sure you want to remove this image from the community?");
+        
+        if (userConfirmed) {
+            // If the user confirms, proceed with removing the image from the community
+            removeFromCommunity();
+        } else {
+            console.log("Image removal canceled.");
+        }
+    };
     
 
     return (
-        <div className='fixed inset-0 bg-black bg-opacity-50 z-50 text-white'> {/* Backdrop */} 
-            <div className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col border-2 border-transparent rounded-[50px] w-[880px] h-[550px]' style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
-            <div className='flex justify-between p-6'> {/* Top section - Header and close modal icon */}
-                    <h1 className='font-extrabold text-2xl'>{headingText}</h1>
-                    <div onClick={closeModal} className="w-8 transform hover:scale-90">
-                        <img src="/Vector.png" alt="close icon" />
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 text-white flex justify-center items-center">
+            <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto sm:h-[500px] p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
+                <div className="flex justify-between items-center mb-4">
+                    <div onClick={closeModal} className="w-4 transform hover:scale-90">
+                        <img src="/back-arrow.png" alt="close icon" />
                     </div>
+                    <h1 className="text-2xl font-extrabold">{headingText}</h1>
+                    {/* Show the Remove from Community button only if the image is in the community */}
+                    {selectedImage.communityPost && (
+                        <button
+                            onClick={handleRemoveClick}
+                            className="w-8 transform hover:scale-90"
+                        >
+                            <img src="/ellipsis.png" alt="remove icon" />
+                        </button>
+                    )}
                 </div>
-                <div className='flex flex-grow items-center justify-evenly'> {/* Main section - left and right side */}
+                <div className='flex flex-col sm:flex-row items-center justify-evenly sm:space-x-6 p-4'> {/* Main section - left and right side */}
                     {/* Left side - image */}
-                    {/* Display the image passed from the GalleryModal */}
-                    {pinDetails.img_data && (
-                        <Image 
-                            src={pinDetails.img_data}  // Image URL
-                            alt="Selected"  // Image alt text
-                            width={300}  // Specify the width
-                            height={300}  // Specify the height
-                            className="object-cover rounded-xl"  // Optional class for styling
-                        />       
+                        {pinDetails.img_data && (
+                            <Image 
+                                src={pinDetails.img_data}  // Image URL
+                                alt="Selected"  // Image alt text
+                                width={300}  // Specify the width
+                                height={300}  // Specify the height
+                                className="object-cover rounded-xl"  // Optional class for styling
+                            />       
                         )}
-
-                    <div className='flex flex-col space-y-4'>
+                    <div className='flex flex-col space-y-4 w-full sm:w-1/2'>
                         <div>
-                            <h2 className='font-bold text-xl'>Title</h2>
+                            <h2 className='text-gray-400'>Title</h2>
                             <input
                                 placeholder="Add your Title Here"
                                 type="text"
-                                className=" bg-transparent placeholder-gray-500"
+                                className=" bg-transparent placeholder-gray-500 text-2xl border-b-2 border-gray-700 focus:outline-none w-full"
                                 id="community_title"
                                 value={pinDetails.title}
                                 onChange={(e) => setPinDetails({ ...pinDetails, title: e.target.value })}
@@ -169,7 +188,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                             </div>
                         </div>
                         <div> {/* Category Dropdown */}
-                            <select className='appearance-none w-1/2 mb-2 text-[14px] text-[#727682b1]'
+                            <select className='focus:outline-none bg-transparent border-2 border-gray-500 rounded-xl w-full sm:w-1/2 mb-2 text-[14px] text-[#727682b1]'
                                 value={pinDetails.category}
                                 onChange={(e) => setPinDetails({ ...pinDetails, category: e.target.value })}
                             >
@@ -186,22 +205,14 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                         <div className='text-sm'>
                             Created By: {pinDetails.created_by}
                         </div>
-                        <div className='flex justify-between'>
+                        <div>
                             <button
-                                onClick={save_community}  // Calls the save_pin function
-                                className="bg-[#8d5aed] w-[200px] h-[40px] rounded-[22px] hover:bg-[#b69aef] transition-colors duration-300"
+                                onClick={save_community}  // Calls the save_community function
+                                className="bg-[#8d5aed] w-full sm:w-[200px] h-[40px] rounded-[22px] hover:bg-[#b69aef] transition-colors duration-300"
                             >
                                 {isEditing ? 'Update' : 'Publish'}
                             </button>
-                            {/* Show the Remove from Community button only if the image is in the community */}
-                            {selectedImage.communityPost && (
-                            <button
-                                onClick={removeFromCommunity}
-                                className="text-gray-400 hover:text-red-500 transition-all text-sm duration-300"
-                            >
-                                Remove from Community?
-                            </button>
-                            )}
+
                         </div>
 
                     </div>
@@ -215,6 +226,3 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
 }
 
 export default Modal;
-
-
-
