@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/FirebaseConfig'; // Firebase config import
-import Pin from '@/components/Pin'; // Pin is the component to render each post
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ViewModal from '@/components/ViewModal';
@@ -103,7 +102,7 @@ function Page() {
         <div className="p-4">
           {/* Masonry grid container */}
           <Masonry columnsCount={4} gutter="10px">
-            {posts.map((post, i) => (
+            {filteredPosts.map((post, i) => (
               <div key={i} onClick={() => handleImageClick(post)} className='cursor-pointer'>
                 <Image
                   src={post.img_data} // Image URL
