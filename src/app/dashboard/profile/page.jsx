@@ -302,7 +302,18 @@ export default function UserProfile() {
   const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
   const [showCommunityModal, setShowCommunityModal] = useState(false); // For Community Modal
   const [theme, setTheme] = useState("dark");
+  const [currentPage, setCurrentPage] = useState(1); // Default to first page
+  const imagesPerPage = 8;
+  const totalPages = Math.ceil(userImages.length / imagesPerPage);
+  // Paginate the images
+  const startIndex = (currentPage - 1) * imagesPerPage;
+  const endIndex = startIndex + imagesPerPage;
+  const paginatedImages = userImages.slice(startIndex, endIndex);
 
+  // Handle page click
+  const handlePageClick = (page) => {
+  setCurrentPage(page);
+  };
 
   // Toggle theme function
   const toggleTheme = () => {
@@ -429,6 +440,8 @@ export default function UserProfile() {
 
 
 
+
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black">
@@ -539,7 +552,7 @@ export default function UserProfile() {
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
                         <div className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                        <Check className="w-5 h-5 text-white" />
+                          <Check className="w-5 h-5 text-white" />
                         </div>
                       </div>
                     </div>
@@ -551,29 +564,28 @@ export default function UserProfile() {
                   </div>
                 </HoverCardContent>
               </HoverCard>
-      ))
-    ) : (
-      <p className="text-gray-400">No images available.</p>
-    )}
-  </div>
-             
-           
+                ))
+              ) : (
+                <p className="text-gray-400">No images available.</p>
+              )}
+            </div>
 
-              {/* Pagination */}
-              <div className="flex justify-center items-center gap-3 mt-8">
-                {[1, 2, 3, 4, 5].map((page) => (
-                  <Button
-                    key={page}
-                    variant="outline"
-                    className={`w-10 h-10 text-lg font-medium ${
-                      page === 1 
-                        ? 'bg-white text-black hover:bg-gray-200' 
-                        : 'border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700'
-                    } shadow-lg transition-all duration-300`}
-                  >
-                    {page}
-                  </Button>
-                ))}
+            {/* Pagination */}
+            <div className="flex justify-center items-center gap-3 mt-8">
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant="outline"
+                  className={`w-10 h-10 text-lg font-medium ${
+                    page === currentPage
+                    ? 'bg-white text-black hover:bg-gray-200'
+                    : 'border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700'
+                  } shadow-lg transition-all duration-300`}
+                  onClick={() => handlePageClick(page)}
+                >
+                  {page}
+                </Button>
+              ))}
               </div>
             </div>
           </div>
