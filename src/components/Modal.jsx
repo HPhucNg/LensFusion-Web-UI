@@ -130,60 +130,46 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
     
 
     return (
-        <div className="add_pin_modal">
-            <div className="add_pin_container">
-                <div className="side" id="left_side">
-                    <div className="topsection">
-                        <div className="post_to">{headingText}</div>
-                    </div>
-
-                    <div className="midsection">
-                        {/* Display the image passed from the GalleryModal */}
-                        {pinDetails.img_data && (
-                            <div className="upload_img_container">
-                                <div className='image-container'>  
-                                    <Image 
-                                        src={pinDetails.img_data}  // Image URL
-                                        alt="Selected"  // Image alt text
-                                        width={800}  // Specify the width
-                                        height={800}  // Specify the height
-                                        className="object-cover w-full h-full rounded-xl"  // Optional class for styling
-                                        />
-                                </div>
-                            </div>
-                        )}
+        <div className='fixed inset-0 bg-black bg-opacity-50 z-50 text-white'> {/* Backdrop */} 
+            <div className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col border-2 border-transparent rounded-[50px] w-[880px] h-[550px]' style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
+            <div className='flex justify-between p-6'> {/* Top section - Header and close modal icon */}
+                    <h1 className='font-extrabold text-2xl'>{headingText}</h1>
+                    <div onClick={closeModal} className="w-8 transform hover:scale-90">
+                        <img src="/Vector.png" alt="close icon" />
                     </div>
                 </div>
+                <div className='flex flex-grow items-center justify-evenly'> {/* Main section - left and right side */}
+                    {/* Left side - image */}
+                    {/* Display the image passed from the GalleryModal */}
+                    {pinDetails.img_data && (
+                        <Image 
+                            src={pinDetails.img_data}  // Image URL
+                            alt="Selected"  // Image alt text
+                            width={300}  // Specify the width
+                            height={300}  // Specify the height
+                            className="object-cover rounded-xl"  // Optional class for styling
+                        />       
+                        )}
 
-                <div className="side" id="right_side">
-                    <div className="topsection">
-                        <div onClick={closeModal} className="w-10 transform hover:scale-90">
-                            <img src="/Vector.png" alt="close_pin" />
+                    <div className='flex flex-col space-y-4'>
+                        <div>
+                            <h2 className='font-bold text-xl'>Title</h2>
+                            <input
+                                placeholder="Add your Title Here"
+                                type="text"
+                                className=" bg-transparent placeholder-gray-500"
+                                id="community_title"
+                                value={pinDetails.title}
+                                onChange={(e) => setPinDetails({ ...pinDetails, title: e.target.value })}
+                            />
                         </div>
-                    </div>
-
-                    <div className="midsection">
-                        <div className='text-xl'>Title</div>
-                        <input
-                            placeholder="Add your Title Here"
-                            type="text"
-                            className="new_pin_input placeholder-gray-500"
-                            id="community_title"
-                            value={pinDetails.title}
-                            onChange={(e) => setPinDetails({ ...pinDetails, title: e.target.value })}
-                        />
-                        
-                        <div className='h-32 mr-3 mb-4 bg-[var(--card-background)] p-3 rounded-xl'>
+                        <div className='h-auto mr-3 mb-4 bg-[var(--card-background)] p-3 rounded-xl'>
                             <div className='text-gray-400 text-sm pb-2'>
                                 Prompt Description <p className='text-gray-500 text-base pt-2'>{pinDetails.prompt}</p>
                             </div>
                         </div>
-
-                        {/* Category Dropdown */}
-                        
-                        <div>
-                            {/* Category dropdown */}
-                            <select className='appearance-none w-full mb-2 text-[14px] text-[#727682b1]'
+                        <div> {/* Category Dropdown */}
+                            <select className='appearance-none w-1/2 mb-2 text-[14px] text-[#727682b1]'
                                 value={pinDetails.category}
                                 onChange={(e) => setPinDetails({ ...pinDetails, category: e.target.value })}
                             >
@@ -196,29 +182,34 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                                 <option value="other">Other</option>
                             </select> 
                         </div>
-                          
-                        <div className='text-sm overflow-hidden'>Created By: {pinDetails.created_by}</div>
+
+                        <div className='text-sm'>
+                            Created By: {pinDetails.created_by}
+                        </div>
+                        <div className='flex justify-between'>
+                            <button
+                                onClick={save_community}  // Calls the save_pin function
+                                className="bg-[#8d5aed] w-[200px] h-[40px] rounded-[22px] hover:bg-[#b69aef] transition-colors duration-300"
+                            >
+                                {isEditing ? 'Update' : 'Publish'}
+                            </button>
+                            {/* Show the Remove from Community button only if the image is in the community */}
+                            {selectedImage.communityPost && (
+                            <button
+                                onClick={removeFromCommunity}
+                                className="text-gray-400 hover:text-red-500 transition-all text-sm duration-300"
+                            >
+                                Remove from Community?
+                            </button>
+                            )}
+                        </div>
+
                     </div>
 
-                    <div className="bottomsection">
-                        <button
-                            onClick={save_community}  // Calls the save_pin function
-                            className="publish_pin"
-                        >
-                            {isEditing ? 'Update' : 'Publish'}
-                        </button>
-                        {/* Show the Remove from Community button only if the image is in the community */}
-                        {selectedImage.communityPost && (
-                        <button
-                            onClick={removeFromCommunity}
-                            className="text-gray-400 hover:text-red-500 transition-all text-sm duration-300"
-                        >
-                            Remove from Community?
-                        </button>
-                        )}
-                    </div>
                 </div>
+
             </div>
+
         </div>
     );
 }
