@@ -459,9 +459,24 @@ export default function ImageProcessor() {
           <button
             onClick={handleGenerate}
             disabled={isProcessing || !selectedFile}
-            className="w-full py-1.5 text-sm bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 disabled:bg-gray-600 rounded-md transition-all"
+            className="w-full py-1.5 text-sm bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 disabled:bg-gradient-to-r disabled:from-gray-700 disabled:to-gray-600 rounded-md transition-all disabled:cursor-not-allowed relative overflow-hidden"
           >
-            {isProcessing ? 'Generating...' : 'Generate'}
+            {isProcessing && (
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 to-blue-500/30 animate-pulse" />
+            )}
+            <div className="relative flex items-center justify-center gap-2">
+              {isProcessing ? (
+                <>
+                  <Wand2 className="w-4 h-4 animate-spin" />
+                  <span>Generating...</span>
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-4 h-4" />
+                  <span>Generate</span>
+                </>
+              )}
+            </div>
           </button>
         </div>
       </div>
