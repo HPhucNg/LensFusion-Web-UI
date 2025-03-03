@@ -4,38 +4,34 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { processImage } from '@/lib/huggingface/client';
 import { defaultParams, parameterDefinitions } from '@/lib/huggingface/clientConfig';
 import { saveAs } from 'file-saver';
-import Image from 'next/image';
-import { templates, getTemplateById } from '@/lib/templates';
-import { CloudUpload, Wand2 } from 'lucide-react';
+import { templates } from '@/lib/templates';
 import { useClickAway } from 'react-use';
+
+import { SettingsSidebar } from './SettingsSidebar';
+import { TemplateGrid } from './TemplateGrid';
+import { TabNavigation } from './TabNavigation';
+import { GenerateButton } from './GenerateButton';
+import { MobileMenuButton } from './MobileMenuButton';
+import { ImageContainer } from './ImageContainer';
+import { FullscreenModal } from './FullscreenModal';
 import ResizePreview from "./ResizePreview";
 
 export default function ImageProcessor() {
   // State management for the component
-  const [isProcessing, setIsProcessing] = useState(false);        // Controls loading state
-  const [inputPreview, setInputPreview] = useState(null);         // Stores the preview of uploaded image
-  const [outputImage, setOutputImage] = useState(null);           // Stores the generated image URL
-  const [preprocessedImage, setPreprocessedImage] = useState(null); // Stores the preprocessed image URL
-  const [webpImage, setWebpImage] = useState(null);               // Stores the WebP version URL
-  const [error, setError] = useState(null);                       // Stores error messages
-  const [status, setStatus] = useState("");                       // Stores status messages
-  const [params, setParams] = useState(defaultParams);            // Stores all generation parameters
-  const [loadedTemplates, setLoadedTemplates] = useState([]); // Renamed state variable
-
-  // Add state for active tab
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [inputPreview, setInputPreview] = useState(null);
+  const [outputImage, setOutputImage] = useState(null);
+  const [preprocessedImage, setPreprocessedImage] = useState(null);
+  const [webpImage, setWebpImage] = useState(null);
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState("");
+  const [params, setParams] = useState(defaultParams);
+  const [loadedTemplates, setLoadedTemplates] = useState([]);
   const [activeSidebar, setActiveSidebar] = useState('settings');
-
-  // Add new state for selected template
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
-
-  // Add new state for tracking the file
   const [selectedFile, setSelectedFile] = useState(null);
-
-  // Add state for fullscreen
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState(null);
-
-  // Add state for mobile sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   //resizing state managements
@@ -181,8 +177,8 @@ export default function ImageProcessor() {
 
   // Fetch templates on component mount
   useEffect(() => {
-    setLoadedTemplates(templates); // Use the imported templates directly
-    console.log("Loaded templates:", templates); // Verify template loading
+    setLoadedTemplates(templates);
+    console.log("Loaded templates:", templates);
   }, []);
 
   // Creates a preview of the uploaded image
@@ -338,81 +334,6 @@ export default function ImageProcessor() {
     handleGenerate();
   };
 
-  // Renders different types of parameter inputs
-  const renderParameter = (param) => {
-    switch (param.type) {
-      case 'text':
-        // Special handling for seed input
-        if (param.id === 'seed') {
-          return (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                id={param.id}
-                placeholder="12345"
-                className="flex-1 p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
-                          focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={params[param.id]}
-                onChange={(e) => handleParamChange(param.id, e.target.value)}
-              />
-              <button
-                onClick={generateRandomSeed}
-                type="button"
-                className="p-3 bg-gray-900/50 border border-gray-700 rounded-lg hover:bg-gray-800
-                          focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                title="Generate Random Seed"
-              >
-                <svg 
-                  className="w-5 h-5" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
-                  />
-                </svg>
-              </button>
-            </div>
-          );
-        }
-        // Changed regular text input to textarea
-        return (
-          <textarea
-            id={param.id}
-            placeholder={param.placeholder}
-            className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
-                      focus:ring-0 focus:outline-none resize-y"
-            value={params[param.id]}
-            onChange={(e) => handleParamChange(param.id, e.target.value)}
-            rows={3}
-          />
-        );
-      // Dropdown select input
-      case 'select':
-        return (
-          <select
-            id={param.id}
-            className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
-                      focus:ring-0 focus:outline-none"
-            value={params[param.id]}
-            onChange={(e) => handleParamChange(param.id, e.target.value)}
-          >
-            {param.options.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        );
-      default:
-        return null;
-    }
-  };
-
   // Add these utility functions
   const handleDownload = async (url) => {
     try {
@@ -442,21 +363,13 @@ export default function ImageProcessor() {
   // Component UI
   return (
     <div className="h-screen flex bg-gray-900 text-white">
-      {/* Mobile menu button at bottom right */}
-      {!isSidebarOpen && (
-        <div className="lg:hidden fixed bottom-6 right-6 z-50">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="p-3 bg-gray-900 border border-gray-700 rounded-lg shadow-xl hover:bg-gray-800 transition-all"
-          >
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        </div>
-      )}
+      {/* Mobile menu button */}
+      <MobileMenuButton 
+        setIsSidebarOpen={setIsSidebarOpen} 
+        isSidebarOpen={isSidebarOpen} 
+      />
 
-      {/* Modified sidebar container (solid black background) */}
+      {/* Sidebar */}
       <div
         ref={sidebarRef}
         className={`fixed lg:relative inset-y-0 left-0 z-40 w-80 transform ${
@@ -464,145 +377,58 @@ export default function ImageProcessor() {
         } lg:translate-x-0 transition-transform duration-300 ease-in-out bg-gray-900 border-r border-gray-700/50`}
       >
         {/* Tab Navigation */}
-        <div className="flex mb-3">
-          <button
-            onClick={() => setActiveSidebar('settings')}
-            className={`flex-1 py-1.5 text-sm ${
-              activeSidebar === 'settings' 
-                ? 'bg-gray-700/50 text-white' 
-                : 'bg-gray-800/20 text-gray-400 hover:bg-gray-700/30'
-            } rounded-l-md transition-colors`}
-          >
-            Settings
-          </button>
-          <button
-            onClick={() => setActiveSidebar('templates')}
-            className={`flex-1 py-1.5 text-sm ${
-              activeSidebar === 'templates' 
-                ? 'bg-gray-700/50 text-white' 
-                : 'bg-gray-800/20 text-gray-400 hover:bg-gray-700/30'
-            } rounded-r-md transition-colors`}
-          >
-            Templates
-          </button>
-        </div>
+        <TabNavigation 
+          activeSidebar={activeSidebar} 
+          setActiveSidebar={setActiveSidebar} 
+        />
 
         {/* Scrollable Content Area */}
         <div className="flex-1 overflow-y-auto pb-4 scrollbar">
           {activeSidebar === 'settings' ? (
-            <>
-              {/* Settings Content */}
-              <div className="space-y-3">
-                {/* Prompts Section */}
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-gray-300">Positive Prompt</label>
-                    <textarea
-                      value={params.prompt}
-                      onChange={(e) => handleParamChange('prompt', e.target.value)}
-                      placeholder="Describe what you want to generate..."
-                      className="w-full p-3 text-sm bg-gray-800/20 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[120px] border border-gray-700"
-                      rows={10}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-gray-300">Negative Prompt</label>
-                    <textarea
-                      value={params.negativePrompt}
-                      onChange={(e) => handleParamChange('negativePrompt', e.target.value)}
-                      placeholder="Describe what you want to avoid..."
-                      className="w-full p-3 text-sm bg-gray-800/20 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[50px] border border-gray-700"
-                      rows={4}
-                    />
-                  </div>
-                </div>
-
-                {/* Advanced Settings */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-300">Advanced Settings</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {parameterDefinitions.slice(2, 4).map(param => (
-                      param.type === 'select' && (
-                        <div key={param.id} className="space-y-1">
-                          <label className="block text-xs font-medium text-gray-300">{param.label}</label>
-                          {renderParameter(param)}
-                        </div>
-                      )
-                    ))}
-                  </div>
-
-                  {/* Seed Input */}
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-300">Seed</label>
-                    {renderParameter(parameterDefinitions.find(p => p.id === 'seed'))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Status and Error Messages */}
-              {status && (
-                <div className="text-xs text-gray-300 mt-3">
-                  Status: {status}
-                </div>
-              )}
-
-              {error && (
-                <div className="text-xs text-red-300 bg-red-900/50 p-2 rounded-md mt-3">
-                  {error}
-                </div>
-              )}
-            </>
+            <SettingsSidebar
+              params={params}
+              handleParamChange={handleParamChange}
+              generateRandomSeed={generateRandomSeed}
+              parameterDefinitions={parameterDefinitions}
+              status={status}
+              error={error}
+            />
           ) : (
-            <div className="grid grid-cols-2 gap-3 p-1 overflow-y-auto h-[calc(100vh-200px)] pr-2 scrollbar-thin scrollbar-track-gray-900/50 scrollbar-thumb-gray-700/50">
-              {loadedTemplates.map((template, index) => (
-                <div
-                  key={template.id}
-                  className={`group relative aspect-square cursor-pointer rounded-xl transition-all ${
-                    selectedTemplateId === template.id
-                      ? 'ring-2 ring-purple-500/80 scale-[0.98] bg-gradient-to-br from-purple-900/20 to-blue-900/10'
-                      : 'hover:scale-95'
-                  }`}
-                  onClick={() => handleTemplateSelect(template)}
-                >
-                  <div className="relative h-full w-full overflow-hidden rounded-xl border border-gray-700/50 bg-gray-900/20">
-                    <Image
-                      src={template.image}
-                      alt={`Template ${index + 1}`}
-                      fill
-                      className={`object-cover transition-opacity ${
-                        selectedTemplateId === template.id ? 'opacity-80' : 'group-hover:opacity-50'
-                      }`}
-                      unoptimized={true}
-                    />
-                    <div className="absolute bottom-2 right-2 rounded-md bg-gray-900/80 px-2 py-1 text-xs font-medium text-gray-300 backdrop-blur-sm">
-                      #{index + 1}
-                    </div>
-                  </div>
-                  {/* Selection glow effect */}
-                  {selectedTemplateId === template.id && (
-                    <div className="absolute inset-0 rounded-xl pointer-events-none border border-purple-500/30 shadow-[0_0_25px_rgba(168,85,247,0.3)]" />
-                  )}
-                </div>
-              ))}
-            </div>
+            <TemplateGrid
+              loadedTemplates={loadedTemplates}
+              selectedTemplateId={selectedTemplateId}
+              handleTemplateSelect={handleTemplateSelect}
+            />
           )}
         </div>
 
-        {/* Fixed Generate Button Container */}
-        <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-gray-800/90 to-transparent">
-          <button
-            onClick={handleGenerate}
-            disabled={isProcessing || !selectedFile}
-            className="w-full py-1.5 text-sm bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 disabled:bg-gray-600 rounded-md transition-all"
-          >
-            {isProcessing ? 'Generating...' : 'Generate'}
-          </button>
-        </div>
+        {/* Generate Button */}
+        <GenerateButton 
+          handleGenerate={handleGenerate} 
+          isProcessing={isProcessing} 
+          selectedFile={selectedFile} 
+        />
       </div>
 
       {/* Image Processing Area */}
       <div className="flex-1 p-4">
         <div className="max-w-4xl mx-auto flex flex-col lg:flex-row gap-8 h-full">
+          <ImageContainer
+            imageSrc={inputPreview}
+            altText="Input preview"
+            onClear={clearImage}
+            onFullscreen={() => openFullscreen(inputPreview)}
+            uploadHandler={handleImageUpload}
+            isInput={true}
+          />
+
+          <ImageContainer
+            imageSrc={outputImage}
+            altText="Generated output"
+            onDownload={() => handleDownload(outputImage)}
+            onFullscreen={() => openFullscreen(outputImage)}
+            isInput={false}
+          />
           {/* Input Container */}
           <div className="group relative flex-1 rounded-2xl p-1 shadow-xl hover:shadow-2xl transition-all duration-300">
             <div className="h-full w-full flex flex-col items-center justify-center rounded-xl backdrop-blur-sm">
@@ -882,6 +708,13 @@ export default function ImageProcessor() {
           </div>
         </div>
       )}
+
+      {/* Fullscreen Modal */}
+      <FullscreenModal
+        isFullscreen={isFullscreen}
+        fullscreenImage={fullscreenImage}
+        closeFullscreen={closeFullscreen}
+      />
     </div>
   );
 }
