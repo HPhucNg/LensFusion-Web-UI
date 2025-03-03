@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { templates, getTemplateById } from '@/lib/templates';
 import { CloudUpload, Wand2 } from 'lucide-react';
 import { useClickAway } from 'react-use';
+import ResizePreview from "./ResizePreview";
 
 export default function ImageProcessor() {
   // State management for the component
@@ -36,6 +37,139 @@ export default function ImageProcessor() {
 
   // Add state for mobile sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  //resizing state managements
+  const [isResizing, setIsResizing] = useState(false);
+  const [imageToResize, setImageToResize] = useState(null);
+  const [resizeDimensions, setResizeDimensions] = useState({ width: 0, height: 0 });
+  const [originalDimensions, setOriginalDimensions] = useState({ width: 0, height: 0 });
+  const [maintainAspectRatio, setMaintainAspectRatio] = useState(true); 
+
+  //handle resizing of an image, keeping the optimal ratio when user changes width or height
+  const handleResizeDimensionChange = (dimension, value) => {
+    //convert to a num
+    const numValue = parseInt(value) || 0;
+    
+    if (maintainAspectRatio) {
+      //original dimention ratio
+      const aspectRatio = originalDimensions.width / originalDimensions.height;
+      
+      //if user adjust width it resizes the height
+      if (dimension === 'width') {
+        setResizeDimensions({
+          width: numValue,
+          height: Math.round(numValue / aspectRatio)
+        });
+      } else {
+        //if user adjust height it resizes the width
+        setResizeDimensions({
+          width: Math.round(numValue * aspectRatio),
+          height: numValue
+        });
+      }
+    } else {
+      //only update size without keeping ratio
+      setResizeDimensions({
+        ...resizeDimensions,
+        [dimension]: numValue
+      });
+    }
+  };
+
+  //keep the original image when user clicks on 'cancel'
+  const closeResizeModal = () => {
+    setIsResizing(false);
+    setImageToResize(null);
+  };
+
+  //convert dataURL to file object (purpose of this is to keep the resized image is properly uploaded when user modifies the size, if not it will generate the originial instead of resized)
+  const dataURLtoFile = (dataurl, filename) => {
+    //spliting the data URL and base64 encoded data
+    const arr = dataurl.split(',');
+    // searches for this - data:image/png;base64 and extracts image/png
+    const mime = arr[0].match(/:(.*?);/)[1];
+    //decode base 64encoded dat a
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    //stores 8-bit of unsigned int
+    const u8arr = new Uint8Array(n);
+    //assigns value, converting to raw binary data
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    //create file like file name and type
+    return new File([u8arr], filename, { type: mime });
+  };
+  
+  //resize function
+  const applyResize = async () => {
+    try {
+      //canvas with modified size
+      const canvas = document.createElement('canvas');
+      canvas.width = resizeDimensions.width;
+      canvas.height = resizeDimensions.height;
+      
+      const ctx = canvas.getContext('2d');
+      
+      //white background
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const img = new window.Image();
+      img.onload = () => {
+        //center image on canvas (will change this later, to make it adjustable)
+        const x = (canvas.width - img.width) / 2;
+        const y = (canvas.height - img.height) / 2;
+        
+        ctx.drawImage(img, x, y, img.width, img.height);
+        
+        const resizedImageUrl = canvas.toDataURL('image/png');      
+        //convert data URL to File object for API processing
+        const resizedImageFile = dataURLtoFile(resizedImageUrl, 'resized-image.png');
+
+        //resize input 
+        if (imageToResize === inputPreview) {
+          //updates input with new resized URL
+          setInputPreview(resizedImageUrl);
+          //updates the selected file to sized
+          setSelectedFile(resizedImageFile);
+        } else if (imageToResize === outputImage) {
+          setOutputImage(resizedImageUrl);
+        }
+        
+        closeResizeModal();
+      };
+      img.src = imageToResize;
+    } catch (error) {
+      console.error('Error resizing canvas:', error);
+    }
+  };
+
+  const handleResize = (imageSrc) => {
+    setImageToResize(imageSrc);
+    
+    const img = new window.Image();
+    img.onload = () => {
+      //get the original image size
+      const originalWidth = img.width;
+      const originalHeight = img.height;
+      
+      //stores the original image
+      setOriginalDimensions({ 
+        width: originalWidth, 
+        height: originalHeight 
+      });
+      
+      //set the original resize to original size
+      setResizeDimensions({ 
+        width: originalWidth, 
+        height: originalHeight 
+      });
+      
+      setIsResizing(true);
+    };
+    img.src = imageSrc;
+  };
 
   const sidebarRef = useRef();
 
@@ -537,6 +671,17 @@ export default function ImageProcessor() {
                   </label>
                 )}
               </div>
+              {inputPreview && (
+                <div className="w-full mt-3">
+                  <button
+                    onClick={() => handleResize(inputPreview)}
+                    className="flex px-4 py-2 bg-gray-800 hover:bg-gray-700/90 rounded-lg border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                    title="Resize image"
+                  >
+                    <span className="text-sm text-white">Resize Image</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -603,6 +748,117 @@ export default function ImageProcessor() {
         </div>
       </div>
 
+
+      {/* Canvas resizing */}
+      {isResizing && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-xl p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-medium text-white">Resize Background</h3>
+            </div>
+            
+            {/* preview grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Resizing adjustable side */}
+              <div className="space-y-5">
+                <div className="p-4 bg-gray-900/50 rounded-lg">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Original image:</span>
+                      <span>{originalDimensions.width} x {originalDimensions.height} px</span>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <span>Current canvas:</span>
+                      <span>{resizeDimensions.width} x {resizeDimensions.height} px</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-white">Adjust Canvas Size</h4>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 mb-1">Width</label>
+                    <input
+                      type="number"
+                      value={resizeDimensions.width}
+                      onChange={(e) => handleResizeDimensionChange('width', e.target.value)}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                      min={originalDimensions.width}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 mb-1">Height</label>
+                    <input
+                      type="number"
+                      value={resizeDimensions.height}
+                      onChange={(e) => handleResizeDimensionChange('height', e.target.value)}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                      min={originalDimensions.height}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="maintain-aspect"
+                      checked={maintainAspectRatio}
+                      onChange={(e) => setMaintainAspectRatio(e.target.checked)}
+                      className="mr-2"
+                    />
+                    <label htmlFor="maintain-aspect">Maintain aspect ratio</label>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <button
+                    onClick={() => {
+                      setResizeDimensions({
+                        width: originalDimensions.width,
+                        height: originalDimensions.height
+                      });
+                    }}
+                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white"
+                  >
+                    Reset to Original
+                  </button>
+                  
+                  <div className="flex space-x-4">
+                    <button
+                      onClick={closeResizeModal}
+                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={applyResize}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-800 rounded-lg text-white"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Preview resized image */}
+              <div className="bg-gray-900/50 rounded-lg overflow-hidden border border-gray-700/50 flex flex-col">
+                <div className="px-4 py-2">
+                  <p className="text-sm font-medium text-white">Preview</p>
+                </div>
+                <div className="flex-1" style={{ minHeight: '300px' }}>
+                  <ResizePreview 
+                    originalDimensions={originalDimensions} 
+                    newDimensions={resizeDimensions} 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Add this fullscreen modal at the bottom of your component */}
       {isFullscreen && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4">
