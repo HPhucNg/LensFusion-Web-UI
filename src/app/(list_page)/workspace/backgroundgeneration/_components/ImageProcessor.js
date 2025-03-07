@@ -94,7 +94,7 @@ export default function ImageProcessor() {
       const ctx = canvas.getContext('2d');
       
       //transparent background
-      ctx.fillStyle = '#00';
+      ctx.fillStyle = 'transparent';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       const img = new window.Image();
