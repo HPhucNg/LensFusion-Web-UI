@@ -39,37 +39,23 @@ export default function ImageProcessor() {
   const [imageToResize, setImageToResize] = useState(null);
   const [resizeDimensions, setResizeDimensions] = useState({ width: 0, height: 0 });
   const [originalDimensions, setOriginalDimensions] = useState({ width: 0, height: 0 });
-  const [maintainAspectRatio, setMaintainAspectRatio] = useState(true); 
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  //image positioning set to  original size
+  const [scalePercentage, setScalePercentage] = useState(1.0); 
 
-  //handle resizing of an image, keeping the optimal ratio when user changes width or height
-  const handleResizeDimensionChange = (dimension, value) => {
-    //convert to a num
-    const numValue = parseInt(value) || 0;
+  //handles image positioning
+  const handleScaleChange = (value) => {
+    const floatValue = parseFloat(value) || 0;
+    setScalePercentage(floatValue);
     
-    if (maintainAspectRatio) {
-      //original dimention ratio
-      const aspectRatio = originalDimensions.width / originalDimensions.height;
-      
-      //if user adjust width it resizes the height
-      if (dimension === 'width') {
-        setResizeDimensions({
-          width: numValue,
-          height: Math.round(numValue / aspectRatio)
-        });
-      } else {
-        //if user adjust height it resizes the width
-        setResizeDimensions({
-          width: Math.round(numValue * aspectRatio),
-          height: numValue
-        });
-      }
-    } else {
-      //only update size without keeping ratio
-      setResizeDimensions({
-        ...resizeDimensions,
-        [dimension]: numValue
-      });
-    }
+    const scaledWidth = Math.round(originalDimensions.width * floatValue);
+    const scaledHeight = Math.round(originalDimensions.height * floatValue);
+    
+    const x = (originalDimensions.width - scaledWidth) / 2;
+    const y = (originalDimensions.height - scaledHeight) / 2;
+    
+    //updates determines the position the scaled image in the original container
+    setImagePosition({ x, y });
   };
 
   //keep the original image when user clicks on 'cancel'
@@ -102,23 +88,30 @@ export default function ImageProcessor() {
     try {
       //canvas with modified size
       const canvas = document.createElement('canvas');
-      canvas.width = resizeDimensions.width;
-      canvas.height = resizeDimensions.height;
+      canvas.width = originalDimensions.width;
+      canvas.height = originalDimensions.height;
       
       const ctx = canvas.getContext('2d');
       
-      //white background
-      ctx.fillStyle = '#FFFFFF';
+      //transparent background
+      ctx.fillStyle = '#00';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       const img = new window.Image();
       img.onload = () => {
-        //center image on canvas (will change this later, to make it adjustable)
-        const x = (canvas.width - img.width) / 2;
-        const y = (canvas.height - img.height) / 2;
-        
-        ctx.drawImage(img, x, y, img.width, img.height);
-        
+        //center image on canvas 
+        const scaledWidth = Math.round(originalDimensions.width * scalePercentage);
+        const scaledHeight = Math.round(originalDimensions.height * scalePercentage);
+
+        const x = imagePosition.x;
+        const y = imagePosition.y;
+
+        ctx.drawImage(
+          img, 
+          0, 0, originalDimensions.width, originalDimensions.height,
+          x, y, scaledWidth, scaledHeight
+        );
+                
         const resizedImageUrl = canvas.toDataURL('image/png');      
         //convert data URL to File object for API processing
         const resizedImageFile = dataURLtoFile(resizedImageUrl, 'resized-image.png');
@@ -141,6 +134,11 @@ export default function ImageProcessor() {
     }
   };
 
+  //updates the new position coordinates
+  const handlePositionChange = (position) => {
+    setImagePosition(position);
+  };
+
   const handleResize = (imageSrc) => {
     setImageToResize(imageSrc);
     
@@ -155,7 +153,9 @@ export default function ImageProcessor() {
         width: originalWidth, 
         height: originalHeight 
       });
-      
+
+      setScalePercentage(1.0);
+
       //set the original resize to original size
       setResizeDimensions({ 
         width: originalWidth, 
@@ -446,69 +446,22 @@ export default function ImageProcessor() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Resizing adjustable side */}
               <div className="space-y-5">
-                <div className="p-4 bg-gray-900/50 rounded-lg">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Original image:</span>
-                      <span>{originalDimensions.width} x {originalDimensions.height} px</span>
-                    </div>
-                    
-                    <div className="flex justify-between">
-                      <span>Current canvas:</span>
-                      <span>{resizeDimensions.width} x {resizeDimensions.height} px</span>
-                    </div>
-                  </div>
-                </div>
-                
                 <div className="space-y-4">
-                  <h4 className="text-sm font-medium text-white">Adjust Canvas Size</h4>
-                  
+                  <h4 className="text-sm font-medium text-white">Product Size </h4>
                   <div>
-                    <label className="text-sm font-medium text-gray-300 mb-1">Width</label>
                     <input
                       type="number"
-                      value={resizeDimensions.width}
-                      onChange={(e) => handleResizeDimensionChange('width', e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
-                      min={originalDimensions.width}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-gray-300 mb-1">Height</label>
-                    <input
-                      type="number"
-                      value={resizeDimensions.height}
-                      onChange={(e) => handleResizeDimensionChange('height', e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
-                      min={originalDimensions.height}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="maintain-aspect"
-                      checked={maintainAspectRatio}
-                      onChange={(e) => setMaintainAspectRatio(e.target.checked)}
-                      className="mr-2"
-                    />
-                    <label htmlFor="maintain-aspect">Maintain aspect ratio</label>
+                      value={scalePercentage}
+                      onChange={(e) => handleScaleChange(e.target.value)}
+                      className="bg-gray-700 rounded-lg px-3 py-1 text-white"
+                      min="0.1"
+                      max="1"
+                      step="0.1"
+                    /> x width
                   </div>
                 </div>
                 
                 <div className="flex justify-between items-center">
-                  <button
-                    onClick={() => {
-                      setResizeDimensions({
-                        width: originalDimensions.width,
-                        height: originalDimensions.height
-                      });
-                    }}
-                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white"
-                  >
-                    Reset to Original
-                  </button>
                   
                   <div className="flex space-x-4">
                     <button
@@ -528,7 +481,7 @@ export default function ImageProcessor() {
               </div>
               
               {/* Preview resized image */}
-              <div className="bg-gray-900/50 rounded-lg overflow-hidden border border-gray-700/50 flex flex-col">
+              <div className="bg-gray-900/50 rounded-lg overflow-hidden border border-gray-700/50 flex flex-col w-96">
                 <div className="px-4 py-2">
                   <p className="text-sm font-medium text-white">Preview</p>
                 </div>
@@ -536,6 +489,8 @@ export default function ImageProcessor() {
                   <ResizePreview 
                     originalDimensions={originalDimensions} 
                     newDimensions={resizeDimensions} 
+                    onPositionChange={handlePositionChange}
+                    scalePercentage={scalePercentage}
                   />
                 </div>
               </div>
