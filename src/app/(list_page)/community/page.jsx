@@ -24,7 +24,7 @@ function Page() {
     { id: 'jewellery', label: 'Jewellery' },
     { id: 'bags', label: 'Bags' },
   ];
-
+  const scrollContainerRef = useRef(null);  // Create a reference to the scroll container
   useEffect(() => {
     // Fetch community posts from the correct Firestore collection
     const fetchPosts = async () => {
@@ -99,7 +99,7 @@ function Page() {
           </div>
         </div>
 
-        <div className="p-4">
+        <div className="flex-grow max-h-[calc(100vh-120px)] overflow-y-auto p-4" ref={scrollContainerRef}>
           {/* Masonry grid container */}
           <Masonry columnsCount={4} gutter="10px">
             {filteredPosts.map((post, i) => (
