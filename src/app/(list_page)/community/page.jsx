@@ -1,6 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { useState, useEffect, useRef } from 'react';
+import { collection, getDocs, query, orderBy, startAfter, limit } from 'firebase/firestore';
 import { db } from '@/firebase/FirebaseConfig'; // Firebase config import
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -17,6 +17,8 @@ function Page() {
   const [showModal, setShowModal] = useState(false);  // To control modal visibility
   const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
   const [selectedCategory, setSelectedCategory] = useState(null);  // State to track the selected category
+  const [lastVisible, setLastVisible] = useState(null); // To store the last fetched document for pagination
+
   const categories = [
     { id: 'skincare', label: 'Skincare' },
     { id: 'candles', label: 'Candles' },
@@ -25,25 +27,60 @@ function Page() {
     { id: 'bags', label: 'Bags' },
   ];
   const scrollContainerRef = useRef(null);  // Create a reference to the scroll container
+ 
   useEffect(() => {
-    // Fetch community posts from the correct Firestore collection
+    // Fetch initial posts from Firestore
     const fetchPosts = async () => {
+      setLoading(true);
       try {
-        const querySnapshot = await getDocs(collection(db, 'community'));
+        const postsQuery = query(
+          collection(db, 'community'),
+          orderBy('createdAt'),  // Order by timestamp or any field for pagination
+          limit(8)  // Fetch only the first 8 posts for the initial load
+        );
+        const querySnapshot = await getDocs(postsQuery);
         const postsArray = [];
         querySnapshot.forEach((doc) => {
           postsArray.push({ id: doc.id, ...doc.data() });
         });
         setPosts(postsArray);  // Set posts to state
+        setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);  // Save the last visible document for pagination
       } catch (e) {
-        console.error("Error fetching community posts: ", e);
+        console.error("Error fetching posts: ", e);
       } finally {
-        setLoading(false);  // Set loading to false after fetching
+        setLoading(false);
       }
     };
-  
+
     fetchPosts();
   }, []);
+
+  const fetchMorePosts = async () => {
+    if (loading || !lastVisible) return;  // Prevent multiple fetches at once
+
+    setLoading(true);
+    try {
+      const postsQuery = query(
+        collection(db, 'community'),
+        orderBy('createdAt'),
+        startAfter(lastVisible),  // Start after the last visible document
+        limit(8)  // Fetch the next 8 posts
+      );
+
+      const querySnapshot = await getDocs(postsQuery);
+      const postsArray = [];
+      querySnapshot.forEach((doc) => {
+        postsArray.push({ id: doc.id, ...doc.data() });
+      });
+
+      setPosts((prevPosts) => [...prevPosts, ...postsArray]);  // Append the new posts to the existing ones
+      setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);  // Update last visible document
+    } catch (e) {
+      console.error("Error fetching more posts: ", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Function to handle image click
   const handleImageClick = (image) => {
@@ -62,6 +99,19 @@ function Page() {
     ? posts.filter((post) => post.category === selectedCategory)
     : posts;  // Show all posts if no category is selected
 
+  // Handle scroll event to detect when to fetch more posts
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    // Check if the user is near the bottom of the page (you can adjust the threshold)
+    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+      // Trigger fetching more posts when scrolled near the bottom
+      fetchMorePosts();
+    }
+  };
+
+  
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
