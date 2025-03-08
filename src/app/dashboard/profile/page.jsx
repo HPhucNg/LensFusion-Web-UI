@@ -15,7 +15,6 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import GalleryModal from '@/components/GalleryModal';
-import Modal from '@/components/Modal';
 import { useSubscription } from '@/context/subscriptionContext';
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import { 
@@ -300,7 +299,7 @@ export default function UserProfile() {
   const [userImages, setUserImages] = useState([]); // State to store user images
   const [showModal, setShowModal] = useState(false);  // To control modal visibility
   const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
-  const [showCommunityModal, setShowCommunityModal] = useState(false); // For Community Modal
+  const [imageStatus, setImageStatus] = useState(false);  // Track image's posted status
   const [theme, setTheme] = useState("dark");
   const [currentPage, setCurrentPage] = useState(1); // Default to first page
   const imagesPerPage = 8;
@@ -313,6 +312,11 @@ export default function UserProfile() {
   // Handle page click
   const handlePageClick = (page) => {
   setCurrentPage(page);
+  };
+
+  // Handle delete image in child component and show in parent
+  const handleImageDelete = (imageId) => {
+    setUserImages((prevImages) => prevImages.filter(image => image.uid !== imageId));
   };
 
   // Toggle theme function
@@ -364,7 +368,7 @@ export default function UserProfile() {
     if (user) {
       fetchUserImages(user);
     }
-  }, [user]);
+  }, [user, imageStatus]);
   
 
   const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId = null, subscriptionStatus = 'inactive', currentPlan = null) => {
@@ -414,6 +418,8 @@ export default function UserProfile() {
   const handleImageClick = (image) => {
     setSelectedImage(image);
     setShowModal(true);
+    setImageStatus(image?.communityPost || false);  // Update the imageStatus when an image is clicked
+    console.log(image?.communityPost);
   };
 
   // Show loading spinner while fetching data
@@ -428,15 +434,7 @@ export default function UserProfile() {
   const closeModal = () => {
     setShowModal(false);
 }
-  const openCommunityModal = () => {
-    setShowModal(false);  // Close Gallery Modal
-    setShowCommunityModal(true);  // Open Community Modal
-  };
 
-  const closeCommunityModal = () => {
-    setShowCommunityModal(false);  // Close Community Modal
-    setShowModal(true);
-  };
 
 
 
@@ -489,19 +487,19 @@ export default function UserProfile() {
                 </h3>
               </div>
               <div className="w-full space-y-3">
-                <Button variant="outline" onClick={() => setIsManageAccountOpen(true)} className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
+                <Button variant="outline" onClick={() => setIsManageAccountOpen(true)} className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700 overflow-hidden transition-all duration-300">
                   <Settings className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Account</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
+                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700  transition-all duration-300 overflow-hidden">
                   <User2 className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Subscription</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
+                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700  transition-all duration-300">
                   <Share2 className="mr-3 h-5 w-5" />
                   <span className="text-lg">Share</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white" onClick={toggleTheme}>
+                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800  hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700 transition-all duration-300" onClick={toggleTheme}>
                   {theme === "dark" ? (
                   <Sun className="mr-3 h-5 w-5 " />
                 ) : (
@@ -533,8 +531,8 @@ export default function UserProfile() {
             <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
               <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {userImages.length > 0 ? (
-                  userImages.map((image, index) => (
+                {paginatedImages.length > 0 ? (
+                  paginatedImages.map((image, index) => (
                 <HoverCard key={index}>
                   <HoverCardTrigger asChild>
                     <div
@@ -578,7 +576,7 @@ export default function UserProfile() {
                   variant="outline"
                   className={`w-10 h-10 text-lg font-medium ${
                     page === currentPage
-                    ? 'bg-white text-black hover:bg-gray-200'
+                    ? 'bg-white text-black hover:bg-gray-200 hover:text-[#c792ff]'
                     : 'border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700'
                   } shadow-lg transition-all duration-300`}
                   onClick={() => handlePageClick(page)}
@@ -605,19 +603,14 @@ export default function UserProfile() {
                 <GalleryModal
                     closeModal={closeModal}
                     image={selectedImage}
-                    openCommunityModal={openCommunityModal}  // Pass openCommunityModal function
+                    createdBy={user?.displayName}
+                    imageStatus={imageStatus}  // Pass imageStatus as prop
+                    updateImageStatus={setImageStatus}  // Pass function to update imageStatus
+                    onDelete={handleImageDelete}  // Pass the delete function
                 />
             )}
 
-            {/* Community Modal */}
-            {showCommunityModal && (
-                <Modal
-                    closeModal={closeCommunityModal}
-                    add_community={() => {}}
-                    selectedImage={selectedImage}
-                    createdBy={user?.displayName}
-                />
-      )}
+            
     </div>
   );
 }

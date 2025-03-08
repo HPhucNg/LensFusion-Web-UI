@@ -6,7 +6,7 @@ import Image from 'next/image';  // Import Image component from next/image
 import { auth, db } from '@/firebase/FirebaseConfig'; // Firebase config import
 import { collection, addDoc, doc, updateDoc, getDoc, getDocs, deleteDoc } from 'firebase/firestore';
 
-function Modal({ closeModal, add_community, selectedImage, createdBy }) {
+function Modal({ closeModal, add_community, selectedImage, createdBy, updateImageStatus, imageStatus }) {
     const [pinDetails, setPinDetails] = useState({
         created_by: createdBy,
         title: '',
@@ -18,14 +18,15 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
     const [isEditing, setIsEditing] = useState(false); // Track if user is editing an existing post
 
     // Check if the post is being managed or new (based on communityPost flag)
-    const headingText = selectedImage.communityPost ? "Manage Post to Community" : "Post to Community";
+    const headingText = imageStatus ? "Manage Post to Community" : "Post to Community";
 
     // Fetch post data if communityPost is true
     useEffect(() => {
         const fetchCommunityPost = async () => {
-            if (selectedImage.communityPost) {
+            if (imageStatus) {
                 const communityPostRef = doc(db, 'community', selectedImage.communityPostId);
                 const communityPostDoc = await getDoc(communityPostRef);
+                
                 
                 if (communityPostDoc.exists()) {
                     const communityPostData = communityPostDoc.data();
@@ -52,7 +53,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
 
         try {
             // If communityPost is false, save as a new post
-            if (!selectedImage.communityPost) {
+            if (!imageStatus) {
                 const communityRef = await addDoc(collection(db, 'community'), {
                     created_by: users_data.created_by,
                     title: users_data.title,
@@ -72,7 +73,8 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                     communityPost: true,  // Set communityPost to true
                     communityPostId: communityRef.id, // Store the community post ID for reference
                 });
-
+                // Update the image status in the parent component
+                updateImageStatus(true);  // Set the image status to posted
                 add_community(users_data); // Pass the final pin data to the parent component
                 closeModal(); // Close the modal after saving the pin
             } else {
@@ -82,7 +84,6 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                     title: users_data.title,
                     category: users_data.category,  // Update the category when editing the post
                 });
-
                 console.log('Community Post updated with ID: ', selectedImage.communityPostId);
                 add_community(users_data); // Pass the updated pin data to the parent component
                 closeModal(); // Close the modal after updating the pin
@@ -120,7 +121,8 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                 communityPost: false,
                 communityPostId: null, // Clear the reference to the community post
             });
-    
+            // Update the parent component's state
+            updateImageStatus(false); // Update status to "not posted"
             alert("Image removed from community successfully!");
             closeModal(); // Close the modal after removal
         } catch (error) {
@@ -135,6 +137,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
         if (userConfirmed) {
             // If the user confirms, proceed with removing the image from the community
             removeFromCommunity();
+            console.log("Image removed from community.");
         } else {
             console.log("Image removal canceled.");
         }
@@ -144,13 +147,13 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 text-white flex justify-center items-center">
             <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto sm:h-[500px] p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center mb-4 justify-between w-full">
                     <div onClick={closeModal} className="w-4 transform hover:scale-90">
                         <img src="/back-arrow.png" alt="close icon" />
                     </div>
-                    <h1 className="text-2xl font-extrabold">{headingText}</h1>
+                    <h1 className="text-2xl font-extrabold flex-grow text-center">{headingText}</h1>
                     {/* Show the Remove from Community button only if the image is in the community */}
-                    {selectedImage.communityPost && (
+                    {imageStatus && (
                         <button
                             onClick={handleRemoveClick}
                             className="w-8 transform hover:scale-90"
@@ -210,7 +213,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                                 onClick={save_community}  // Calls the save_community function
                                 className="bg-[#8d5aed] w-full sm:w-[200px] h-[40px] rounded-[22px] hover:bg-[#b69aef] transition-colors duration-300"
                             >
-                                {isEditing ? 'Update' : 'Publish'}
+                                {imageStatus ? 'Update' : 'Publish'}
                             </button>
 
                         </div>

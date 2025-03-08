@@ -106,13 +106,19 @@ body {
 
 /* Light theme custom styles */
 html.light .bg-gradient-to-r {
-  background: rgb(254, 250, 250);
+  background: rgba(235, 244, 255, 0.649);
   color: rgb(65, 65, 65);
-  --card-background: rgb(253, 242, 246);
+  --card-background: rgb(255, 255, 255);
   --modal-background: rgba(255, 255, 255, 0.404);
   --modal-backdrop: blur(10px); /* Equivalent to backdrop-blur-lg */
   --border-gray:#e0e0e0; 
 }
+
+html.light .hover\:from-gray-800:hover {
+  background: rgba(192, 202, 220, 0.3); /* Hover for profile */
+  color:#c792ff;
+}
+
 
 
   .dark {
@@ -153,6 +159,7 @@ html.light .bg-gradient-to-r {
                             linear-gradient(to right, #81f2eb, #1a202c, #5403a4) border-box;
         --modal-backdrop: none; /* No backdrop blur in dark mode */
         --border-gray: #242c3a;
+        color:white;
     }
 }
 
