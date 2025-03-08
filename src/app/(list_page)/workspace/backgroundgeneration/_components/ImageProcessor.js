@@ -53,7 +53,7 @@ export default function ImageProcessor() {
     reader.onloadend = () => {
       setInputPreview(reader.result);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(file);//convert to base64
   }, []);
 
   // Generates a random seed between 1 and 100000
