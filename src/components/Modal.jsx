@@ -164,15 +164,17 @@ function Modal({ closeModal, add_community, selectedImage, createdBy, updateImag
                 </div>
                 <div className='flex flex-col sm:flex-row items-center justify-evenly sm:space-x-6 p-4'> {/* Main section - left and right side */}
                     {/* Left side - image */}
+                    <div className="mb-4 md:mb-0 w-full md:w-[300px] h-[300px] mt-4 overflow-hidden rounded-xl">
                         {pinDetails.img_data && (
                             <Image 
                                 src={pinDetails.img_data}  // Image URL
                                 alt="Selected"  // Image alt text
                                 width={300}  // Specify the width
                                 height={300}  // Specify the height
-                                className="object-cover rounded-xl"  // Optional class for styling
+                                className="object-cover rounded-xl w-full h-full"  // Optional class for styling
                             />       
                         )}
+                    </div>
                     <div className='flex flex-col space-y-4 w-full sm:w-1/2'>
                         <div>
                             <h2 className='text-gray-400'>Title</h2>
