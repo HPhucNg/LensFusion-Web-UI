@@ -13,6 +13,15 @@ export default function ObjectRemovalUI() {
   const [resultImage, setResultImage] = useState(null);
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [isEraser, setIsEraser] = useState(false);
+  const [paddingMetadata, setPaddingMetadata] = useState(null);
+  const [originalDimensions, setOriginalDimensions] = useState(null);
+  const [resultDimensions, setResultDimensions] = useState(null);
+  
+  const [paddedDebugImage, setPaddedDebugImage] = useState(null);
+  const [paddedDebugMask, setPaddedDebugMask] = useState(null);
+  const [showDebug, setShowDebug] = useState(true);
+  
+  const [isCanvasHovered, setIsCanvasHovered] = useState(false);
   
   const originalFileInputRef = useRef(null);
   const imageContainerRef = useRef(null);
@@ -20,28 +29,37 @@ export default function ObjectRemovalUI() {
   const maskCanvasRef = useRef(null);
   const contextRef = useRef(null);
   const imageRef = useRef(null);
+  const resultImageRef = useRef(null);
 
   // Set up the canvas when original image is loaded
   useEffect(() => {
     if (originalImage && canvasRef.current && maskCanvasRef.current && imageContainerRef.current) {
+      console.log("Original image changed, setting up canvas");
       const img = new Image();
       
-      img.onload = () => {
+      img.onload = async () => {
         imageRef.current = img; // Store the image reference
+        const originalWidth = img.width;
+        const originalHeight = img.height;
+        console.log("Original image dimensions:", { width: originalWidth, height: originalHeight });
+        setOriginalDimensions({ width: originalWidth, height: originalHeight });
         
         // Get container dimensions
         const container = imageContainerRef.current;
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
+        console.log("Container dimensions:", { width: containerWidth, height: containerHeight });
         
         // Calculate scale to fit image within container while preserving aspect ratio
         const scaleWidth = containerWidth / img.width;
         const scaleHeight = containerHeight / img.height;
         const scale = Math.min(scaleWidth, scaleHeight, 1); // Don't scale up, only down
+        console.log("Calculated scale factor:", scale);
         
         // Calculate new dimensions
         const width = Math.floor(img.width * scale);
         const height = Math.floor(img.height * scale);
+        console.log("Scaled image dimensions:", { width, height });
         
         // Set canvas dimensions
         const canvas = canvasRef.current;
@@ -53,21 +71,193 @@ export default function ObjectRemovalUI() {
         
         // Draw the image
         const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
+        console.log("Image drawn to canvas");
         
         // Set up mask canvas
-        const maskCtx = maskCanvas.getContext('2d');
+        const maskCtx = maskCanvas.getContext('2d', { alpha: true });
         maskCtx.clearRect(0, 0, width, height);
         maskCtx.lineJoin = 'round';
         maskCtx.lineCap = 'round';
         maskCtx.strokeStyle = 'black';
         maskCtx.fillStyle = 'black';
+        maskCtx.globalCompositeOperation = 'source-over'; // Default to drawing mode
         contextRef.current = maskCtx;
+        
+        // Calculate padding metadata for 1:1 ratio
+        const metadata = calculatePaddingMetadata(originalWidth, originalHeight);
+        setPaddingMetadata(metadata);
+        console.log("Calculated padding metadata:", metadata);
       };
       
       img.src = originalImage;
     }
   }, [originalImage]);
+
+  // Helper function to calculate padding for 1:1 aspect ratio
+  const calculatePaddingMetadata = (width, height) => {
+    // Determine the target size (the larger dimension)
+    const maxDimension = Math.max(width, height);
+    
+    // Calculate padding
+    let paddingLeft = 0;
+    let paddingTop = 0;
+    let paddingRight = 0;
+    let paddingBottom = 0;
+    
+    if (width < height) {
+      // Portrait image - add padding on left and right
+      const totalWidthPadding = height - width;
+      paddingLeft = Math.floor(totalWidthPadding / 2);
+      paddingRight = totalWidthPadding - paddingLeft; // Handle odd padding
+    } else if (width > height) {
+      // Landscape image - add padding on top and bottom
+      const totalHeightPadding = width - height;
+      paddingTop = Math.floor(totalHeightPadding / 2);
+      paddingBottom = totalHeightPadding - paddingTop; // Handle odd padding
+    }
+    
+    return {
+      originalWidth: width,
+      originalHeight: height,
+      paddingLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeftPercent: (paddingLeft / maxDimension) * 100,
+      paddingTopPercent: (paddingTop / maxDimension) * 100,
+      paddingRightPercent: (paddingRight / maxDimension) * 100,
+      paddingBottomPercent: (paddingBottom / maxDimension) * 100,
+      squareSize: maxDimension
+    };
+  };
+
+  // Function to pad image to square 1:1 ratio
+  const padImageToSquare = (imageDataUrl, metadata) => {
+    return new Promise((resolve, reject) => {
+      console.log("Starting to pad image to square");
+      const img = new Image();
+      img.onload = () => {
+        console.log("Image loaded for padding, dimensions:", { width: img.width, height: img.height });
+        const { originalWidth, originalHeight, paddingLeft, paddingTop, squareSize } = metadata;
+        console.log("Using padding metadata:", { originalWidth, originalHeight, paddingLeft, paddingTop, squareSize });
+        
+        // Create a square canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = squareSize;
+        canvas.height = squareSize;
+        console.log("Created square canvas with dimensions:", { width: squareSize, height: squareSize });
+        
+        // Get the canvas context
+        const ctx = canvas.getContext('2d');
+        
+        // Fill with black background
+        ctx.fillStyle = 'rgb(0, 0, 0)';
+        ctx.fillRect(0, 0, squareSize, squareSize);
+        
+        // Draw the image in the center with padding
+        ctx.drawImage(
+          img, 
+          0, 0, originalWidth, originalHeight,
+          paddingLeft, paddingTop, originalWidth, originalHeight
+        );
+        console.log("Image drawn to square canvas with padding");
+        
+        // Convert back to data URL
+        const paddedImageDataUrl = canvas.toDataURL('image/png');
+        console.log("Padded image data URL generated");
+        
+        // Save padded image for debug display
+        if (imageDataUrl === originalImage) {
+          setPaddedDebugImage(paddedImageDataUrl);
+        }
+        
+        resolve(paddedImageDataUrl);
+      };
+      
+      img.onerror = (error) => {
+        console.error("Error loading image for padding:", error);
+        reject(new Error('Failed to load image for padding'));
+      };
+      img.src = imageDataUrl;
+    });
+  };
+
+  // Function to pad mask to square with same dimensions
+  const padMaskToSquare = async (metadata) => {
+    console.log("Starting to pad mask to square");
+    if (!maskCanvasRef.current) {
+      console.error("Mask canvas ref is null");
+      return null;
+    }
+    
+    // Check if mask has any content
+    const maskCtx = maskCanvasRef.current.getContext('2d');
+    const imageData = maskCtx.getImageData(
+      0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height
+    );
+    
+    // Check if there are any non-transparent pixels
+    let hasContent = false;
+    for (let i = 3; i < imageData.data.length; i += 4) {
+      if (imageData.data[i] > 0) {
+        hasContent = true;
+        break;
+      }
+    }
+    
+    if (!hasContent) {
+      console.warn("Mask is empty - no content to pad");
+      return null; // Return null if mask is empty
+    }
+    
+    // Get the mask from canvas - make sure we're at original scale
+    const maskImage = maskCanvasRef.current.toDataURL('image/png');
+    console.log("Original mask image data URL generated");
+    
+    // Create a square canvas with transparent background for the mask
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const { originalWidth, originalHeight, paddingLeft, paddingTop, squareSize } = metadata;
+        
+        // Create a square canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = squareSize;
+        canvas.height = squareSize;
+        
+        // Get the canvas context and ensure transparency
+        const ctx = canvas.getContext('2d', { alpha: true });
+        ctx.clearRect(0, 0, squareSize, squareSize); // This creates a transparent background
+        
+        // Draw the mask in the center with padding
+        ctx.drawImage(
+          img, 
+          0, 0, originalWidth * (maskCanvasRef.current.width / originalDimensions.width), 
+          originalHeight * (maskCanvasRef.current.height / originalDimensions.height),
+          paddingLeft, paddingTop, originalWidth, originalHeight
+        );
+        console.log("Mask drawn to square canvas with padding");
+        
+        // Convert back to data URL with transparency
+        const paddedMaskDataUrl = canvas.toDataURL('image/png');
+        console.log("Padded mask data URL generated");
+        
+        // Save padded mask for debug display
+        setPaddedDebugMask(paddedMaskDataUrl);
+        
+        resolve(paddedMaskDataUrl);
+      };
+      
+      img.onerror = (error) => {
+        console.error("Error loading mask for padding:", error);
+        resolve(null);
+      };
+      
+      img.src = maskImage;
+    });
+  };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -78,6 +268,9 @@ export default function ObjectRemovalUI() {
       const dataUrl = await readFileAsDataURL(file);
       setOriginalImage(dataUrl);
       setResultImage(null);
+      setResultDimensions(null);
+      setPaddedDebugImage(null);
+      setPaddedDebugMask(null);
       
       if (maskCanvasRef.current) {
         const maskCtx = maskCanvasRef.current.getContext('2d');
@@ -100,7 +293,7 @@ export default function ObjectRemovalUI() {
     });
   };
 
-  // Drawing functions
+  // Drawing functions 
   const startDrawing = ({nativeEvent}) => {
     if (!contextRef.current) return;
     
@@ -118,6 +311,13 @@ export default function ObjectRemovalUI() {
     contextRef.current.fill();
     
     setIsDrawing(true);
+    
+    // Make sure cursor remains visible during drawing operation
+    document.body.style.cursor = 'none';
+    
+    // Add mouse event listeners to the window to track cursor outside canvas
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
   };
 
   const draw = ({nativeEvent}) => {
@@ -138,6 +338,13 @@ export default function ObjectRemovalUI() {
 
   const stopDrawing = () => {
     setIsDrawing(false);
+    
+    // Restore default cursor
+    document.body.style.cursor = '';
+    
+    // Remove global event listeners
+    window.removeEventListener('mousemove', handleGlobalMouseMove);
+    window.removeEventListener('mouseup', handleGlobalMouseUp);
   };
 
   const updateCursorPosition = ({nativeEvent}) => {
@@ -155,56 +362,47 @@ export default function ObjectRemovalUI() {
     }
   };
 
-  // Generate mask image with transparency
-  const getMaskImage = () => {
-    if (!maskCanvasRef.current) return null;
-    
-    // Check if mask has any content
-    const maskCtx = maskCanvasRef.current.getContext('2d');
-    const imageData = maskCtx.getImageData(
-      0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height
-    );
-    
-    // Check if there are any non-transparent pixels by looking at the alpha channel
-    let hasContent = false;
-    for (let i = 3; i < imageData.data.length; i += 4) {
-      if (imageData.data[i] > 0) {
-        hasContent = true;
-        break;
-      }
-    }
-    
-    if (!hasContent) {
-      return null; // Return null if mask is empty
-    }
-    
-    // Return as data URL with transparency
-    return maskCanvasRef.current.toDataURL('image/png');
-  };
-
   const handleRemoveObject = async () => {
     if (!originalImage) {
       alert('Please upload an image first');
       return;
     }
     
-    // Get mask image from canvas
-    const maskImage = getMaskImage();
-    if (!maskImage) {
+    if (!paddingMetadata) {
+      alert('Image metadata not ready. Please try again.');
+      return;
+    }
+    
+    console.log("Starting remove object process");
+    console.log("Current padding metadata:", paddingMetadata);
+    
+    // Get padded mask with transparency
+    const paddedMask = await padMaskToSquare(paddingMetadata);
+    if (!paddedMask) {
       alert('Please draw the areas you want to remove');
       return;
     }
 
     setProcessing(true);
     try {
+      console.log("Preparing to send request to API");
+      
+      // Step 1: Pad the original image to square
+      const paddedImageDataUrl = await padImageToSquare(originalImage, paddingMetadata);
+      console.log("Original image padded to square");
+      
+      // Step 2: Send padded images to API
       const imageData = {
-        background: originalImage,
-        layers: [maskImage],
-        composite: originalImage,
+        background: paddedImageDataUrl,
+        layers: [paddedMask],
+        composite: paddedImageDataUrl,
       };
+      
+      console.log("Prepared image data for API");
 
       // Always use random seed
       const randomSeed = Math.floor(Math.random() * 1000000);
+      console.log("Generated random seed:", randomSeed);
       
       // Fixed parameters with random seed
       const settings = {
@@ -215,15 +413,25 @@ export default function ObjectRemovalUI() {
         similarity_suppression_steps: 9,
         similarity_suppression_scale: 0.3,
       };
+      console.log("Using settings:", settings);
 
-      console.log("Submitting request to remove object with seed:", randomSeed);
+      console.log("Sending request to API");
       const result = await removeObjectFromImage(imageData, settings);
-      console.log("Result received in UI:", result);
+      console.log("Received result from API");
       
       if (result) {
+        // Get dimensions of the result image to apply correct cropping
+        const img = new Image();
+        img.onload = () => {
+          setResultDimensions({ width: img.width, height: img.height });
+          console.log("Result image dimensions:", { width: img.width, height: img.height });
+        };
+        img.src = result;
+        
+        console.log("Setting result image");
         setResultImage(result);
       } else {
-        console.error("No result data received");
+        console.error("No result data received from API");
         alert("No result data received from the API");
       }
     } catch (error) {
@@ -231,6 +439,7 @@ export default function ObjectRemovalUI() {
       alert('Failed to remove object: ' + (error.message || 'Unknown error'));
     } finally {
       setProcessing(false);
+      console.log("Process completed");
     }
   };
 
@@ -266,6 +475,44 @@ export default function ObjectRemovalUI() {
       </html>
     `);
   };
+
+  // Add these new handler functions
+  const handleGlobalMouseMove = (e) => {
+    if (!isDrawing || !maskCanvasRef.current) return;
+    
+    // Get canvas position
+    const rect = maskCanvasRef.current.getBoundingClientRect();
+    
+    // Calculate position relative to canvas
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Update cursor position for display
+    setCursorPosition({ x, y });
+    
+    // Only draw if within canvas bounds
+    if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+      draw({
+        nativeEvent: {
+          offsetX: x,
+          offsetY: y
+        }
+      });
+    }
+  };
+
+  const handleGlobalMouseUp = () => {
+    stopDrawing();
+  };
+
+  // Add cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.body.style.cursor = '';
+    };
+  }, []);
 
   return (
     <div className="w-full p-6 bg-gradient-to-br from-gray-900 to-black text-white min-h-screen">
@@ -356,21 +603,61 @@ export default function ObjectRemovalUI() {
                     className="z-0"
                     style={{ display: 'block' }}
                   />
+                  
+                  {/* Drawing canvas - now with proper event handling */}
                   <canvas 
                     ref={maskCanvasRef}
                     className="absolute top-0 left-0 z-10"
-                    style={{ cursor: 'none' }}
-                    onMouseDown={startDrawing}
+                    style={{ 
+                      cursor: 'none',
+                      pointerEvents: 'auto' // Always capture events on the canvas
+                    }}
+                    onMouseEnter={() => {
+                      setIsCanvasHovered(true);
+                    }}
+                    onMouseLeave={() => {
+                      if (!isDrawing) {
+                        setIsCanvasHovered(false);
+                      }
+                    }}
+                    onMouseDown={(e) => {
+                      const rect = e.target.getBoundingClientRect();
+                      const x = e.clientX - rect.left;
+                      const y = e.clientY - rect.top;
+                      
+                      // Make sure we're not clicking on the action buttons area
+                      if (y > 40) { // Approximate height of the buttons area
+                        startDrawing({
+                          nativeEvent: {
+                            offsetX: x,
+                            offsetY: y
+                          }
+                        });
+                      }
+                    }}
                     onMouseMove={(e) => {
-                      updateCursorPosition(e);
-                      if (isDrawing) draw(e);
+                      const rect = e.target.getBoundingClientRect();
+                      const x = e.clientX - rect.left;
+                      const y = e.clientY - rect.top;
+                      
+                      // Update cursor position regardless of whether we're drawing
+                      setCursorPosition({ x, y });
+                      
+                      // Only draw if actively drawing
+                      if (isDrawing) {
+                        draw({
+                          nativeEvent: {
+                            offsetX: x,
+                            offsetY: y
+                          }
+                        });
+                      }
                     }}
                     onMouseUp={stopDrawing}
-                    onMouseLeave={stopDrawing}
                   />
                   
-                  {/* Custom cursor overlay */}
-                  {originalImage && !isDrawing && (
+                  {/* Custom cursor overlay - show when either hovering over canvas or actively drawing */}
+                  {originalImage && (isCanvasHovered || isDrawing) && (
                     <div 
                       className={`absolute pointer-events-none z-20 rounded-full border-2 ${isEraser ? 'border-red-400' : 'border-white'}`}
                       style={{
@@ -385,8 +672,8 @@ export default function ObjectRemovalUI() {
                   )}
                 </div>
                 
-                {/* Action Buttons */}
-                <div className="absolute top-3 right-3 flex gap-2">
+                {/* Action Buttons - with proper z-index and pointer-events */}
+                <div className="absolute top-3 right-3 flex gap-2 z-30 pointer-events-auto">
                   <button
                     onClick={() => viewFullscreen(originalImage)}
                     className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all"
@@ -446,31 +733,93 @@ export default function ObjectRemovalUI() {
           </div>
         </div>
 
-        {/* Output Section */}
+        {/* Output Section with Improved CSS Cropping */}
         <div className="bg-gray-800/30 rounded-2xl overflow-hidden shadow-xl">
           <div className="w-full h-[500px] flex items-center justify-center p-4">
             {resultImage ? (
               <div className="relative max-w-full max-h-full">
-                <img 
-                  src={resultImage} 
-                  alt="Generated result" 
-                  className="max-w-full max-h-full object-contain"
-                  style={{
-                    maxWidth: canvasRef.current ? canvasRef.current.width + 'px' : '100%',
-                    maxHeight: canvasRef.current ? canvasRef.current.height + 'px' : '100%'
-                  }}
-                  onError={(e) => {
-                    console.error("Error loading result image:", e);
-                    alert("Failed to load result image. The URL might be invalid.");
-                  }}
-                />
+                {/* Use percentages for positioning to handle high-res result images */}
+                <div className="relative" style={{
+                  width: canvasRef.current ? canvasRef.current.width + 'px' : 'auto',
+                  height: canvasRef.current ? canvasRef.current.height + 'px' : 'auto',
+                  overflow: 'hidden'
+                }}>
+                  {paddingMetadata && (
+                    <img 
+                      ref={resultImageRef}
+                      src={resultImage} 
+                      alt="Generated result" 
+                      style={{
+                        position: 'absolute',
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: `center`
+                      }}
+                      onLoad={(e) => {
+                        console.log("Result image loaded, dimensions:", {
+                          width: e.target.naturalWidth,
+                          height: e.target.naturalHeight
+                        });
+                        
+                        // Update positioning with percentage calculations
+                        if (resultImageRef.current && paddingMetadata) {
+                          const { 
+                            originalWidth, originalHeight, 
+                            squareSize, paddingLeftPercent, paddingTopPercent 
+                          } = paddingMetadata;
+                          
+                          const aspectRatio = originalWidth / originalHeight;
+                          const containerWidth = canvasRef.current.width;
+                          const containerHeight = canvasRef.current.height;
+                          
+                          // Determine if result should be cropped by width or height
+                          let scale, offsetX, offsetY;
+                          
+                          if (originalWidth < originalHeight) {
+                            // Portrait image
+                            scale = containerHeight / originalHeight;
+                            const scaledSquareSize = squareSize * scale;
+                            const scaledPaddingLeft = (paddingLeftPercent / 100) * scaledSquareSize;
+                            
+                            resultImageRef.current.style.width = scaledSquareSize + 'px';
+                            resultImageRef.current.style.height = scaledSquareSize + 'px';
+                            resultImageRef.current.style.left = -scaledPaddingLeft + 'px';
+                            resultImageRef.current.style.top = '0';
+                          } else {
+                            // Landscape image
+                            scale = containerWidth / originalWidth;
+                            const scaledSquareSize = squareSize * scale;
+                            const scaledPaddingTop = (paddingTopPercent / 100) * scaledSquareSize;
+                            
+                            resultImageRef.current.style.width = scaledSquareSize + 'px';
+                            resultImageRef.current.style.height = scaledSquareSize + 'px';
+                            resultImageRef.current.style.left = '0';
+                            resultImageRef.current.style.top = -scaledPaddingTop + 'px';
+                          }
+                          
+                          console.log("Applied result image positioning:", {
+                            width: resultImageRef.current.style.width,
+                            height: resultImageRef.current.style.height,
+                            left: resultImageRef.current.style.left,
+                            top: resultImageRef.current.style.top
+                          });
+                        }
+                      }}
+                      onError={(e) => {
+                        console.error("Error loading result image:", e);
+                        alert("Failed to load result image. The URL might be invalid.");
+                      }}
+                    />
+                  )}
+                </div>
                 
                 {/* Action Buttons */}
                 <div className="absolute top-3 right-3 flex gap-2">
                   <button
                     onClick={() => viewFullscreen(resultImage)}
                     className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all"
-                    title="View fullscreen"
+                    title="View fullscreen (full square result)"
                   >
                     <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
@@ -480,7 +829,7 @@ export default function ObjectRemovalUI() {
                   <button
                     onClick={downloadResult}
                     className="p-2 bg-gray-900/80 hover:bg-blue-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all"
-                    title="Download image"
+                    title="Download image (full square result)"
                   >
                     <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -530,6 +879,14 @@ export default function ObjectRemovalUI() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </span>
+            <p>Images are automatically padded to square format for the AI model</p>
+          </div>
+          {/* <div className="flex items-start gap-2">
+            <span className="bg-purple-500/20 p-1 rounded-full">
+              <svg className="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </span>
             <p>Use the eraser to fix mistakes or refine your mask</p>
           </div>
           <div className="flex items-start gap-2">
@@ -538,18 +895,108 @@ export default function ObjectRemovalUI() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </span>
-            <p>Make multiple attempts with different masks if needed</p>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="bg-purple-500/20 p-1 rounded-full">
-              <svg className="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </span>
             <p>Each generation uses a random seed for variety in results</p>
-          </div>
+          </div> */}
         </div>
       </div>
+      
+      {/* Debug Section*/}
+      {showDebug && (
+        <div className="mt-6 p-4 rounded-xl backdrop-blur-sm bg-gray-800/50 border border-red-700">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-sm font-semibold text-red-400">Debug: Square Padding Visualization</h3>
+            <button 
+              onClick={() => setShowDebug(false)}
+              className="text-xs bg-red-900/50 hover:bg-red-900 px-2 py-1 rounded"
+            >
+              Hide Debug Panel
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <div className="bg-gray-800/50 p-3 rounded-lg">
+              <p className="text-xs font-medium mb-2 text-gray-400">Original Image</p>
+              <div className="h-60 flex items-center justify-center border border-gray-700 rounded overflow-hidden">
+                {originalImage ? (
+                  <img 
+                    src={originalImage} 
+                    alt="Original" 
+                    className="max-w-full max-h-full object-contain"
+                  />
+                ) : (
+                  <span className="text-xs text-gray-500">No image uploaded</span>
+                )}
+              </div>
+              {paddingMetadata && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Dimensions: {paddingMetadata.originalWidth}x{paddingMetadata.originalHeight}
+                </p>
+              )}
+            </div>
+            
+          
+            <div className="bg-gray-800/50 p-3 rounded-lg">
+              <p className="text-xs font-medium mb-2 text-gray-400">Padded Square Image (1:1)</p>
+              <div className="h-60 flex items-center justify-center border border-gray-700 rounded overflow-hidden bg-black/50">
+                {paddedDebugImage ? (
+                  <img 
+                    src={paddedDebugImage} 
+                    alt="Padded Image" 
+                    className="max-w-full max-h-full object-contain"
+                  />
+                ) : (
+                  <span className="text-xs text-gray-500">Process an image to see padding</span>
+                )}
+              </div>
+              {paddingMetadata && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Square Size: {paddingMetadata.squareSize}x{paddingMetadata.squareSize}
+                </p>
+              )}
+            </div>
+            
+        
+            <div className="bg-gray-800/50 p-3 rounded-lg">
+              <p className="text-xs font-medium mb-2 text-gray-400">Padded Square Mask (1:1)</p>
+              <div className="h-60 flex items-center justify-center border border-gray-700 rounded overflow-hidden bg-gray-700" style={{background: 'repeating-conic-gradient(#808080 0% 25%, #606060 0% 50%) 50% / 20px 20px'}}>
+                {paddedDebugMask ? (
+                  <img 
+                    src={paddedDebugMask} 
+                    alt="Padded Mask" 
+                    className="max-w-full max-h-full object-contain"
+                  />
+                ) : (
+                  <span className="text-xs text-gray-500">Draw a mask and process to see</span>
+                )}
+              </div>
+              {paddingMetadata && paddedDebugMask && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Padding: L{paddingMetadata.paddingLeft} T{paddingMetadata.paddingTop} R{paddingMetadata.paddingRight} B{paddingMetadata.paddingBottom}
+                </p>
+              )}
+            </div>
+     
+            <div className="bg-gray-800/50 p-3 rounded-lg md:col-span-3">
+              <p className="text-xs font-medium mb-2 text-gray-400">API Result (Square Format)</p>
+              <div className="h-60 flex items-center justify-center border border-gray-700 rounded overflow-hidden">
+                {resultImage ? (
+                  <img 
+                    src={resultImage} 
+                    alt="API Result" 
+                    className="max-w-full max-h-full object-contain"
+                  />
+                ) : (
+                  <span className="text-xs text-gray-500">Process an image to see result</span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                This is the full square result from the API before CSS cropping is applied.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
