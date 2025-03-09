@@ -5,6 +5,7 @@ import { db } from '@/firebase/FirebaseConfig'; // Firebase config import
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ViewModal from '@/components/ViewModal';
+import Pin from '@/components/Pin'; 
 import '../style.css'; 
 import { cn } from '@/lib/utils';
 import Image from "next/image";
@@ -152,15 +153,9 @@ function Page() {
         <div className="flex-grow max-h-[calc(100vh-120px)] overflow-y-auto p-4" ref={scrollContainerRef}>
           {/* Masonry grid container */}
           <Masonry columnsCount={4} gutter="10px">
-            {filteredPosts.map((post, i) => (
-              <div key={i} onClick={() => handleImageClick(post)} className='cursor-pointer'>
-                <Image
-                  src={post.img_data} // Image URL
-                  alt={post.title} // Image alt text
-                  width={400} // Specify the width
-                  height={400} // Specify the height
-                  style={{ width: "100%", display: "block", borderRadius: "5%" }} // Ensure the image fills the width of the container
-                />
+            {filteredPosts.map((post) => (
+              <div key={post.id} onClick={() => handleImageClick(post)} className='cursor-pointer'>
+                <Pin image={post}/>
               </div>
             ))}
           </Masonry>
@@ -174,12 +169,14 @@ function Page() {
         />
       )}
 
+      {selectedImage && <Pin image={selectedImage} />}
+           
+
     </div>
       
       
   );
 }
-
 export default Page;
 
 

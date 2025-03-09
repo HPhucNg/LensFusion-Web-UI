@@ -1,205 +1,25 @@
-import React, { useState, useEffect, useCallback, useReducer } from 'react';
-import { collection, addDoc, getDocs, setDoc, getDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import React from 'react';
 import { db, auth } from '@/firebase/FirebaseConfig';
-import '../styles/modal_styles.css';
+//import '../styles/modal_styles.css';
 import Image from 'next/image';
+import useCommentsAndLikes from '@/hooks/useCommentsAndLikes';
 
 function ViewModal({ closeModal, image }) {
-    const initialState = {
-        comments: [],
-        newComment: '',
-        editingCommentId: null,
-        editedCommentText: '',
-        likesData: { likes: [], hasLiked: false },
-        userName: '',
-        userProfileImage: null,
-    };
+    const { 
+        state,
+        handleLikeToggle,
+        handleCommentSubmit,
+        handleNewCommentChange,
+        handleEditComment,
+        handleEditedCommentChange,
+        handleSaveEdit,
+        handleDeleteComment,
+    } = useCommentsAndLikes(image); 
 
-    const commentsReducer = (state, action) => {
-        switch (action.type) {
-            case 'SET_COMMENTS':
-                return { ...state, comments: action.payload };
-            case 'SET_NEW_COMMENT':
-                return { ...state, newComment: action.payload };
-            case 'SET_EDITED_COMMENT_TEXT':
-                return { ...state, editedCommentText: action.payload };
-            case 'SET_EDITING_COMMENT_ID':
-                return { ...state, editingCommentId: action.payload };
-            case 'SET_LIKES':
-                return { ...state, likesData: action.payload };
-            case 'SET_USER_PROFILE_IMAGE':
-                return { ...state, userProfileImage: action.payload };
-            case 'SET_USER_NAME':
-                return { ...state, userName: action.payload };
-            default:
-                return state;
-        }
-    };
-
-    const [state, dispatch] = useReducer(commentsReducer, initialState);
-
-    const { comments, newComment, editedCommentText, likesData, userName, userProfileImage } = state;
+    const { comments, newComment, editedCommentText, likesData, userProfileImage, userName } = state;
     const user = auth.currentUser;
     const formattedDate = new Date(image.createdAt.seconds * 1000).toLocaleString();
-
-    
-
-
-    // Set User Name
-    useEffect(() => {
-        if (user) {
-            dispatch({ type: 'SET_USER_NAME', payload: user.displayName || user.email || 'Anonymous' });
-        } else {
-            alert("No user is authenticated.");
-        }
-    }, [user]);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // Fetch comments
-                const commentsRef = collection(db, 'community', image.id, 'comments');
-                const querySnapshot = await getDocs(commentsRef);
-                const fetchedComments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-                // Fetch likes
-                const likesRef = collection(db, 'community', image.id, 'likes');
-                const likeSnapshot = await getDocs(likesRef);
-                const fetchedLikes = likeSnapshot.docs.map(doc => doc.id);
-                const hasUserLiked = fetchedLikes.includes(user?.uid);
-    
-                // Fetch user profile image
-                const communityRef = doc(db, 'community', image.id);
-                const communityDoc = await getDoc(communityRef);
-                if (!communityDoc.exists()) return;
-                const userId = communityDoc.data()?.userId;
-                if (!userId) return;
-    
-                const userRef = doc(db, 'users', userId);
-                const userDoc = await getDoc(userRef);
-                const userProfileImage = userDoc.exists() ? userDoc.data().photoURL : null;
-    
-                // Dispatch state updates in one go
-                dispatch({ 
-                    type: 'SET_COMMENTS', 
-                    payload: fetchedComments 
-                });
-                dispatch({ 
-                    type: 'SET_LIKES', 
-                    payload: { likes: fetchedLikes, hasLiked: hasUserLiked } 
-                });
-                dispatch({ 
-                    type: 'SET_USER_PROFILE_IMAGE', 
-                    payload: userProfileImage 
-                });
-            } catch (error) {
-                console.error("Error fetching data:", error);
-            }
-        };
-    
-        if (image && user) {
-            fetchData();
-        }
-    }, [image, user]);
-    
-    
-
-    // Like Toggle Handler
-    const handleLikeToggle = async () => {
-        try {
-            const likesRef = doc(db, 'community', image.id, 'likes', user.uid);
-            const { hasLiked } = likesData;
-
-            if (hasLiked) {
-                await deleteDoc(likesRef);
-                dispatch({
-                    type: 'SET_LIKES',
-                    payload: { likes: likesData.likes.filter(id => id !== user.uid), hasLiked: false },
-                });
-            } else {
-                await setDoc(likesRef, { userId: user.uid });
-                dispatch({
-                    type: 'SET_LIKES',
-                    payload: { likes: [...likesData.likes, user.uid], hasLiked: true },
-                });
-            }
-        } catch (e) {
-            console.error("Error toggling like: ", e);
-        }
-    };
-
-    // Handle Comment Submit
-    const handleCommentSubmit = useCallback(async (e) => {
-        e.preventDefault();
-        if (newComment.trim() === '') return;
-
-        try {
-            const commentsRef = collection(db, 'community', image.id, 'comments');
-            const docRef = await addDoc(commentsRef, {
-                commentText: newComment,
-                createdBy: user.displayName || user.email,
-                createdByUID: user.uid,
-                createdAt: new Date(),
-            });
-
-            const newCommentWithId = {
-                id: docRef.id,
-                commentText: newComment,
-                createdBy: user.displayName || user.email,
-                createdByUID: user.uid
-            };
-
-            dispatch({ type: 'SET_NEW_COMMENT', payload: '' });
-            dispatch({ type: 'SET_COMMENTS', payload: [...comments, newCommentWithId] });
-        } catch (e) {
-            console.error("Error adding comment: ", e);
-        }
-    }, [newComment, user, image.id, comments]);
-
-    // Handle Edit Comment
-    const handleEditComment = (commentId, currentText) => {
-        dispatch({ type: 'SET_EDITING_COMMENT_ID', payload: commentId });
-        dispatch({ type: 'SET_EDITED_COMMENT_TEXT', payload: currentText });
-    };
-
-    // Handle Save Edit
-    const handleSaveEdit = async (e, commentId) => {
-        e.preventDefault();
-        if (editedCommentText.trim() === '') return;
-
-        try {
-            const commentRef = doc(db, 'community', image.id, 'comments', commentId);
-            await updateDoc(commentRef, { commentText: editedCommentText });
-
-            dispatch({
-                type: 'SET_COMMENTS',
-                payload: comments.map(comment =>
-                    comment.id === commentId ? { ...comment, commentText: editedCommentText } : comment
-                ),
-            });
-
-            dispatch({ type: 'SET_EDITING_COMMENT_ID', payload: null });
-            dispatch({ type: 'SET_EDITED_COMMENT_TEXT', payload: '' });
-        } catch (e) {
-            console.error("Error updating comment: ", e);
-        }
-    };
-
-    // Handle Delete Comment
-    const handleDeleteComment = async (commentId) => {
-        try {
-            const commentRef = doc(db, 'community', image.id, 'comments', commentId);
-            await deleteDoc(commentRef);
-
-            dispatch({
-                type: 'SET_COMMENTS',
-                payload: comments.filter(comment => comment.id !== commentId),
-            });
-        } catch (e) {
-            console.error("Error deleting comment: ", e);
-        }
-    };
-
+   
     return (
         <div className='flex w-full h-full fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[99999] bg-black/50'>
             <div className='flex w-[calc(100%-70px)] h-[calc(100%-30px)] fixed top-1/2 left-1/2 transform -translate-x-[calc(50%+20px)] -translate-y-1/2 flex backdrop-blur-lg rounded-xl overflow-hidden text-white' style={{ background: 'var(--modal-background)' }}>
@@ -219,7 +39,7 @@ function ViewModal({ closeModal, image }) {
                         ) : (
                             <div className="w-8 h-8 bg-gray-500 rounded-full mr-2"></div>
                         )}
-                        <span>{image.created_by}</span>
+                        <span>{userName}</span>
                     </div>
                     <div className='mt-4 font-bold'>{image.title}</div>
                     <div className='mb-4 text-gray-400 text-sm'>{formattedDate}</div>
@@ -228,15 +48,19 @@ function ViewModal({ closeModal, image }) {
                             Prompt Description <p className='text-gray-500 text-base pt-2'>{image.prompt}</p>
                         </div>
                     </div>
-                    <div className="comments-section">
+                    <div className="mt-[20px]">
                         <h3>Comments:</h3>
-                        <div className="comments-list">
+                        <div className="mb-5 max-h-[100px] overflow-y-auto bg-[var(--card-background)] rounded-[10px]">
                             {comments.map((comment) => (
-                                <div key={comment.id} className="comment">
-                                    <div><strong>{comment.createdBy}</strong></div>
+                                <div key={comment.id} className="mb-2.5 p-1.5 border-b border-[#ccc] text-[#CBD5E0] text-sm">
+                                    <div><strong className='font-bold text-base text-[#6B7280]'>{comment.createdBy}</strong></div>
                                     {state.editingCommentId === comment.id ? (
                                         <div>
-                                            <textarea value={editedCommentText} onChange={(e) => dispatch({ type: 'SET_EDITED_COMMENT_TEXT', payload: e.target.value })} rows="2" />
+                                            <textarea 
+                                                value={editedCommentText} 
+                                                onChange={(e) => handleEditedCommentChange(e.target.value)} // Handle change here
+                                                rows="2"  
+                                            />
                                             <button onClick={(e) => handleSaveEdit(e, comment.id)}>Save</button>
                                         </div>
                                     ) : (
@@ -251,17 +75,20 @@ function ViewModal({ closeModal, image }) {
                                 </div>
                             ))}
                         </div>
-                        <form onSubmit={handleCommentSubmit} className="comment-form">
-                            <textarea value={newComment} onChange={(e) => dispatch({ type: 'SET_NEW_COMMENT', payload: e.target.value })} placeholder="Add a comment..." rows="3" />
-                            <div className="buttons-container">
-                                <button type="submit" className="submit-comment-btn">Post Comment</button>
-                                <button onClick={handleLikeToggle} className={`like-btn ${likesData.hasLiked ? 'liked' : ''}`}>♡ {likesData.likes.length}</button>
+                        <form onSubmit={handleCommentSubmit}>
+                            <textarea className="w-full p-2.5 border border-[#ccc] rounded-md resize-y text-black" 
+                            value={newComment} 
+                            onChange={handleNewCommentChange} 
+                            placeholder='Add a comment...' rows="3" />
+                            <div className="flex mt-[10px] items-center gap-[10px]">
+                                <button type="submit" className="mt-2 px-4 py-2 bg-[#8D5AEA] text-white border-0 rounded-lg cursor-pointer hover:bg-[#B69AF9]">Post Comment</button>
+                                <button onClick={handleLikeToggle} className={`mt-2 px-4 py-2 bg-[#8D5AEA] text-white border-0 rounded-md cursor-pointer transition-transform duration-200 ease-in-out hover:scale-110 ${likesData.hasLiked ? 'bg-[#F096CC] hover:bg-[#DC78B4]' : ''}`}>♡ {likesData.likes.length}</button>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
-            <div onClick={closeModal} className="icon_close absolute right-0 top-0 p-2">
+            <div onClick={closeModal} className="w-[4%] hover:scale-90 absolute right-0 top-0 p-2">
                 <img src="/Vector.png" alt="close_pin" />
             </div>
         </div>
