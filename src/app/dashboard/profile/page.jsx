@@ -16,6 +16,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import GalleryModal from '@/components/GalleryModal';
 import Modal from '@/components/Modal';
+import ActiveSessions from '@/components/ActiveSessions';
 import { useSubscription } from '@/context/subscriptionContext';
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import { 
@@ -39,6 +40,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showActiveSessions, setShowActiveSessions] = useState(false);
   const router = useRouter();
 
   // Form States
@@ -53,7 +55,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
   });
 
   const [securitySettings, setSecuritySettings] = useState({
-    passwordLastChanged: null,
     loginNotifications: true,
   });
 
@@ -569,7 +570,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                   <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
                     <div>
                       <h4 className="font-medium text-white">Login Notifications</h4>
-                      <p className="text-sm text-gray-400">Get notified when someone logs into your account</p>
+                      <p className="text-sm text-gray-400">Get notified when someone logs into your account from a new device</p>
                     </div>
                     <div className="flex items-center">
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -589,24 +590,12 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                   
                   <div className="p-4 bg-gray-800/50 rounded-lg">
                     <div className="mb-3">
-                      <h4 className="font-medium text-white">Password</h4>
-                      <p className="text-sm text-gray-400">Change your password regularly for better security</p>
+                      <h4 className="font-medium text-white">Active Sessions</h4>
+                      <p className="text-sm text-gray-400">View and manage your active sessions across different devices</p>
                     </div>
                     <Button
                       variant="outline"
-                      className="bg-transparent border border-gray-700 hover:bg-gray-800 text-white"
-                    >
-                      Change Password
-                    </Button>
-                  </div>
-
-                  <div className="p-4 bg-gray-800/50 rounded-lg">
-                    <div className="mb-3">
-                      <h4 className="font-medium text-white">Session Management</h4>
-                      <p className="text-sm text-gray-400">View and manage your active sessions</p>
-                    </div>
-                    <Button
-                      variant="outline"
+                      onClick={() => setShowActiveSessions(true)}
                       className="bg-transparent border border-gray-700 hover:bg-gray-800 text-white"
                     >
                       View Active Sessions
@@ -1009,6 +998,13 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
           </div>
         </div>
       </div>
+      
+      {showActiveSessions && (
+        <ActiveSessions
+          userId={user.uid}
+          onClose={() => setShowActiveSessions(false)}
+        />
+      )}
     </div>
   );
 };
