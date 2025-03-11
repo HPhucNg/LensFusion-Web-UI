@@ -26,6 +26,7 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    --accent-color: #8b5cf6; /* Default purple */
 }
 
 .dark {
@@ -189,4 +190,55 @@ html.light .bg-gradient-to-r {
   body {
     @apply bg-background text-foreground;
     }
+}
+
+.reduce-motion * {
+  transition-duration: 0s !important;
+  animation-duration: 0s !important;
+  transition-property: none !important;
+}
+
+.high-contrast {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card-background: #121212;
+  --border-color: #ffffff;
+  --text-contrast: 1.5;
+}
+
+.high-contrast button {
+  border-width: 2px;
+}
+
+/* Apply accent color to various UI elements */
+.app-accent-color {
+  color: var(--accent-color);
+}
+
+.app-accent-bg {
+  background-color: var(--accent-color);
+}
+
+.app-accent-border {
+  border-color: var(--accent-color);
+}
+
+/* Override button styles */
+button.bg-purple-600, 
+.bg-purple-600, 
+button.hover\:bg-purple-700:hover,
+.hover\:bg-purple-700:hover,
+.peer-checked\:bg-purple-600 {
+  background-color: var(--accent-color) !important;
+  border-color: var(--accent-color) !important;
+}
+
+button.text-purple-600,
+.text-purple-600 {
+  color: var(--accent-color) !important;
+}
+
+button.border-purple-600,
+.border-purple-600 {
+  border-color: var(--accent-color) !important;
 }

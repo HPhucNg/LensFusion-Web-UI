@@ -33,6 +33,7 @@ import {
 } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { applyInterfaceSettings, getAccentColorValue, getFontSizeValue, getGridViewClasses } from '@/lib/interfaceUtils';
 
 // Account Management Dialog Component
 const AccountManagementDialog = ({ isOpen, onClose, user }) => {
@@ -75,6 +76,10 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
     reducedAnimations: false,
     highContrastMode: false,
     fontSize: 'medium', // small, medium, large
+    gridViewType: 'compact', // compact, comfortable, spacious
+    autosaveInterval: 5, // in minutes
+    accentColor: 'purple', // purple, blue, teal, amber, pink
+    defaultExportFormat: 'png', // jpg, png, webp
   });
 
   // Fetch user settings if they exist
@@ -121,12 +126,8 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
           if (userData.interfaceSettings) {
             setInterfaceSettings(userData.interfaceSettings);
             
-            // Apply the theme if it's defined
-            if (userData.interfaceSettings.colorScheme && userData.interfaceSettings.colorScheme !== 'system') {
-              setTheme(userData.interfaceSettings.colorScheme);
-              document.documentElement.classList.remove("dark", "light");
-              document.documentElement.classList.add(userData.interfaceSettings.colorScheme);
-            }
+            // Apply interface settings
+            applyInterfaceSettings(userData.interfaceSettings);
           }
         }
       } catch (error) {
@@ -296,13 +297,8 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
         updatedAt: serverTimestamp(),
       });
 
-      // Apply theme changes immediately
-      if (interfaceSettings.colorScheme !== 'system') {
-        setTheme(interfaceSettings.colorScheme);
-        document.documentElement.classList.remove("dark", "light");
-        document.documentElement.classList.add(interfaceSettings.colorScheme);
-        localStorage.setItem("theme", interfaceSettings.colorScheme);
-      }
+      // Apply all interface settings
+      applyInterfaceSettings(interfaceSettings);
 
       setSuccess('Interface settings updated successfully!');
     } catch (error) {
@@ -866,6 +862,65 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                   
                   <div className="p-4 bg-gray-800/50 rounded-lg">
                     <div className="mb-3">
+                      <h4 className="font-medium text-white">Accent Color</h4>
+                      <p className="text-sm text-gray-400">Choose accent color for UI elements</p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Button
+                        variant={interfaceSettings.accentColor === 'purple' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'purple'}))}
+                        className={`bg-transparent border hover:bg-gray-800 text-white ${
+                          interfaceSettings.accentColor === 'purple' ? 'bg-purple-600 border-purple-600' : 'border-gray-700'
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-purple-500 mr-2"></div>
+                        Purple
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.accentColor === 'blue' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'blue'}))}
+                        className={`bg-transparent border hover:bg-gray-800 text-white ${
+                          interfaceSettings.accentColor === 'blue' ? 'bg-blue-600 border-blue-600' : 'border-gray-700'
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                        Blue
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.accentColor === 'teal' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'teal'}))}
+                        className={`bg-transparent border hover:bg-gray-800 text-white ${
+                          interfaceSettings.accentColor === 'teal' ? 'bg-teal-600 border-teal-600' : 'border-gray-700'
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-teal-500 mr-2"></div>
+                        Teal
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.accentColor === 'amber' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'amber'}))}
+                        className={`bg-transparent border hover:bg-gray-800 text-white ${
+                          interfaceSettings.accentColor === 'amber' ? 'bg-amber-600 border-amber-600' : 'border-gray-700'
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-amber-500 mr-2"></div>
+                        Amber
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.accentColor === 'pink' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'pink'}))}
+                        className={`bg-transparent border hover:bg-gray-800 text-white ${
+                          interfaceSettings.accentColor === 'pink' ? 'bg-pink-600 border-pink-600' : 'border-gray-700'
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-pink-500 mr-2"></div>
+                        Pink
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
                       <h4 className="font-medium text-white">Text Size</h4>
                       <p className="text-sm text-gray-400">Adjust the text size for better readability</p>
                     </div>
@@ -897,6 +952,104 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       >
                         Large
                       </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Default Export Format</h4>
+                      <p className="text-sm text-gray-400">Choose preferred format for exporting images</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        variant={interfaceSettings.defaultExportFormat === 'jpg' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, defaultExportFormat: 'jpg'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.defaultExportFormat === 'jpg' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        JPG
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.defaultExportFormat === 'png' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, defaultExportFormat: 'png'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.defaultExportFormat === 'png' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        PNG
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.defaultExportFormat === 'webp' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, defaultExportFormat: 'webp'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.defaultExportFormat === 'webp' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        WebP
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Gallery View</h4>
+                      <p className="text-sm text-gray-400">Set your preferred gallery view density</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        variant={interfaceSettings.gridViewType === 'compact' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, gridViewType: 'compact'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.gridViewType === 'compact' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Compact
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.gridViewType === 'comfortable' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, gridViewType: 'comfortable'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.gridViewType === 'comfortable' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Comfortable
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.gridViewType === 'spacious' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, gridViewType: 'spacious'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.gridViewType === 'spacious' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Spacious
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Autosave Interval</h4>
+                      <p className="text-sm text-gray-400">How often to automatically save your work</p>
+                    </div>
+                    <div className="flex items-center w-full">
+                      <input
+                        type="range"
+                        min="1"
+                        max="15"
+                        step="1"
+                        value={interfaceSettings.autosaveInterval}
+                        onChange={(e) => setInterfaceSettings(prev => ({
+                          ...prev,
+                          autosaveInterval: parseInt(e.target.value)
+                        }))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="ml-4 text-white min-w-20">
+                        {interfaceSettings.autosaveInterval === 1 
+                          ? '1 minute' 
+                          : `${interfaceSettings.autosaveInterval} minutes`}
+                      </span>
                     </div>
                   </div>
                   
@@ -988,16 +1141,26 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
 
 // Main UserProfile Component
 export default function UserProfile() {
+  // 1. All useState hooks first
   const [user, setUser] = useState(null);
-  const [isloading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
-  const [userImages, setUserImages] = useState([]); // State to store user images
-  const [showModal, setShowModal] = useState(false);  // To control modal visibility
-  const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
-  const [showCommunityModal, setShowCommunityModal] = useState(false); // For Community Modal
+  const [userImages, setUserImages] = useState([]); 
+  const [showModal, setShowModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showCommunityModal, setShowCommunityModal] = useState(false);
   const [theme, setTheme] = useState("dark");
+  const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
+  const [userSettings, setUserSettings] = useState({
+    interfaceSettings: {
+      gridViewType: 'compact',
+    }
+  });
 
-  // Check for saved theme in localStorage
+  // 2. All context hooks
+  const { tokens, loading: subscriptionLoading } = useSubscription();
+
+  // 3. All useEffect hooks
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) {
@@ -1005,7 +1168,60 @@ export default function UserProfile() {
     }
   }, []);
 
-  // Toggle theme function
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserSettings();
+      fetchUserImages(user);
+    }
+  }, [user]);
+
+  // Helper functions
+  const fetchUserSettings = async () => {
+    if (!user) return;
+    
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setUserSettings(userData);
+        
+        if (userData.interfaceSettings) {
+          applyInterfaceSettings(userData.interfaceSettings);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user settings:', error);
+    }
+  };
+
+  const fetchUserImages = async (user) => {
+    setIsLoadingImages(true);
+    try {
+      const userImagesRef = collection(db, 'user_images');
+      const q = query(userImagesRef, where('userID', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+      const images = querySnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        uid: doc.id
+      }));
+      setUserImages(images);
+    } catch (error) {
+      console.error('Error fetching user images:', error);
+    } finally {
+      setIsLoadingImages(false);
+    }
+  };
+
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
@@ -1013,123 +1229,33 @@ export default function UserProfile() {
     document.documentElement.classList.remove("dark", "light");
     document.documentElement.classList.add(newTheme);
   };
-  const { tokens, loading } = useSubscription();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Function to fetch user images from Firestore
-  const fetchUserImages = async (user) => {
-    setIsLoadingImages(true); // Set loading state for images
-    try {
-      const userImagesRef = collection(db, 'user_images');
-      const q = query(userImagesRef, where('userID', '==', user.uid)); // Filter by userID
-      const querySnapshot = await getDocs(q);
-      //const images = querySnapshot.docs.map((doc) => doc.data()); // Extract image data
-      const images = querySnapshot.docs.map((doc) => ({
-        ...doc.data(),
-        uid: doc.id  // Assuming the document ID is used as the UID
-      }));
-      setUserImages(images); // Set images in state
-    } catch (error) {
-      console.error('Error fetching user images:', error);
-    } finally {
-      setIsLoadingImages(false); // Reset loading state regardless of success or failure
-    }
-  };
-  
-  // Fetch user images when user changes
-  useEffect(() => {
-    if (user) {
-      fetchUserImages(user);
-    }
-  }, [user]);
-  
-
-  const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId = null, subscriptionStatus = 'inactive', currentPlan = null) => {
-    try {
-      if (!userData || !userData.uid) {
-        console.error("User data is missing essential properties.");
-        return;
-      }
-      const userRef = doc(db, 'users', userData.uid); 
-      const userDoc = await getDoc(userRef);
-      
-      if (!userDoc.exists()) {
-        const newUser = {
-          email: userData.email,
-          name: userData.displayName || "guest",
-          photoURL: userData.photoURL,
-          lastLogin: serverTimestamp(),
-          tokens: tokensToAdd, 
-          customerId: customerId || null, 
-          subscriptionStatus: subscriptionStatus,
-          currentPlan: currentPlan ,
-        };
-        await setDoc(userRef, newUser);
-        console.log("New user created in Firebase");
-      } else {
-        const existingData = userDoc.data();
-        const updatedData = {
-          email: userData.email,
-          name: userData.displayName || existingData.name || "guest",
-          photoURL: userData.photoURL,
-          lastLogin: serverTimestamp(),
-          tokens: (existingData.tokens || 0) + tokensToAdd,
-          customerId: customerId || existingData.customerId || null, 
-          subscriptionStatus: subscriptionStatus || existingData.subscriptionStatus,
-          currentPlan: currentPlan || existingData.currentPlan,
-        };
-
-        await setDoc(userRef, updatedData);
-        console.log("User saved to Firebase");
-      }
-    } catch (error) {
-      console.error("Error saving user data:", error);
-    }
-  };
-
-  // Handle image click to open gallery modal
   const handleImageClick = (image) => {
     setSelectedImage(image);
     setShowModal(true);
   };
 
-  // Show loading spinner while fetching data
-  if (isLoadingImages) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-      </div>
-    );
-  }
-
   const closeModal = () => {
     setShowModal(false);
-}
+  };
+
   const openCommunityModal = () => {
-    setShowModal(false);  // Close Gallery Modal
-    setShowCommunityModal(true);  // Open Community Modal
+    setShowModal(false);
+    setShowCommunityModal(true);
   };
 
   const closeCommunityModal = () => {
-    setShowCommunityModal(false);  // Close Community Modal
+    setShowCommunityModal(false);
   };
 
   const handleImageDeleted = (deletedImageId) => {
-    // Update the userImages state by filtering out the deleted image
     setUserImages(prevImages => prevImages.filter(image => 
       (image.uid !== deletedImageId && image.id !== deletedImageId)
     ));
   };
 
-  if (loading) {
+  // Loading states
+  if (isLoading || subscriptionLoading || isLoadingImages) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
@@ -1219,7 +1345,7 @@ export default function UserProfile() {
             {/* Gallery Section */}
             <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
               <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className={`grid ${getGridViewClasses(userSettings?.interfaceSettings?.gridViewType || 'compact')}`}>
                 {userImages.length > 0 ? (
                   userImages.map((image, index) => (
                 <HoverCard key={index}>
