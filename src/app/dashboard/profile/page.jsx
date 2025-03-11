@@ -64,20 +64,13 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
     marketingEmails: false,
   });
 
-  const [privacySettings, setPrivacySettings] = useState({
-    profileVisibility: 'public', // public, friends, private
-    showOnlineStatus: true,
-    shareUsageData: false,
-  });
-
   const [interfaceSettings, setInterfaceSettings] = useState({
-    colorScheme: 'system', // system, dark, light
+    colorScheme: 'system',
     reducedAnimations: false,
     highContrastMode: false,
-    fontSize: 'medium', // small, medium, large
-    gridViewType: 'compact', // compact, comfortable, spacious
-    autosaveInterval: 5, // in minutes
-    accentColor: 'purple', // purple, blue, teal, amber, pink
+    fontSize: 'medium',
+    gridViewType: 'compact',
+    accentColor: 'purple',
   });
 
   // Fetch user settings if they exist
@@ -112,11 +105,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
           // Update notification settings
           if (userData.notificationSettings) {
             setNotificationSettings(userData.notificationSettings);
-          }
-          
-          // Update privacy settings
-          if (userData.privacySettings) {
-            setPrivacySettings(userData.privacySettings);
           }
           
           // Update interface settings
@@ -261,26 +249,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
     }
   };
 
-  const handlePrivacyUpdate = async () => {
-    setIsLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        privacySettings,
-        updatedAt: serverTimestamp(),
-      });
-
-      setSuccess('Privacy settings updated successfully!');
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleInterfaceUpdate = async () => {
     setIsLoading(true);
     setError('');
@@ -370,16 +338,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               >
                 <Bell className="h-5 w-5" />
                 <span>Notifications</span>
-              </button>
-              
-              <button
-                onClick={() => setActiveTab('privacy')}
-                className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
-                  activeTab === 'privacy' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
-                }`}
-              >
-                <Shield className="h-5 w-5" />
-                <span>Privacy</span>
               </button>
               
               <button
@@ -678,116 +636,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               </div>
             )}
 
-            {/* Privacy Tab */}
-            {activeTab === 'privacy' && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium text-white">Privacy Settings</h3>
-                
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-800/50 rounded-lg">
-                    <div className="mb-3">
-                      <h4 className="font-medium text-white">Profile Visibility</h4>
-                      <p className="text-sm text-gray-400">Control who can see your profile</p>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="flex items-center space-x-2">
-                        <input 
-                          type="radio" 
-                          name="profileVisibility" 
-                          value="public" 
-                          checked={privacySettings.profileVisibility === 'public'}
-                          onChange={() => setPrivacySettings(prev => ({
-                            ...prev, 
-                            profileVisibility: 'public'
-                          }))}
-                          className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600"
-                        />
-                        <span className="text-white">Public (Everyone can see your profile)</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input 
-                          type="radio" 
-                          name="profileVisibility" 
-                          value="friends" 
-                          checked={privacySettings.profileVisibility === 'friends'}
-                          onChange={() => setPrivacySettings(prev => ({
-                            ...prev, 
-                            profileVisibility: 'friends'
-                          }))}
-                          className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600"
-                        />
-                        <span className="text-white">Friends Only (Only friends can see your profile)</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input 
-                          type="radio" 
-                          name="profileVisibility" 
-                          value="private" 
-                          checked={privacySettings.profileVisibility === 'private'}
-                          onChange={() => setPrivacySettings(prev => ({
-                            ...prev, 
-                            profileVisibility: 'private'
-                          }))}
-                          className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600"
-                        />
-                        <span className="text-white">Private (Your profile is hidden from everyone)</span>
-                      </label>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
-                    <div>
-                      <h4 className="font-medium text-white">Online Status</h4>
-                      <p className="text-sm text-gray-400">Show when you're online to other users</p>
-                    </div>
-                    <div className="flex items-center">
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={privacySettings.showOnlineStatus}
-                          onChange={() => setPrivacySettings(prev => ({
-                            ...prev, 
-                            showOnlineStatus: !prev.showOnlineStatus
-                          }))}
-                        />
-                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                      </label>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
-                    <div>
-                      <h4 className="font-medium text-white">Usage Data Sharing</h4>
-                      <p className="text-sm text-gray-400">Share anonymous usage data to help improve our service</p>
-                    </div>
-                    <div className="flex items-center">
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={privacySettings.shareUsageData}
-                          onChange={() => setPrivacySettings(prev => ({
-                            ...prev, 
-                            shareUsageData: !prev.shareUsageData
-                          }))}
-                        />
-                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                
-                <Button
-                  onClick={handlePrivacyUpdate}
-                  disabled={isLoading}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  {isLoading ? 'Saving...' : 'Save Privacy Settings'}
-                </Button>
-              </div>
-            )}
-
             {/* Interface Tab */}
             {activeTab === 'interface' && (
               <div className="space-y-6">
@@ -958,32 +806,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       >
                         Spacious
                       </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="p-4 bg-gray-800/50 rounded-lg">
-                    <div className="mb-3">
-                      <h4 className="font-medium text-white">Autosave Interval</h4>
-                      <p className="text-sm text-gray-400">How often to automatically save your work</p>
-                    </div>
-                    <div className="flex items-center w-full">
-                      <input
-                        type="range"
-                        min="1"
-                        max="15"
-                        step="1"
-                        value={interfaceSettings.autosaveInterval}
-                        onChange={(e) => setInterfaceSettings(prev => ({
-                          ...prev,
-                          autosaveInterval: parseInt(e.target.value)
-                        }))}
-                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <span className="ml-4 text-white min-w-20">
-                        {interfaceSettings.autosaveInterval === 1 
-                          ? '1 minute' 
-                          : `${interfaceSettings.autosaveInterval} minutes`}
-                      </span>
                     </div>
                   </div>
                   

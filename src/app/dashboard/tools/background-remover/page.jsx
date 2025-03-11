@@ -10,6 +10,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { saveAs } from 'file-saver';
 import { useRouter } from 'next/navigation';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import DownloadOptions from '@/components/DownloadOptions';
 
 // Background removal API function
 const removeBackground = async (imageFile) => {
@@ -169,19 +170,6 @@ export default function BackgroundRemover() {
     }
   };
 
-  const handleDownload = async () => {
-    if (!outputImage) return;
-    
-    try {
-      const response = await fetch(outputImage);
-      const blob = await response.blob();
-      const timestamp = new Date().toISOString().split('T')[0];
-      saveAs(blob, `background-removed-${timestamp}.png`);
-    } catch (error) {
-      setError('Error downloading image: ' + error.message);
-    }
-  };
-
   const clearImages = () => {
     if (inputImage) {
       URL.revokeObjectURL(inputImage);
@@ -303,26 +291,22 @@ export default function BackgroundRemover() {
           {/* Result Section */}
           <div className="bg-[#1E1E1E] rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Result</h2>
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-900">
-              {outputImage ? (
-                <>
+            <div className="space-y-4">
+              <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-900">
+                {outputImage ? (
                   <img
                     src={outputImage}
                     alt="Output"
                     className="w-full h-full object-cover"
                   />
-                  <Button
-                    className="absolute bottom-4 right-4"
-                    onClick={handleDownload}
-                  >
-                    <Download className="w-5 h-5 mr-2" />
-                    Download
-                  </Button>
-                </>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-                  Processed image will appear here
-                </div>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+                    Processed image will appear here
+                  </div>
+                )}
+              </div>
+              {outputImage && (
+                <DownloadOptions imageUrl={outputImage} filename="background-removed" />
               )}
             </div>
           </div>
