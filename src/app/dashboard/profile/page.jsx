@@ -47,13 +47,12 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
     photoURL: user?.photoURL || '',
     firstName: '',
     lastName: '',
-    bio: '',
     location: '',
     phoneNumber: '',
+    timezone: 'UTC',
   });
 
   const [securitySettings, setSecuritySettings] = useState({
-    enableTwoFactor: false,
     passwordLastChanged: null,
     loginNotifications: true,
   });
@@ -70,6 +69,13 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
     profileVisibility: 'public', // public, friends, private
     showOnlineStatus: true,
     shareUsageData: false,
+  });
+
+  const [interfaceSettings, setInterfaceSettings] = useState({
+    colorScheme: 'system', // system, dark, light
+    reducedAnimations: false,
+    highContrastMode: false,
+    fontSize: 'medium', // small, medium, large
   });
 
   // Fetch user settings if they exist
@@ -94,6 +100,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
             bio: userData.bio || '',
             location: userData.location || '',
             phoneNumber: userData.phoneNumber || '',
+            timezone: userData.timezone || 'UTC',
           }));
           
           // Update security settings
@@ -109,6 +116,18 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
           // Update privacy settings
           if (userData.privacySettings) {
             setPrivacySettings(userData.privacySettings);
+          }
+          
+          // Update interface settings
+          if (userData.interfaceSettings) {
+            setInterfaceSettings(userData.interfaceSettings);
+            
+            // Apply the theme if it's defined
+            if (userData.interfaceSettings.colorScheme && userData.interfaceSettings.colorScheme !== 'system') {
+              setTheme(userData.interfaceSettings.colorScheme);
+              document.documentElement.classList.remove("dark", "light");
+              document.documentElement.classList.add(userData.interfaceSettings.colorScheme);
+            }
           }
         }
       } catch (error) {
@@ -194,6 +213,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
         bio: profileData.bio,
         location: profileData.location,
         phoneNumber: profileData.phoneNumber,
+        timezone: profileData.timezone,
         updatedAt: serverTimestamp(),
       });
 
@@ -258,6 +278,34 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
       });
 
       setSuccess('Privacy settings updated successfully!');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInterfaceUpdate = async () => {
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        interfaceSettings,
+        updatedAt: serverTimestamp(),
+      });
+
+      // Apply theme changes immediately
+      if (interfaceSettings.colorScheme !== 'system') {
+        setTheme(interfaceSettings.colorScheme);
+        document.documentElement.classList.remove("dark", "light");
+        document.documentElement.classList.add(interfaceSettings.colorScheme);
+        localStorage.setItem("theme", interfaceSettings.colorScheme);
+      }
+
+      setSuccess('Interface settings updated successfully!');
     } catch (error) {
       setError(error.message);
     } finally {
@@ -344,6 +392,16 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               </button>
               
               <button
+                onClick={() => setActiveTab('interface')}
+                className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                  activeTab === 'interface' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                }`}
+              >
+                <Settings className="h-5 w-5" />
+                <span>Interface</span>
+              </button>
+              
+              <button
                 onClick={() => setActiveTab('danger')}
                 className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
                   activeTab === 'danger' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
@@ -371,19 +429,21 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Display Name
-                  </label>
-                  <input
-                    type="text"
-                    value={profileData.displayName}
-                    onChange={(e) => setProfileData({ ...profileData, displayName: e.target.value })}
-                    className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
+                <h3 className="text-lg font-medium text-white">Profile Information</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      Display Name
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.displayName}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">
                       First Name
@@ -391,10 +451,11 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     <input
                       type="text"
                       value={profileData.firstName}
-                      onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
-                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
+                      onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">
                       Last Name
@@ -402,25 +463,13 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     <input
                       type="text"
                       value={profileData.lastName}
-                      onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
-                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
+                      onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Bio
-                  </label>
-                  <textarea
-                    value={profileData.bio}
-                    onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                    className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white h-24"
-                    placeholder="Tell us about yourself"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
+                  
+                  
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">
                       Location
@@ -428,24 +477,35 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     <input
                       type="text"
                       value={profileData.location}
-                      onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
-                      placeholder="City, Country"
+                      onChange={(e) => setProfileData(prev => ({ ...prev, location: e.target.value }))}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
+                  
+                 
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">
-                      Phone Number
+                      Timezone
                     </label>
-                    <input
-                      type="tel"
-                      value={profileData.phoneNumber}
-                      onChange={(e) => setProfileData({ ...profileData, phoneNumber: e.target.value })}
-                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
-                      placeholder="+1 (123) 456-7890"
-                    />
+                    <select
+                      value={profileData.timezone}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, timezone: e.target.value }))}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="UTC">UTC (Coordinated Universal Time)</option>
+                      <option value="EST">EST (Eastern Standard Time)</option>
+                      <option value="CST">CST (Central Standard Time)</option>
+                      <option value="MST">MST (Mountain Standard Time)</option>
+                      <option value="PST">PST (Pacific Standard Time)</option>
+                      <option value="GMT">GMT (Greenwich Mean Time)</option>
+                    </select>
                   </div>
+                  
+                
                 </div>
+                
+               
 
                 <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">
@@ -505,28 +565,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               <div className="space-y-6">
                 <h3 className="text-lg font-medium text-white">Security Settings</h3>
                 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
-                    <div>
-                      <h4 className="font-medium text-white">Two-Factor Authentication</h4>
-                      <p className="text-sm text-gray-400">Add an extra layer of security to your account</p>
-                    </div>
-                    <div className="flex items-center">
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={securitySettings.enableTwoFactor}
-                          onChange={() => setSecuritySettings(prev => ({
-                            ...prev, 
-                            enableTwoFactor: !prev.enableTwoFactor
-                          }))}
-                        />
-                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                      </label>
-                    </div>
-                  </div>
-                  
+                <div className="space-y-4">                  
                   <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
                     <div>
                       <h4 className="font-medium text-white">Login Notifications</h4>
@@ -558,6 +597,19 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       className="bg-transparent border border-gray-700 hover:bg-gray-800 text-white"
                     >
                       Change Password
+                    </Button>
+                  </div>
+
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Session Management</h4>
+                      <p className="text-sm text-gray-400">View and manage your active sessions</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="bg-transparent border border-gray-700 hover:bg-gray-800 text-white"
+                    >
+                      View Active Sessions
                     </Button>
                   </div>
                 </div>
@@ -804,6 +856,137 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               </div>
             )}
 
+            {/* Interface Tab */}
+            {activeTab === 'interface' && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium text-white">Interface Settings</h3>
+                
+                <div className="space-y-4">
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Color Scheme</h4>
+                      <p className="text-sm text-gray-400">Choose your preferred color scheme</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        variant={interfaceSettings.colorScheme === 'system' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, colorScheme: 'system'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.colorScheme === 'system' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        System
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.colorScheme === 'light' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, colorScheme: 'light'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.colorScheme === 'light' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Light
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.colorScheme === 'dark' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, colorScheme: 'dark'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.colorScheme === 'dark' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Dark
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Text Size</h4>
+                      <p className="text-sm text-gray-400">Adjust the text size for better readability</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        variant={interfaceSettings.fontSize === 'small' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, fontSize: 'small'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.fontSize === 'small' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Small
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.fontSize === 'medium' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, fontSize: 'medium'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.fontSize === 'medium' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Medium
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.fontSize === 'large' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, fontSize: 'large'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.fontSize === 'large' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Large
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Reduce Animations</h4>
+                      <p className="text-sm text-gray-400">Minimize animations for a simpler experience</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={interfaceSettings.reducedAnimations}
+                          onChange={() => setInterfaceSettings(prev => ({
+                            ...prev, 
+                            reducedAnimations: !prev.reducedAnimations
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">High Contrast Mode</h4>
+                      <p className="text-sm text-gray-400">Increase contrast for better accessibility</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={interfaceSettings.highContrastMode}
+                          onChange={() => setInterfaceSettings(prev => ({
+                            ...prev, 
+                            highContrastMode: !prev.highContrastMode
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handleInterfaceUpdate}
+                  disabled={isLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {isLoading ? 'Saving...' : 'Save Interface Settings'}
+                </Button>
+              </div>
+            )}
+
             {/* Danger Zone Tab */}
             {activeTab === 'danger' && (
               <div className="space-y-4">
@@ -1034,9 +1217,9 @@ export default function UserProfile() {
                   <Moon className="mr-3 h-5 w-5 " />
                 )}
                   <span className="text-lg">{theme === "dark" ? "Light" : "Dark"} Mode</span>
-              </Button>
+                </Button>
 
-              </div>
+                </div>
             </div>
           </div>
 

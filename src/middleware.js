@@ -10,7 +10,14 @@ export function middleware(request) {
                       path === '/register' || 
                       path === '/' || 
                       path.startsWith('/_next') || 
-                      path.startsWith('/api');
+                      path.startsWith('/api') ||
+                      path.includes('.mp4') ||  // Allow video files
+                      path.includes('.jpg') ||  // Allow image files
+                      path.includes('.png') ||  // Allow image files
+                      path.includes('.svg') ||  // Allow SVG files
+                      path.includes('.ico') ||  // Allow icon files
+                      path.includes('.css') ||  // Allow CSS files
+                      path.includes('.js');     // Allow JS files
   
   // Get the session token from cookies
   const authToken = request.cookies.get('authToken')?.value || '';
@@ -31,6 +38,6 @@ export function middleware(request) {
 // Specify which paths this middleware should run on
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|hero-video.mp4).*)',
   ],
 }; 

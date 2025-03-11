@@ -33,7 +33,7 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError('');
-
+  
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
@@ -77,7 +77,7 @@ export default function LoginPage() {
 
   // Don't render the login form if the user is already logged in
   if (loading) {
-    return (
+  return (
       <div className="flex min-h-screen flex-col">
         <Navbar />
         <div className="flex flex-1 items-center justify-center">
@@ -90,19 +90,19 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar />
+      <Navbar /> 
       
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <h2 className="mt-6 text-3xl font-bold tracking-tight text-white">
               Sign in to your account
-            </h2>
+              </h2>
             <p className="mt-2 text-sm text-gray-400">
               Choose your preferred login method
             </p>
           </div>
-          
+
           {error && (
             <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded relative" role="alert">
               <span className="block sm:inline">{error}</span>
@@ -119,15 +119,15 @@ export default function LoginPage() {
               <span className="text-lg">Continue with Google</span>
             </Button>
             
-            <Button
+                  <Button
               onClick={handleGithubLogin}
               disabled={isLoading}
               className="w-full py-6 bg-transparent border border-gray-700 hover:bg-gray-800 text-white flex items-center justify-center"
             >
               <FaGithub className="mr-3 h-5 w-5" />
               <span className="text-lg">Continue with GitHub</span>
-            </Button>
-          </div>
+                  </Button>
+              </div>
           
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-400">
@@ -139,7 +139,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );
