@@ -1,6 +1,6 @@
 // middleware.js
 import { NextResponse } from 'next/server';
- 
+
 export function middleware(request) {
   // Get the pathname
   const path = request.nextUrl.pathname;
@@ -20,17 +20,17 @@ export function middleware(request) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   
-  // If the user is authenticated and tries to access login/register, redirect to dashboard
+  // If the user is authenticated and tries to access login/register, redirect to profile
   if (isPublicPath && authToken && (path === '/login' || path === '/register')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL('/dashboard/profile', request.url));
   }
   
   return NextResponse.next();
 }
- 
+
 // Specify which paths this middleware should run on
 export const config = {
   matcher: [
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
-};
+}; 

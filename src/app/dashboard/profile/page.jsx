@@ -45,7 +45,79 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
   const [profileData, setProfileData] = useState({
     displayName: user?.displayName || '',
     photoURL: user?.photoURL || '',
+    firstName: '',
+    lastName: '',
+    bio: '',
+    location: '',
+    phoneNumber: '',
   });
+
+  const [securitySettings, setSecuritySettings] = useState({
+    enableTwoFactor: false,
+    passwordLastChanged: null,
+    loginNotifications: true,
+  });
+
+  const [notificationSettings, setNotificationSettings] = useState({
+    emailNotifications: true,
+    pushNotifications: true,
+    productUpdates: true,
+    securityAlerts: true,
+    marketingEmails: false,
+  });
+
+  const [privacySettings, setPrivacySettings] = useState({
+    profileVisibility: 'public', // public, friends, private
+    showOnlineStatus: true,
+    shareUsageData: false,
+  });
+
+  // Fetch user settings if they exist
+  useEffect(() => {
+    const fetchUserSettings = async () => {
+      if (!user) return;
+      
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          
+          // Update profile data
+          setProfileData(prev => ({
+            ...prev,
+            displayName: user.displayName || '',
+            photoURL: user.photoURL || '',
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
+            bio: userData.bio || '',
+            location: userData.location || '',
+            phoneNumber: userData.phoneNumber || '',
+          }));
+          
+          // Update security settings
+          if (userData.securitySettings) {
+            setSecuritySettings(userData.securitySettings);
+          }
+          
+          // Update notification settings
+          if (userData.notificationSettings) {
+            setNotificationSettings(userData.notificationSettings);
+          }
+          
+          // Update privacy settings
+          if (userData.privacySettings) {
+            setPrivacySettings(userData.privacySettings);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user settings:', error);
+      }
+    };
+    
+    fetchUserSettings();
+  }, [user]);
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -117,9 +189,75 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
       await updateDoc(userRef, {
         name: profileData.displayName,
         photoURL: profileData.photoURL,
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        bio: profileData.bio,
+        location: profileData.location,
+        phoneNumber: profileData.phoneNumber,
+        updatedAt: serverTimestamp(),
       });
 
       setSuccess('Profile updated successfully!');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSecurityUpdate = async () => {
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        securitySettings,
+        updatedAt: serverTimestamp(),
+      });
+
+      setSuccess('Security settings updated successfully!');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNotificationUpdate = async () => {
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        notificationSettings,
+        updatedAt: serverTimestamp(),
+      });
+
+      setSuccess('Notification preferences updated successfully!');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePrivacyUpdate = async () => {
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        privacySettings,
+        updatedAt: serverTimestamp(),
+      });
+
+      setSuccess('Privacy settings updated successfully!');
     } catch (error) {
       setError(error.message);
     } finally {
@@ -176,6 +314,36 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               </button>
               
               <button
+                onClick={() => setActiveTab('security')}
+                className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                  activeTab === 'security' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                }`}
+              >
+                <Lock className="h-5 w-5" />
+                <span>Security</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('notifications')}
+                className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                  activeTab === 'notifications' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                }`}
+              >
+                <Bell className="h-5 w-5" />
+                <span>Notifications</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('privacy')}
+                className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                  activeTab === 'privacy' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                }`}
+              >
+                <Shield className="h-5 w-5" />
+                <span>Privacy</span>
+              </button>
+              
+              <button
                 onClick={() => setActiveTab('danger')}
                 className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
                   activeTab === 'danger' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
@@ -214,6 +382,71 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
                   />
                 </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.firstName}
+                      onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
+                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.lastName}
+                      onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
+                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    Bio
+                  </label>
+                  <textarea
+                    value={profileData.bio}
+                    onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                    className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white h-24"
+                    placeholder="Tell us about yourself"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.location}
+                      onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
+                      placeholder="City, Country"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={profileData.phoneNumber}
+                      onChange={(e) => setProfileData({ ...profileData, phoneNumber: e.target.value })}
+                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
+                      placeholder="+1 (123) 456-7890"
+                    />
+                  </div>
+                </div>
+
                 <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">
                   Profile Picture
@@ -263,6 +496,310 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                 >
                   {isLoading ? 'Saving...' : 'Save Profile'}
+                </Button>
+              </div>
+            )}
+
+            {/* Security Tab */}
+            {activeTab === 'security' && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium text-white">Security Settings</h3>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Two-Factor Authentication</h4>
+                      <p className="text-sm text-gray-400">Add an extra layer of security to your account</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={securitySettings.enableTwoFactor}
+                          onChange={() => setSecuritySettings(prev => ({
+                            ...prev, 
+                            enableTwoFactor: !prev.enableTwoFactor
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Login Notifications</h4>
+                      <p className="text-sm text-gray-400">Get notified when someone logs into your account</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={securitySettings.loginNotifications}
+                          onChange={() => setSecuritySettings(prev => ({
+                            ...prev, 
+                            loginNotifications: !prev.loginNotifications
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Password</h4>
+                      <p className="text-sm text-gray-400">Change your password regularly for better security</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="bg-transparent border border-gray-700 hover:bg-gray-800 text-white"
+                    >
+                      Change Password
+                    </Button>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handleSecurityUpdate}
+                  disabled={isLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {isLoading ? 'Saving...' : 'Save Security Settings'}
+                </Button>
+              </div>
+            )}
+
+            {/* Notifications Tab */}
+            {activeTab === 'notifications' && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium text-white">Notification Preferences</h3>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Email Notifications</h4>
+                      <p className="text-sm text-gray-400">Receive notifications via email</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={notificationSettings.emailNotifications}
+                          onChange={() => setNotificationSettings(prev => ({
+                            ...prev, 
+                            emailNotifications: !prev.emailNotifications
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Push Notifications</h4>
+                      <p className="text-sm text-gray-400">Receive push notifications in browser</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={notificationSettings.pushNotifications}
+                          onChange={() => setNotificationSettings(prev => ({
+                            ...prev, 
+                            pushNotifications: !prev.pushNotifications
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Product Updates</h4>
+                      <p className="text-sm text-gray-400">Receive updates about new features and improvements</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={notificationSettings.productUpdates}
+                          onChange={() => setNotificationSettings(prev => ({
+                            ...prev, 
+                            productUpdates: !prev.productUpdates
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Security Alerts</h4>
+                      <p className="text-sm text-gray-400">Get notified about security-related activity</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={notificationSettings.securityAlerts}
+                          onChange={() => setNotificationSettings(prev => ({
+                            ...prev, 
+                            securityAlerts: !prev.securityAlerts
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Marketing Emails</h4>
+                      <p className="text-sm text-gray-400">Receive promotional emails and special offers</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={notificationSettings.marketingEmails}
+                          onChange={() => setNotificationSettings(prev => ({
+                            ...prev, 
+                            marketingEmails: !prev.marketingEmails
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handleNotificationUpdate}
+                  disabled={isLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {isLoading ? 'Saving...' : 'Save Notification Preferences'}
+                </Button>
+              </div>
+            )}
+
+            {/* Privacy Tab */}
+            {activeTab === 'privacy' && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium text-white">Privacy Settings</h3>
+                
+                <div className="space-y-4">
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Profile Visibility</h4>
+                      <p className="text-sm text-gray-400">Control who can see your profile</p>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2">
+                        <input 
+                          type="radio" 
+                          name="profileVisibility" 
+                          value="public" 
+                          checked={privacySettings.profileVisibility === 'public'}
+                          onChange={() => setPrivacySettings(prev => ({
+                            ...prev, 
+                            profileVisibility: 'public'
+                          }))}
+                          className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600"
+                        />
+                        <span className="text-white">Public (Everyone can see your profile)</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input 
+                          type="radio" 
+                          name="profileVisibility" 
+                          value="friends" 
+                          checked={privacySettings.profileVisibility === 'friends'}
+                          onChange={() => setPrivacySettings(prev => ({
+                            ...prev, 
+                            profileVisibility: 'friends'
+                          }))}
+                          className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600"
+                        />
+                        <span className="text-white">Friends Only (Only friends can see your profile)</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input 
+                          type="radio" 
+                          name="profileVisibility" 
+                          value="private" 
+                          checked={privacySettings.profileVisibility === 'private'}
+                          onChange={() => setPrivacySettings(prev => ({
+                            ...prev, 
+                            profileVisibility: 'private'
+                          }))}
+                          className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600"
+                        />
+                        <span className="text-white">Private (Your profile is hidden from everyone)</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Online Status</h4>
+                      <p className="text-sm text-gray-400">Show when you're online to other users</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={privacySettings.showOnlineStatus}
+                          onChange={() => setPrivacySettings(prev => ({
+                            ...prev, 
+                            showOnlineStatus: !prev.showOnlineStatus
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Usage Data Sharing</h4>
+                      <p className="text-sm text-gray-400">Share anonymous usage data to help improve our service</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={privacySettings.shareUsageData}
+                          onChange={() => setPrivacySettings(prev => ({
+                            ...prev, 
+                            shareUsageData: !prev.shareUsageData
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handlePrivacyUpdate}
+                  disabled={isLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {isLoading ? 'Saving...' : 'Save Privacy Settings'}
                 </Button>
               </div>
             )}
