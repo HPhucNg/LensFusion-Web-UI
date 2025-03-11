@@ -78,7 +78,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
     gridViewType: 'compact', // compact, comfortable, spacious
     autosaveInterval: 5, // in minutes
     accentColor: 'purple', // purple, blue, teal, amber, pink
-    defaultExportFormat: 'png', // jpg, png, webp
   });
 
   // Fetch user settings if they exist
@@ -928,42 +927,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                   
                   <div className="p-4 bg-gray-800/50 rounded-lg">
                     <div className="mb-3">
-                      <h4 className="font-medium text-white">Default Export Format</h4>
-                      <p className="text-sm text-gray-400">Choose preferred format for exporting images</p>
-                    </div>
-                    <div className="flex gap-3">
-                      <Button
-                        variant={interfaceSettings.defaultExportFormat === 'jpg' ? "default" : "outline"}
-                        onClick={() => setInterfaceSettings(prev => ({...prev, defaultExportFormat: 'jpg'}))}
-                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
-                          interfaceSettings.defaultExportFormat === 'jpg' ? 'bg-purple-600 border-purple-600' : ''
-                        }`}
-                      >
-                        JPG
-                      </Button>
-                      <Button
-                        variant={interfaceSettings.defaultExportFormat === 'png' ? "default" : "outline"}
-                        onClick={() => setInterfaceSettings(prev => ({...prev, defaultExportFormat: 'png'}))}
-                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
-                          interfaceSettings.defaultExportFormat === 'png' ? 'bg-purple-600 border-purple-600' : ''
-                        }`}
-                      >
-                        PNG
-                      </Button>
-                      <Button
-                        variant={interfaceSettings.defaultExportFormat === 'webp' ? "default" : "outline"}
-                        onClick={() => setInterfaceSettings(prev => ({...prev, defaultExportFormat: 'webp'}))}
-                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
-                          interfaceSettings.defaultExportFormat === 'webp' ? 'bg-purple-600 border-purple-600' : ''
-                        }`}
-                      >
-                        WebP
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="p-4 bg-gray-800/50 rounded-lg">
-                    <div className="mb-3">
                       <h4 className="font-medium text-white">Gallery View</h4>
                       <p className="text-sm text-gray-400">Set your preferred gallery view density</p>
                     </div>
@@ -1280,10 +1243,6 @@ export default function UserProfile() {
                 <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
                   <User2 className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Subscription</span>
-                </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
-                  <Share2 className="mr-3 h-5 w-5" />
-                  <span className="text-lg">Share</span>
                 </Button>
                 <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white" onClick={toggleTheme}>
                   {theme === "dark" ? (
