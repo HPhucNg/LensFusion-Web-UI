@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { SubscriptionProvider } from "@/context/subscriptionContext";
-
+import { AuthProvider } from "@/context/AuthContext"; // Add this import
 import "./globals.css";
 
 export default function RootLayout({ children }) {
@@ -10,9 +10,11 @@ export default function RootLayout({ children }) {
 
   // Check for saved theme preference in localStorage on page load
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      setTheme(savedTheme);
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme) {
+        setTheme(savedTheme);
+      }
     }
   }, []);
 
@@ -25,18 +27,22 @@ export default function RootLayout({ children }) {
 
   // Apply theme to the HTML element
   useEffect(() => {
-    document.documentElement.classList.remove("dark", "light");
-    document.documentElement.classList.add(theme);
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove("dark", "light");
+      document.documentElement.classList.add(theme);
+    }
   }, [theme]);
 
   return (
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning className="h-screen overflow-y-auto bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans">
-        <SubscriptionProvider>
-          <div className="flex flex-col min-h-screen">
-            {children}
-          </div>
-        </SubscriptionProvider>
+        <AuthProvider> {/* Add AuthProvider here */}
+          <SubscriptionProvider>
+            <div className="flex flex-col min-h-screen">
+              {children}
+            </div>
+          </SubscriptionProvider>
+        </AuthProvider>
       </body>
     </html>
   );
