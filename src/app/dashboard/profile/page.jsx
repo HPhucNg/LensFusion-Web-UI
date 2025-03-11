@@ -52,7 +52,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
     lastName: '',
     location: '',
     phoneNumber: '',
-    timezone: 'UTC',
   });
 
   const [securitySettings, setSecuritySettings] = useState({});
@@ -104,7 +103,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
             bio: userData.bio || '',
             location: userData.location || '',
             phoneNumber: userData.phoneNumber || '',
-            timezone: userData.timezone || 'UTC',
           }));
           
           // Update security settings
@@ -213,7 +211,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
         bio: profileData.bio,
         location: profileData.location,
         phoneNumber: profileData.phoneNumber,
-        timezone: profileData.timezone,
         updatedAt: serverTimestamp(),
       });
 
@@ -463,8 +460,6 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     />
                   </div>
                   
-                  
-                  
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">
                       Location
@@ -476,32 +471,8 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
-                  
-                 
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">
-                      Timezone
-                    </label>
-                    <select
-                      value={profileData.timezone}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, timezone: e.target.value }))}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    >
-                      <option value="UTC">UTC (Coordinated Universal Time)</option>
-                      <option value="EST">EST (Eastern Standard Time)</option>
-                      <option value="CST">CST (Central Standard Time)</option>
-                      <option value="MST">MST (Mountain Standard Time)</option>
-                      <option value="PST">PST (Pacific Standard Time)</option>
-                      <option value="GMT">GMT (Greenwich Mean Time)</option>
-                    </select>
-                  </div>
-                  
-                
                 </div>
                 
-               
-
                 <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">
                   Profile Picture
