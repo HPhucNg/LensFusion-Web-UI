@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
+// Define the categories for the product selection
 const categories = [
   { id: 'skincare', label: 'Skincare' },
   { id: 'candles', label: 'Candles' },
@@ -11,6 +12,7 @@ const categories = [
   { id: 'bags', label: 'Bags' },
 ];
 
+// Define the product images for each category
 const productImages = {
   skincare: [
     { src: 'https://i.pinimg.com/736x/a1/df/51/a1df51fac9062fe1bd3a17d903f82184.jpg', alt: 'Skincare product 1' },
@@ -62,38 +64,43 @@ const productImages = {
     { src: "https://i.pinimg.com/236x/c1/b7/20/c1b720d96036e59ca78384db84b55e1e.jpg", alt: "Bag 7" },
     { src: "https://i.pinimg.com/736x/db/52/ad/db52ad62eebeb1fd6c5dcf542d227aa7.jpg", alt: "Bag 8" },
   ],
-  
 };
 
+// Main component for displaying product categories and images
 const ProductCategory = () => {
+  // State to manage the currently selected category
   const [selectedCategory, setSelectedCategory] = useState('skincare');
 
   return (
     <div className="px-4 mt-[-1rem] min-h-screen">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-2xl md:text-2xl lg:text-5xl font-bold text-center mb-12">
+        {/* Header for the product photography section */}
+        <h2 className="text-2xl md:text-3xl lg:text-5xl font-bold text-center mb-12 md:mb-16">
           Beautiful product photography for every category
         </h2>
 
-        <div className="flex justify-center mb-8">
-          <div className="flex rounded-full bg-black/40 p-1">
-            {categories.map((category, index) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={cn(
-                  'px-8 py-3 text-lg transition-all rounded-full relative',
-                  selectedCategory === category.id
-                    ? 'bg-[#EBDDF7] text-black'
-                    : 'text-gray-400 hover:text-white',
-                )}
-              >
-                {category.label}
-              </button>
-            ))}
+        {/* Category selector for user to choose a product category */}
+        <div className="mb-12 md:mb-16">
+          <div className="flex flex-wrap justify-center gap-2 md:gap-4">
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={cn(
+                'px-6 md:px-8 py-3 text-sm md:text-base',
+                'tracking-wide uppercase font-light rounded-full',
+                selectedCategory === category.id
+                  ? 'text-black bg-[#EBDDF7]' // Active category styling
+                  : 'text-gray-400 hover:text-gray-200' // Inactive category styling
+              )}
+            >
+              {category.label}
+            </button>
+          ))}
           </div>
         </div>
 
+        {/* Image grid layout for displaying products */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {productImages[selectedCategory].map((image, index) => (
             <div key={index} className="aspect-square rounded-2xl overflow-hidden border border-white/20">

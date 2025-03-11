@@ -1,0 +1,105 @@
+/* Prevent zooming on input focus */
+@media screen and (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px;
+  }
+}
+
+/* Smooth scrolling for mobile */
+html {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent textarea resizing on mobile */
+textarea {
+  resize: none;
+}
+
+/* Mobile-first responsive adjustments */
+@media screen and (max-width: 768px) {
+  .image-processor-container {
+    flex-direction: column;
+    padding: 0.5rem;
+  }
+
+  .sidebar {
+    width: 100% !important;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #374151;
+    padding: 1rem;
+  }
+
+  .image-container {
+    width: 100% !important;
+    height: 300px !important; /* Reduced height for mobile */
+    margin: 0.5rem 0;
+  }
+
+  .action-buttons {
+    gap: 1rem;
+    padding: 0.5rem;
+  }
+
+  .fullscreen-modal img {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+
+  /* Input/Output labels */
+  .image-label {
+    bottom: 1rem;
+    font-size: 0.875rem;
+  }
+
+  /* Generate button mobile positioning */
+  .generate-button-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0.5rem;
+    background: #1f2937;
+    z-index: 50;
+  }
+}
+
+/* Add these mobile-specific tweaks */
+@media screen and (max-width: 640px) {
+  .sidebar-tabs button {
+    font-size: 0.875rem;
+    padding: 0.75rem;
+  }
+
+  .parameter-input {
+    font-size: 14px !important;
+    padding: 0.75rem !important;
+  }
+
+  .action-button {
+    padding: 0.75rem;
+    min-width: 40px;
+  }
+
+  .upload-icon {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+
+.sidebar {
+  transition: transform 0.3s ease-out;
+  will-change: transform;
+  backdrop-filter: blur(10px);
+  box-shadow: 16px 0 32px -16px rgba(0,0,0,0.5);
+}
+
+@media (min-width: 1024px) {
+  .sidebar {
+    transform: translateX(0) !important;
+  }
+}
+
+.mobile-menu-button {
+  backdrop-filter: blur(8px);
+} 
