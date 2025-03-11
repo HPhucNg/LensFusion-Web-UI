@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from "next/image";
-import { Upload, X, Download, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Download, Image as ImageIcon, ArrowLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { saveAs } from 'file-saver';
+import { useRouter } from 'next/navigation';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 // Background removal API function
 const removeBackground = async (imageFile) => {
@@ -30,13 +32,49 @@ const removeBackground = async (imageFile) => {
   return URL.createObjectURL(blob);
 };
 
+// Add function to save image to user gallery
+const saveToUserGallery = async (imageUrl, userId) => {
+  try {
+    // Create a unique filename
+    const timestamp = Date.now();
+    const filename = `background-removed-${timestamp}.png`;
+    
+    // Create a reference to the storage location
+    const storageRef = ref(storage, `user_images/${userId}/${filename}`);
+    
+    // Fetch the image and convert to blob
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    
+    // Upload to Firebase Storage
+    await uploadBytes(storageRef, blob);
+    const downloadURL = await getDownloadURL(storageRef);
+    
+    // Add to Firestore user_images collection
+    const userImageRef = collection(db, 'user_images');
+    await addDoc(userImageRef, {
+      userID: userId,
+      img_data: downloadURL,
+      createdAt: serverTimestamp(),
+      type: 'background-removed'
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error saving to gallery:', error);
+    return false;
+  }
+};
+
 export default function BackgroundRemover() {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [tokens, setTokens] = useState(0);
   const [inputImage, setInputImage] = useState(null);
   const [outputImage, setOutputImage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
 
   useEffect(() => {
@@ -94,40 +132,38 @@ export default function BackgroundRemover() {
   };
 
   const handleRemoveBackground = async () => {
-    if (!inputImage || tokens < 1) {
-      setError(tokens < 1 ? 'Not enough tokens' : 'Please upload an image first');
-      return;
-    }
-
+    if (!inputImage || isProcessing || tokens < 1) return;
+    
     setIsProcessing(true);
-    setError('');
-
+    setError(null);
+    setSuccess(null);
+    
     try {
-      // Process the image
-      const processedImageUrl = await removeBackground(uploadedFile);
+      // Get the file from the data URL
+      const response = await fetch(inputImage);
+      const blob = await response.blob();
+      const file = new File([blob], 'input-image.jpg', { type: 'image/jpeg' });
+      
+      // Remove background
+      const resultUrl = await removeBackground(file);
+      setOutputImage(resultUrl);
       
       // Update tokens
-      const userRef = doc(db, "users", user.uid);
+      const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
         tokens: tokens - 1
       });
       setTokens(prev => prev - 1);
       
-      // Set output image
-      setOutputImage(processedImageUrl);
-
-      // Log usage
-      const timestamp = new Date().toISOString();
-      await updateDoc(userRef, {
-        usage: {
-          backgroundRemoval: {
-            lastUsed: timestamp,
-            count: tokens
-          }
-        }
-      });
+      // Save to user's gallery
+      const saved = await saveToUserGallery(resultUrl, user.uid);
+      if (saved) {
+        setSuccess('Image processed and saved to your gallery successfully!');
+      }
+      
     } catch (error) {
-      setError('Error processing image: ' + error.message);
+      console.error('Error:', error);
+      setError(error.message || 'Failed to remove background');
     } finally {
       setIsProcessing(false);
     }
@@ -162,6 +198,15 @@ export default function BackgroundRemover() {
   return (
     <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white">
       <div className="container mx-auto px-4 py-8">
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors mb-6"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Back</span>
+        </button>
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Background Remover</h1>
@@ -170,6 +215,20 @@ export default function BackgroundRemover() {
             <p className="text-sm">Available tokens: <span className="font-bold">{tokens}</span></p>
           </div>
         </div>
+
+        {/* Success Message */}
+        {success && (
+          <div className="mb-4 p-4 bg-green-500/10 border border-green-500 rounded-lg">
+            <p className="text-green-500">{success}</p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-500/10 border border-red-500 rounded-lg">
+            <p className="text-red-500">{error}</p>
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="grid md:grid-cols-2 gap-8">
@@ -221,12 +280,6 @@ export default function BackgroundRemover() {
                 </div>
               )}
             </div>
-
-            {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500 rounded-lg text-red-500">
-                {error}
-              </div>
-            )}
 
             <Button
               onClick={handleRemoveBackground}
