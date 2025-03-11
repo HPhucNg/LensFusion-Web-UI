@@ -1149,7 +1149,12 @@ export default function UserProfile() {
     setShowCommunityModal(false);  // Close Community Modal
   };
 
-
+  const handleImageDeleted = (deletedImageId) => {
+    // Update the userImages state by filtering out the deleted image
+    setUserImages(prevImages => prevImages.filter(image => 
+      (image.uid !== deletedImageId && image.id !== deletedImageId)
+    ));
+  };
 
   if (loading) {
     return (
@@ -1315,7 +1320,8 @@ export default function UserProfile() {
                 <GalleryModal
                     closeModal={closeModal}
                     image={selectedImage}
-                    openCommunityModal={openCommunityModal}  // Pass openCommunityModal function
+                    openCommunityModal={openCommunityModal}
+                    onImageDeleted={handleImageDeleted}
                 />
             )}
 
