@@ -8,8 +8,8 @@ import ViewModal from '@/components/ViewModal';
 import Pin from '@/components/Pin'; 
 import '../style.css'; 
 import { cn } from '@/lib/utils';
-import Image from "next/image";
 import Masonry from 'react-responsive-masonry'; // Import Masonry component
+import { Nav } from 'react-day-picker';
 
 
 function Page() {
@@ -141,61 +141,54 @@ function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
-      <Navbar />
-      <main>
-      <div className="flex justify-center mb-8">
-  <div className="flex flex-wrap justify-center gap-4 rounded-full bg-[var(--card-background)] p-2">
-    {/* Category buttons */}
-    {categories.map((category) => (
-      <button
-        key={category.id}
-        className={cn(
-          'px-6 py-2 text-base sm:px-8 sm:py-3 sm:text-lg transition-all rounded-full relative',
-          selectedCategory === category.id
-            ? 'bg-[#EBDDF7] text-black'
-            : 'text-gray-400 hover:text-white'
+     <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black font-sans relative overflow-hidden">
+        <Navbar />
+        <div className='flex justify-center mb-6'>
+          {showModal && (
+          <ViewModal
+              closeModal={closeModal}
+              image={selectedImage}
+          />
         )}
-        onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)} // Toggle category selection
-      >
-        {category.label}
-      </button>
-    ))}
-    {/* All Images button */}
-    <button
-      className={cn(
-        'px-6 py-2 text-base sm:text-lg transition-all rounded-full relative',
-        selectedCategory === null ? 'bg-[#EBDDF7] text-black' : 'text-gray-400 hover:text-white'
-      )}
-      onClick={() => setSelectedCategory(null)} // Show all posts
-    >
-      All Images
-    </button>
-  </div>
-</div>
-
-
-        <div className="flex-grow max-h-[calc(100vh-120px)] overflow-y-auto p-4" ref={scrollContainerRef}>
+      </div>
+        <div className='flex justify-center pb-4'>
+          <div className="flex flex-wrap justify-center gap-4 rounded-full bg-[var(--card-background)] p-2">
+            {/* Category buttons */}
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                className={cn('px-6 py-2 text-base sm:px-8 sm:py-3 sm:text-lg transition-all rounded-full relative',
+                  selectedCategory === category.id ? 'bg-[#EBDDF7] text-black' : 'text-gray-400 hover:text-white')}
+                onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)} // Toggle category selection
+              >
+                {category.label}
+              </button>
+            ))}
+            {/* All Images button */}
+              <button
+                className={cn('px-6 py-2 text-base sm:text-lg transition-all rounded-full relative', 
+                  selectedCategory === null ? 'bg-[#EBDDF7] text-black' : 'text-gray-400 hover:text-white')}
+                onClick={() => setSelectedCategory(null)} // Show all posts
+              >
+                All Images
+              </button>
+            </div>
+        </div>
+        
+        <div className='flex flex-grow p-2'>
           {/* Masonry grid container */}
           <Masonry columnsCount={columns} gutter="10px">
             {filteredPosts.map((post) => (
               <div key={post.id} onClick={() => handleImageClick(post)} className='cursor-pointer'>
                 <Pin image={post}/>
-              </div>
+                </div>
             ))}
           </Masonry>
         </div>
-      </main>
-      <Footer />
-      {showModal && (
-        <ViewModal
-            closeModal={closeModal}
-            image={selectedImage}
-        />
-      )}
 
-      {selectedImage && <Pin image={selectedImage} />}
-           
+        <Footer />
+
+      {/*{selectedImage && <Pin image={selectedImage} />}*/}
 
     </div>
       
