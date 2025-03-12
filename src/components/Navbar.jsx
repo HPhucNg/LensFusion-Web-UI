@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import Branding from "./Branding";
 import { auth } from '@/firebase/FirebaseConfig';
 import { signOut } from "firebase/auth";
+import { clearAuthCookie } from '@/utils/authCookies';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +31,10 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
+      clearAuthCookie();
+      
       await signOut(auth);
+      
       router.push('/');
     } catch (error) {
       console.error("Error signing out:", error);

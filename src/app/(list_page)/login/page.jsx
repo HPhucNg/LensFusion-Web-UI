@@ -1,91 +1,146 @@
 "use client";
 
-import React from 'react';
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/firebase/FirebaseConfig';
-import { signInWithPopup, GoogleAuthProvider, GithubAuthProvider } from "firebase/auth";
-import { FaGoogle, FaGithub } from 'react-icons/fa'; // Install react-icons if not already installed
+import Link from 'next/link';
+import { FaGoogle, FaGithub } from 'react-icons/fa';
+import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { auth } from '@/firebase/FirebaseConfig';
+import { 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  GithubAuthProvider 
+} from "firebase/auth";
+import { setAuthCookie } from '@/utils/authCookies';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user, loading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Handles Google sign-in process
+  // Redirect to profile if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard/profile');
+    }
+  }, [user, loading, router]);
+
+  // Handle Google login
   const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError('');
+  
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      if (result.user) {
-        router.push('/dashboard/profile');
-      }
+      const user = result.user;
+      
+      // Set auth cookie
+      await setAuthCookie(user);
+      
+      // Redirect to profile page
+      router.push('/dashboard/profile');
     } catch (error) {
-      console.error("Error signing in with Google:", error);
+      console.error("Google login error:", error);
+      setError('Error signing in with Google. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Handles GitHub sign-in process
+  // Handle GitHub login
   const handleGithubLogin = async () => {
+    setIsLoading(true);
+    setError('');
+
     try {
       const provider = new GithubAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      if (result.user) {
-        router.push('/dashboard/profile');
-      }
+      const user = result.user;
+      
+      // Set auth cookie
+      await setAuthCookie(user);
+      
+      // Redirect to profile page
+      router.push('/dashboard/profile');
     } catch (error) {
-      console.error("Error signing in with GitHub:", error);
+      console.error("GitHub login error:", error);
+      setError('Error signing in with GitHub. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // Don't render the login form if the user is already logged in
+  if (loading) {
   return (
-    <>
-      <Navbar />
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-[#0D161F] p-8 rounded-2xl shadow-2xl border border-gray-800">
-          <h2 className="text-3xl font-bold text-center mb-8">Welcome Back</h2>
-          <div className="space-y-4">
-            {/* Google Sign-In Button */}
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <div className="flex flex-1 items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Navbar /> 
+      
+      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h2 className="mt-6 text-3xl font-bold tracking-tight text-white">
+              Sign in to your account
+              </h2>
+            <p className="mt-2 text-sm text-gray-400">
+              Choose your preferred login method
+            </p>
+          </div>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded relative" role="alert">
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+
+          <div className="space-y-6">
             <Button
-              variant="outline"
               onClick={handleGoogleLogin}
-              className="w-full py-6 bg-white hover:bg-gray-100 text-black transition-all duration-300 flex items-center justify-center space-x-3"
+              disabled={isLoading}
+              className="w-full py-6 bg-transparent border border-gray-700 hover:bg-gray-800 text-white flex items-center justify-center"
             >
-              <FaGoogle className="w-5 h-5" />
+              <FaGoogle className="mr-3 h-5 w-5" />
               <span className="text-lg">Continue with Google</span>
             </Button>
             
-            {/* GitHub Sign-In Button */}
-            <Button
-              variant="outline"
+                  <Button
               onClick={handleGithubLogin}
-              className="w-full py-6 bg-[#24292e] hover:bg-[#1b1f23] text-white transition-all duration-300 flex items-center justify-center space-x-3"
+              disabled={isLoading}
+              className="w-full py-6 bg-transparent border border-gray-700 hover:bg-gray-800 text-white flex items-center justify-center"
             >
-              <FaGithub className="w-5 h-5" />
+              <FaGithub className="mr-3 h-5 w-5" />
               <span className="text-lg">Continue with GitHub</span>
-            </Button>
-
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-700"></div>
+                  </Button>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-[#0D161F] text-gray-400">Or</span>
-              </div>
-            </div>
-
-            {/* Sign-up Redirect */}
-            <p className="text-center text-gray-400">
-              Don't have an account?{" "}
-              <button onClick={() => router.push('/register')} className="text-blue-500 hover:text-blue-400">
-                Sign up
-              </button>
+          
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-400">
+              Don't have an account?{' '}
+              <Link href="/register" className="font-medium text-purple-600 hover:text-purple-500">
+                Register now
+              </Link>
             </p>
           </div>
         </div>
       </div>
+
       <Footer />
-    </>
+    </div>
   );
 }

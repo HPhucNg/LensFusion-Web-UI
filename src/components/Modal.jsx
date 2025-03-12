@@ -3,14 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/modal_styles.css';
 import { auth, db } from '@/firebase/FirebaseConfig'; // Firebase config import
-import { collection, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
 
 function Modal({ closeModal, add_community, selectedImage, createdBy }) {
     const [pinDetails, setPinDetails] = useState({
         created_by: createdBy,
         title: '',
-        prompt: selectedImage.prompt,
-        img_data: selectedImage.img_data,
+        prompt: selectedImage?.prompt || 'No prompt available',
+        img_data: selectedImage?.img_data,
     });
     
     const [isEditing, setIsEditing] = useState(false); // Track if user is editing an existing post
@@ -52,12 +52,12 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
             if (!selectedImage.communityPost) {
                 const communityRef = await addDoc(collection(db, 'community'), {
                     created_by: users_data.created_by,
-                    title: users_data.title,
-                    prompt: users_data.prompt,
+                    title: users_data.title || 'Untitled',
+                    prompt: users_data.prompt || 'No prompt available',
                     img_data: users_data.img_data,
                     userImageId: selectedImage.uid,
-                    createdAt: new Date(), // Timestamp
-                    userId: auth.currentUser?.uid,  // Add the user ID here
+                    createdAt: new Date(),
+                    userId: auth.currentUser?.uid,
                 });
 
                 console.log('Community Post saved with ID: ', communityRef.id);
@@ -65,25 +65,54 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                 // Update the user's image document to set communityPost to true
                 const userImageRef = doc(db, 'user_images', selectedImage.uid);
                 await updateDoc(userImageRef, {
-                    communityPost: true,  // Set communityPost to true
-                    communityPostId: communityRef.id, // Store the community post ID for reference
+                    communityPost: true,
+                    communityPostId: communityRef.id,
                 });
 
-                add_community(users_data); // Pass the final pin data to the parent component
-                closeModal(); // Close the modal after saving the pin
+                add_community(users_data);
+                closeModal();
             } else {
                 // If communityPost is true, update the existing post
-                const communityPostRef = doc(db, 'community', selectedImage.communityPostId); // Reference to the post
+                const communityPostRef = doc(db, 'community', selectedImage.communityPostId);
                 await updateDoc(communityPostRef, {
-                    title: users_data.title
+                    title: users_data.title || 'Untitled',
                 });
 
                 console.log('Community Post updated with ID: ', selectedImage.communityPostId);
-                add_community(users_data); // Pass the updated pin data to the parent component
-                closeModal(); // Close the modal after updating the pin
+                add_community(users_data);
+                closeModal();
             }
         } catch (e) {
             console.error('Error adding/updating document: ', e);
+        }
+    };
+
+    const handleDeletePost = async () => {
+        if (!selectedImage.communityPost || !selectedImage.communityPostId) {
+            return;
+        }
+
+        const confirmDelete = window.confirm('Are you sure you want to delete this post from the community? This action cannot be undone.');
+        if (!confirmDelete) {
+            return;
+        }
+
+        try {
+            // Delete the community post
+            await deleteDoc(doc(db, 'community', selectedImage.communityPostId));
+
+            // Update the user's image document to remove community post status
+            const userImageRef = doc(db, 'user_images', selectedImage.uid);
+            await updateDoc(userImageRef, {
+                communityPost: false,
+                communityPostId: null
+            });
+
+            console.log('Community post deleted successfully');
+            closeModal();
+        } catch (error) {
+            console.error('Error deleting community post:', error);
+            alert('Failed to delete the post. Please try again.');
         }
     };
 
@@ -131,15 +160,35 @@ function Modal({ closeModal, add_community, selectedImage, createdBy }) {
                         <div className='text-3xl mb-2'>Prompt</div>
                         <div className='mb-4'>{pinDetails.prompt}</div>
                           
-                        <div className='text-xl overflow-hidden'>Created By: {pinDetails.created_by}</div>
-                    </div>
+                        <div className='text-xl mb-4'>Created By: {pinDetails.created_by}</div>
 
-                    <div className="bottomsection">
-                        <div
-                            onClick={save_community}  // Calls the save_pin function
-                            className="publish_pin"
-                        >
-                            {isEditing ? 'Update' : 'Publish'}
+                        <div className="bottomsection">
+                            <button
+                                type="button"
+                                onClick={() => window.open(`/workspace/backgroundgeneration?id=${selectedImage.uid}`, '_blank')}
+                                className="publish_pin"
+                                style={{ backgroundColor: '#4B5563' }}
+                            >
+                                Open Workflow
+                            </button>
+                            <button
+                                type="button"
+                                onClick={save_community}
+                                className="publish_pin"
+                                style={{ backgroundColor: isEditing ? '#9333EA' : '#6D28D9' }}
+                            >
+                                {isEditing ? 'Update' : 'Publish'}
+                            </button>
+                            {isEditing && (
+                                <button
+                                    type="button"
+                                    onClick={handleDeletePost}
+                                    className="publish_pin"
+                                    style={{ backgroundColor: '#DC2626' }}
+                                >
+                                    Delete Post
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -6,6 +6,7 @@ import BrandSection from '../components/BrandSection';
 import ProductCategory from '@/components/landing_page/ProductCategory';
 import ScrollToTop from '@/components/ScrollToTop';
 import Image from 'next/image'
+import HeroVideo from '@/components/HeroVideo';
 
 export default function Home() {
   // State management for typing animation
@@ -89,19 +90,7 @@ export default function Home() {
 
             {/* Hero Video Section */}
             <div className="mt-8 sm:mt-16 max-w-5xl mx-auto px-2 sm:px-4">
-              <div className="relative rounded-xl bg-[#0D161F] p-2 sm:p-4 shadow-2xl">
-                {isClient && (
-                  <video 
-                    className="rounded-lg w-full"
-                    autoPlay={true}
-                    loop={true}
-                    muted={true}
-                    playsInline={true}
-                  >
-                    <source src="/hero-video.mp4" type="video/mp4" />
-                  </video>
-                )}
-              </div>
+              <HeroVideo />
             </div>
           </div>
         </section>

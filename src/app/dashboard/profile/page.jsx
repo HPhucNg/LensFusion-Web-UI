@@ -16,6 +16,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import GalleryModal from '@/components/GalleryModal';
 import Modal from '@/components/Modal';
+import ActiveSessions from '@/components/ActiveSessions';
 import { useSubscription } from '@/context/subscriptionContext';
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import { 
@@ -32,6 +33,7 @@ import {
 } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { applyInterfaceSettings, getAccentColorValue, getFontSizeValue, getGridViewClasses } from '@/lib/interfaceUtils';
 
 // Account Management Dialog Component
 const AccountManagementDialog = ({ isOpen, onClose, user }) => {
@@ -39,13 +41,87 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showActiveSessions, setShowActiveSessions] = useState(false);
   const router = useRouter();
 
   // Form States
   const [profileData, setProfileData] = useState({
     displayName: user?.displayName || '',
     photoURL: user?.photoURL || '',
+    firstName: '',
+    lastName: '',
+    location: '',
+    phoneNumber: '',
   });
+
+  const [securitySettings, setSecuritySettings] = useState({});
+
+  const [notificationSettings, setNotificationSettings] = useState({
+    emailNotifications: true,
+    pushNotifications: true,
+    productUpdates: true,
+    securityAlerts: true,
+    marketingEmails: false,
+  });
+
+  const [interfaceSettings, setInterfaceSettings] = useState({
+    colorScheme: 'system',
+    reducedAnimations: false,
+    highContrastMode: false,
+    fontSize: 'medium',
+    gridViewType: 'compact',
+    accentColor: 'purple',
+  });
+
+  // Fetch user settings if they exist
+  useEffect(() => {
+    const fetchUserSettings = async () => {
+      if (!user) return;
+      
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          
+          // Update profile data
+          setProfileData(prev => ({
+            ...prev,
+            displayName: user.displayName || '',
+            photoURL: user.photoURL || '',
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
+            bio: userData.bio || '',
+            location: userData.location || '',
+            phoneNumber: userData.phoneNumber || '',
+          }));
+          
+          // Update security settings
+          if (userData.securitySettings) {
+            setSecuritySettings(userData.securitySettings);
+          }
+          
+          // Update notification settings
+          if (userData.notificationSettings) {
+            setNotificationSettings(userData.notificationSettings);
+          }
+          
+          // Update interface settings
+          if (userData.interfaceSettings) {
+            setInterfaceSettings(userData.interfaceSettings);
+            
+            // Apply interface settings
+            applyInterfaceSettings(userData.interfaceSettings);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user settings:', error);
+      }
+    };
+    
+    fetchUserSettings();
+  }, [user]);
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -117,9 +193,78 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
       await updateDoc(userRef, {
         name: profileData.displayName,
         photoURL: profileData.photoURL,
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        bio: profileData.bio,
+        location: profileData.location,
+        phoneNumber: profileData.phoneNumber,
+        updatedAt: serverTimestamp(),
       });
 
       setSuccess('Profile updated successfully!');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSecurityUpdate = async () => {
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        securitySettings,
+        updatedAt: serverTimestamp(),
+      });
+
+      setSuccess('Security settings updated successfully!');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNotificationUpdate = async () => {
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        notificationSettings,
+        updatedAt: serverTimestamp(),
+      });
+
+      setSuccess('Notification preferences updated successfully!');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInterfaceUpdate = async () => {
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        interfaceSettings,
+        updatedAt: serverTimestamp(),
+      });
+
+      // Apply all interface settings
+      applyInterfaceSettings(interfaceSettings);
+
+      setSuccess('Interface settings updated successfully!');
     } catch (error) {
       setError(error.message);
     } finally {
@@ -176,6 +321,36 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               </button>
               
               <button
+                onClick={() => setActiveTab('security')}
+                className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                  activeTab === 'security' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                }`}
+              >
+                <Lock className="h-5 w-5" />
+                <span>Security</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('notifications')}
+                className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                  activeTab === 'notifications' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                }`}
+              >
+                <Bell className="h-5 w-5" />
+                <span>Notifications</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('interface')}
+                className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                  activeTab === 'interface' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                }`}
+              >
+                <Settings className="h-5 w-5" />
+                <span>Interface</span>
+              </button>
+              
+              <button
                 onClick={() => setActiveTab('danger')}
                 className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
                   activeTab === 'danger' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
@@ -203,17 +378,58 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Display Name
-                  </label>
-                  <input
-                    type="text"
-                    value={profileData.displayName}
-                    onChange={(e) => setProfileData({ ...profileData, displayName: e.target.value })}
-                    className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white"
-                  />
+                <h3 className="text-lg font-medium text-white">Profile Information</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      Display Name
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.displayName}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.firstName}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.lastName}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.location}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, location: e.target.value }))}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
                 </div>
+                
                 <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">
                   Profile Picture
@@ -267,6 +483,385 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               </div>
             )}
 
+            {/* Security Tab */}
+            {activeTab === 'security' && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium text-white">Security Settings</h3>
+                
+                <div className="space-y-4">                  
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Active Sessions</h4>
+                      <p className="text-sm text-gray-400">View and manage your active sessions across different devices</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowActiveSessions(true)}
+                      className="bg-transparent border border-gray-700 hover:bg-gray-800 text-white"
+                    >
+                      View Active Sessions
+                    </Button>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handleSecurityUpdate}
+                  disabled={isLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {isLoading ? 'Saving...' : 'Save Security Settings'}
+                </Button>
+              </div>
+            )}
+
+            {/* Notifications Tab */}
+            {activeTab === 'notifications' && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium text-white">Notification Preferences</h3>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Email Notifications</h4>
+                      <p className="text-sm text-gray-400">Receive notifications via email</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={notificationSettings.emailNotifications}
+                          onChange={() => setNotificationSettings(prev => ({
+                            ...prev, 
+                            emailNotifications: !prev.emailNotifications
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Push Notifications</h4>
+                      <p className="text-sm text-gray-400">Receive push notifications in browser</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={notificationSettings.pushNotifications}
+                          onChange={() => setNotificationSettings(prev => ({
+                            ...prev, 
+                            pushNotifications: !prev.pushNotifications
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Product Updates</h4>
+                      <p className="text-sm text-gray-400">Receive updates about new features and improvements</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={notificationSettings.productUpdates}
+                          onChange={() => setNotificationSettings(prev => ({
+                            ...prev, 
+                            productUpdates: !prev.productUpdates
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Security Alerts</h4>
+                      <p className="text-sm text-gray-400">Get notified about security-related activity</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={notificationSettings.securityAlerts}
+                          onChange={() => setNotificationSettings(prev => ({
+                            ...prev, 
+                            securityAlerts: !prev.securityAlerts
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Marketing Emails</h4>
+                      <p className="text-sm text-gray-400">Receive promotional emails and special offers</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={notificationSettings.marketingEmails}
+                          onChange={() => setNotificationSettings(prev => ({
+                            ...prev, 
+                            marketingEmails: !prev.marketingEmails
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handleNotificationUpdate}
+                  disabled={isLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {isLoading ? 'Saving...' : 'Save Notification Preferences'}
+                </Button>
+              </div>
+            )}
+
+            {/* Interface Tab */}
+            {activeTab === 'interface' && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium text-white">Interface Settings</h3>
+                
+                <div className="space-y-4">
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Color Scheme</h4>
+                      <p className="text-sm text-gray-400">Choose your preferred color scheme</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        variant={interfaceSettings.colorScheme === 'system' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, colorScheme: 'system'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.colorScheme === 'system' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        System
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.colorScheme === 'light' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, colorScheme: 'light'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.colorScheme === 'light' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Light
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.colorScheme === 'dark' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, colorScheme: 'dark'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.colorScheme === 'dark' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Dark
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Accent Color</h4>
+                      <p className="text-sm text-gray-400">Choose accent color for UI elements</p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Button
+                        variant={interfaceSettings.accentColor === 'purple' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'purple'}))}
+                        className={`bg-transparent border hover:bg-gray-800 text-white ${
+                          interfaceSettings.accentColor === 'purple' ? 'bg-purple-600 border-purple-600' : 'border-gray-700'
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-purple-500 mr-2"></div>
+                        Purple
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.accentColor === 'blue' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'blue'}))}
+                        className={`bg-transparent border hover:bg-gray-800 text-white ${
+                          interfaceSettings.accentColor === 'blue' ? 'bg-blue-600 border-blue-600' : 'border-gray-700'
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                        Blue
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.accentColor === 'teal' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'teal'}))}
+                        className={`bg-transparent border hover:bg-gray-800 text-white ${
+                          interfaceSettings.accentColor === 'teal' ? 'bg-teal-600 border-teal-600' : 'border-gray-700'
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-teal-500 mr-2"></div>
+                        Teal
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.accentColor === 'amber' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'amber'}))}
+                        className={`bg-transparent border hover:bg-gray-800 text-white ${
+                          interfaceSettings.accentColor === 'amber' ? 'bg-amber-600 border-amber-600' : 'border-gray-700'
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-amber-500 mr-2"></div>
+                        Amber
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.accentColor === 'pink' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'pink'}))}
+                        className={`bg-transparent border hover:bg-gray-800 text-white ${
+                          interfaceSettings.accentColor === 'pink' ? 'bg-pink-600 border-pink-600' : 'border-gray-700'
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-pink-500 mr-2"></div>
+                        Pink
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Text Size</h4>
+                      <p className="text-sm text-gray-400">Adjust the text size for better readability</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        variant={interfaceSettings.fontSize === 'small' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, fontSize: 'small'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.fontSize === 'small' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Small
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.fontSize === 'medium' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, fontSize: 'medium'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.fontSize === 'medium' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Medium
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.fontSize === 'large' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, fontSize: 'large'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.fontSize === 'large' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Large
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="mb-3">
+                      <h4 className="font-medium text-white">Gallery View</h4>
+                      <p className="text-sm text-gray-400">Set your preferred gallery view density</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        variant={interfaceSettings.gridViewType === 'compact' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, gridViewType: 'compact'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.gridViewType === 'compact' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Compact
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.gridViewType === 'comfortable' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, gridViewType: 'comfortable'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.gridViewType === 'comfortable' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Comfortable
+                      </Button>
+                      <Button
+                        variant={interfaceSettings.gridViewType === 'spacious' ? "default" : "outline"}
+                        onClick={() => setInterfaceSettings(prev => ({...prev, gridViewType: 'spacious'}))}
+                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                          interfaceSettings.gridViewType === 'spacious' ? 'bg-purple-600 border-purple-600' : ''
+                        }`}
+                      >
+                        Spacious
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">Reduce Animations</h4>
+                      <p className="text-sm text-gray-400">Minimize animations for a simpler experience</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={interfaceSettings.reducedAnimations}
+                          onChange={() => setInterfaceSettings(prev => ({
+                            ...prev, 
+                            reducedAnimations: !prev.reducedAnimations
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-white">High Contrast Mode</h4>
+                      <p className="text-sm text-gray-400">Increase contrast for better accessibility</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={interfaceSettings.highContrastMode}
+                          onChange={() => setInterfaceSettings(prev => ({
+                            ...prev, 
+                            highContrastMode: !prev.highContrastMode
+                          }))}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handleInterfaceUpdate}
+                  disabled={isLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {isLoading ? 'Saving...' : 'Save Interface Settings'}
+                </Button>
+              </div>
+            )}
+
             {/* Danger Zone Tab */}
             {activeTab === 'danger' && (
               <div className="space-y-4">
@@ -289,22 +884,39 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
           </div>
         </div>
       </div>
+      
+      {showActiveSessions && (
+        <ActiveSessions
+          userId={user.uid}
+          onClose={() => setShowActiveSessions(false)}
+        />
+      )}
     </div>
   );
 };
 
 // Main UserProfile Component
 export default function UserProfile() {
+  // 1. All useState hooks first
   const [user, setUser] = useState(null);
-  const [isloading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
-  const [userImages, setUserImages] = useState([]); // State to store user images
-  const [showModal, setShowModal] = useState(false);  // To control modal visibility
-  const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
-  const [showCommunityModal, setShowCommunityModal] = useState(false); // For Community Modal
+  const [userImages, setUserImages] = useState([]); 
+  const [showModal, setShowModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showCommunityModal, setShowCommunityModal] = useState(false);
   const [theme, setTheme] = useState("dark");
+  const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
+  const [userSettings, setUserSettings] = useState({
+    interfaceSettings: {
+      gridViewType: 'compact',
+    }
+  });
 
-  // Check for saved theme in localStorage
+  // 2. All context hooks
+  const { tokens, loading: subscriptionLoading } = useSubscription();
+
+  // 3. All useEffect hooks
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) {
@@ -312,7 +924,60 @@ export default function UserProfile() {
     }
   }, []);
 
-  // Toggle theme function
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserSettings();
+      fetchUserImages(user);
+    }
+  }, [user]);
+
+  // Helper functions
+  const fetchUserSettings = async () => {
+    if (!user) return;
+    
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setUserSettings(userData);
+        
+        if (userData.interfaceSettings) {
+          applyInterfaceSettings(userData.interfaceSettings);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user settings:', error);
+    }
+  };
+
+  const fetchUserImages = async (user) => {
+    setIsLoadingImages(true);
+    try {
+      const userImagesRef = collection(db, 'user_images');
+      const q = query(userImagesRef, where('userID', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+      const images = querySnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        uid: doc.id
+      }));
+      setUserImages(images);
+    } catch (error) {
+      console.error('Error fetching user images:', error);
+    } finally {
+      setIsLoadingImages(false);
+    }
+  };
+
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
@@ -320,118 +985,33 @@ export default function UserProfile() {
     document.documentElement.classList.remove("dark", "light");
     document.documentElement.classList.add(newTheme);
   };
-  const { tokens, loading } = useSubscription();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Function to fetch user images from Firestore
-  const fetchUserImages = async (user) => {
-    setIsLoadingImages(true); // Set loading state for images
-    try {
-      const userImagesRef = collection(db, 'user_images');
-      const q = query(userImagesRef, where('userID', '==', user.uid)); // Filter by userID
-      const querySnapshot = await getDocs(q);
-      //const images = querySnapshot.docs.map((doc) => doc.data()); // Extract image data
-      const images = querySnapshot.docs.map((doc) => ({
-        ...doc.data(),
-        uid: doc.id  // Assuming the document ID is used as the UID
-      }));
-      setUserImages(images); // Set images in state
-    } catch (error) {
-      console.error('Error fetching user images:', error);
-    } finally {
-      setIsLoadingImages(false); // Reset loading state regardless of success or failure
-    }
-  };
-  
-  // Fetch user images when user changes
-  useEffect(() => {
-    if (user) {
-      fetchUserImages(user);
-    }
-  }, [user]);
-  
-
-  const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId = null, subscriptionStatus = 'inactive', currentPlan = null) => {
-    try {
-      if (!userData || !userData.uid) {
-        console.error("User data is missing essential properties.");
-        return;
-      }
-      const userRef = doc(db, 'users', userData.uid); 
-      const userDoc = await getDoc(userRef);
-      
-      if (!userDoc.exists()) {
-        const newUser = {
-          email: userData.email,
-          name: userData.displayName || "guest",
-          photoURL: userData.photoURL,
-          lastLogin: serverTimestamp(),
-          tokens: tokensToAdd, 
-          customerId: customerId || null, 
-          subscriptionStatus: subscriptionStatus,
-          currentPlan: currentPlan ,
-        };
-        await setDoc(userRef, newUser);
-        console.log("New user created in Firebase");
-      } else {
-        const existingData = userDoc.data();
-        const updatedData = {
-          email: userData.email,
-          name: userData.displayName || existingData.name || "guest",
-          photoURL: userData.photoURL,
-          lastLogin: serverTimestamp(),
-          tokens: (existingData.tokens || 0) + tokensToAdd,
-          customerId: customerId || existingData.customerId || null, 
-          subscriptionStatus: subscriptionStatus || existingData.subscriptionStatus,
-          currentPlan: currentPlan || existingData.currentPlan,
-        };
-
-        await setDoc(userRef, updatedData);
-        console.log("User saved to Firebase");
-      }
-    } catch (error) {
-      console.error("Error saving user data:", error);
-    }
-  };
-
-  // Handle image click to open gallery modal
   const handleImageClick = (image) => {
     setSelectedImage(image);
     setShowModal(true);
   };
 
-  // Show loading spinner while fetching data
-  if (isLoadingImages) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-      </div>
-    );
-  }
-
   const closeModal = () => {
     setShowModal(false);
-}
+  };
+
   const openCommunityModal = () => {
-    setShowModal(false);  // Close Gallery Modal
-    setShowCommunityModal(true);  // Open Community Modal
+    setShowModal(false);
+    setShowCommunityModal(true);
   };
 
   const closeCommunityModal = () => {
-    setShowCommunityModal(false);  // Close Community Modal
+    setShowCommunityModal(false);
   };
 
+  const handleImageDeleted = (deletedImageId) => {
+    setUserImages(prevImages => prevImages.filter(image => 
+      (image.uid !== deletedImageId && image.id !== deletedImageId)
+    ));
+  };
 
-
-  if (loading) {
+  // Loading states
+  if (isLoading || subscriptionLoading || isLoadingImages) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
@@ -486,10 +1066,6 @@ export default function UserProfile() {
                   <User2 className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Subscription</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
-                  <Share2 className="mr-3 h-5 w-5" />
-                  <span className="text-lg">Share</span>
-                </Button>
                 <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white" onClick={toggleTheme}>
                   {theme === "dark" ? (
                   <Sun className="mr-3 h-5 w-5 " />
@@ -497,9 +1073,9 @@ export default function UserProfile() {
                   <Moon className="mr-3 h-5 w-5 " />
                 )}
                   <span className="text-lg">{theme === "dark" ? "Light" : "Dark"} Mode</span>
-              </Button>
+                </Button>
 
-              </div>
+                </div>
             </div>
           </div>
 
@@ -521,7 +1097,7 @@ export default function UserProfile() {
             {/* Gallery Section */}
             <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
               <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className={`grid ${getGridViewClasses(userSettings?.interfaceSettings?.gridViewType || 'compact')}`}>
                 {userImages.length > 0 ? (
                   userImages.map((image, index) => (
                 <HoverCard key={index}>
@@ -595,7 +1171,8 @@ export default function UserProfile() {
                 <GalleryModal
                     closeModal={closeModal}
                     image={selectedImage}
-                    openCommunityModal={openCommunityModal}  // Pass openCommunityModal function
+                    openCommunityModal={openCommunityModal}
+                    onImageDeleted={handleImageDeleted}
                 />
             )}
 
