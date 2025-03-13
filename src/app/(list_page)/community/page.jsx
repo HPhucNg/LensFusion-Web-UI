@@ -1,41 +1,41 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { collection, getDocs, query, orderBy, startAfter, limit } from 'firebase/firestore';
-import { db } from '@/firebase/FirebaseConfig'; // Firebase config import
+import { db } from '@/firebase/FirebaseConfig'; 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ViewModal from '@/components/ViewModal';
 import Pin from '@/components/Pin'; 
 import '../style.css'; 
 import { cn } from '@/lib/utils';
-import Masonry from 'react-responsive-masonry'; // Import Masonry component
-import { Nav } from 'react-day-picker';
+import Masonry from 'react-responsive-masonry'; 
 
 
 function Page() {
-  const [posts, setPosts] = useState([]);  // State to hold fetched posts
-  const [loading, setLoading] = useState(true);  // State for loading state
-  const [showModal, setShowModal] = useState(false);  // To control modal visibility
-  const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
-  const [selectedCategory, setSelectedCategory] = useState(null);  // State to track the selected category
-  const [lastVisible, setLastVisible] = useState(null); // To store the last fetched document for pagination
+  const [posts, setPosts] = useState([]);  // hold fetched posts
+  const [loading, setLoading] = useState(true);  // loading state
+  const [showModal, setShowModal] = useState(false);  // control modal visibility
+  const [selectedImage, setSelectedImage] = useState(null);  // selected image data
+  const [selectedCategory, setSelectedCategory] = useState(null);  // track the selected category
+  const [lastVisible, setLastVisible] = useState(null); // store the last fetched document for pagination
+  const [currentIndex, setCurrentIndex] = useState(null); // hold the current image's index
 
 
-  const [columns, setColumns] = useState(4); // Default to 4 columns
+  const [columns, setColumns] = useState(4); // default to 4 columns
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth <= 640) { // Small screens
-        setColumns(1);  // 1 column on small screens
-      } else if (window.innerWidth <= 1024) { // Medium screens
-        setColumns(2);  // 2 columns on medium screens
-      } else { // Large screens
+      if (window.innerWidth <= 640) { // small screens
+        setColumns(2);  // 2 column on small screens
+      } else if (window.innerWidth <= 1024) { // medium screens
+        setColumns(3);  // 3 columns on medium screens
+      } else { // large screens
         setColumns(4);  // 4 columns on large screens
       }
     };
 
     window.addEventListener('resize', handleResize);
-    handleResize(); // Call once to set initial column count
+    handleResize(); // call once to set initial column count
 
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -49,24 +49,24 @@ function Page() {
     { id: 'jewellery', label: 'Jewellery' },
     { id: 'bags', label: 'Bags' },
   ];
-  const scrollContainerRef = useRef(null);  // Create a reference to the scroll container
+  const scrollContainerRef = useRef(null);  // reference to the scroll container
  
   useEffect(() => {
-    // Fetch initial posts from Firestore
+    // fetch initial posts from Firestore
     const fetchPosts = async () => {
       setLoading(true);
       try {
         const postsQuery = query(
           collection(db, 'community'),
-          orderBy('createdAt'),  // Order by timestamp or any field for pagination
-          limit(20)  // Fetch only the first 20 posts for the initial load
+          orderBy('createdAt'),  // order by timestamp or any field for pagination
+          limit(20)  // fetch only the first 20 posts for the initial load
         );
         const querySnapshot = await getDocs(postsQuery);
         const postsArray = [];
         querySnapshot.forEach((doc) => {
           postsArray.push({ id: doc.id, ...doc.data() });
         });
-        setPosts(postsArray);  // Set posts to state
+        setPosts(postsArray);  // set posts to state
         setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);  // Save the last visible document for pagination
       } catch (e) {
         console.error("Error fetching posts: ", e);
@@ -79,15 +79,15 @@ function Page() {
   }, []);
 
   const fetchMorePosts = async () => {
-    if (loading || !lastVisible) return;  // Prevent multiple fetches at once
+    if (loading || !lastVisible) return;  // prevent multiple fetches at once
 
     setLoading(true);
     try {
       const postsQuery = query(
         collection(db, 'community'),
         orderBy('createdAt'),
-        startAfter(lastVisible),  // Start after the last visible document
-        limit(20)  // Fetch the next 20 posts
+        startAfter(lastVisible),  // start after the last visible document
+        limit(20)  // fetch the next 20 posts
       );
 
       const querySnapshot = await getDocs(postsQuery);
@@ -96,8 +96,8 @@ function Page() {
         postsArray.push({ id: doc.id, ...doc.data() });
       });
 
-      setPosts((prevPosts) => [...prevPosts, ...postsArray]);  // Append the new posts to the existing ones
-      setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);  // Update last visible document
+      setPosts((prevPosts) => [...prevPosts, ...postsArray]);  // append the new posts to the existing ones
+      setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);  // update last visible document
     } catch (e) {
       console.error("Error fetching more posts: ", e);
     } finally {
@@ -105,31 +105,38 @@ function Page() {
     }
   };
 
-  // Function to handle image click
-  const handleImageClick = (image) => {
+  const modalRef = useRef(null); // to handle jumping up to viewmodal
+  const handleImageClick = (image, index) => {
     setSelectedImage(image);
-    setShowModal(true);  // Show the modal
+    setCurrentIndex(index); 
+    setShowModal(true);  
+    if (modalRef.current) {
+      modalRef.current.scrollIntoView({
+        behavior: 'smooth', // smooth scroll to modal
+        block: 'start',     // align the modal at the top
+      });
+    }
   };
 
   const closeModal = () => {
-    setShowModal(false);  // Hide modal
-    setSelectedImage(null); // Reset selected image
+    setShowModal(false);  
+    setSelectedImage(null); // reset selected image
 }
 
 
-  // Filter posts based on the selected category
+  // filter posts based on the selected category
   const filteredPosts = selectedCategory
     ? posts.filter((post) => post.category === selectedCategory)
-    : posts;  // Show all posts if no category is selected
+    : posts;  // all posts if no category is selected
 
-  // Handle scroll event to detect when to fetch more posts
+  // scroll event to detect when to fetch more posts
   const handleScroll = () => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    // Check if the user is near the bottom of the page (adjust the threshold)
+    // if the user is near the bottom of the page 
     if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
-      // Trigger fetching more posts when scrolled near the bottom
+      // trigger fetching more posts when scrolled near the bottom
       fetchMorePosts();
     }
   };
@@ -143,17 +150,20 @@ function Page() {
   return (
      <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black font-sans relative overflow-hidden">
         <Navbar />
-        <div className='flex justify-center mb-6'>
+        <div className='flex justify-center mb-6' ref={modalRef}>
           {showModal && (
           <ViewModal
               closeModal={closeModal}
               image={selectedImage}
+              posts={posts} 
+              currentIndex={currentIndex} 
+              setCurrentIndex={setCurrentIndex} 
           />
         )}
-      </div>
+        </div>
         <div className='flex justify-center pb-4'>
           <div className="flex flex-wrap justify-center gap-4 rounded-full bg-[var(--card-background)] p-2">
-            {/* Category buttons */}
+            {/* category buttons */}
             {categories.map((category) => (
               <button
                 key={category.id}
@@ -164,28 +174,29 @@ function Page() {
                 {category.label}
               </button>
             ))}
-            {/* All Images button */}
+            {/* all images button */}
               <button
                 className={cn('px-6 py-2 text-base sm:text-lg transition-all rounded-full relative', 
                   selectedCategory === null ? 'bg-[#EBDDF7] text-black' : 'text-gray-400 hover:text-white')}
-                onClick={() => setSelectedCategory(null)} // Show all posts
+                onClick={() => setSelectedCategory(null)} // all posts
               >
                 All Images
               </button>
             </div>
         </div>
         
-        <div className='flex flex-grow p-2'>
-          {/* Masonry grid container */}
-          <Masonry columnsCount={columns} gutter="10px">
-            {filteredPosts.map((post) => (
-              <div key={post.id} onClick={() => handleImageClick(post)} className='cursor-pointer'>
-                <Pin image={post}/>
+        <div className="flex justify-center px-4"> {/* to center */}
+          <div className="p-2 max-w-[1270px] w-full"> {/* make width is responsive */}
+            {/* masonry grid container */}
+            <Masonry columnsCount={columns} gutter="10px">
+              {filteredPosts.map((post, index) => (
+                <div key={post.id} onClick={() => handleImageClick(post, index)} className="cursor-pointer">
+                  <Pin image={post} />
                 </div>
-            ))}
-          </Masonry>
+              ))}
+            </Masonry>
+          </div>
         </div>
-
         <Footer />
 
       {/*{selectedImage && <Pin image={selectedImage} />}*/}

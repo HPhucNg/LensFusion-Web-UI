@@ -1,5 +1,4 @@
-// useCommentsAndLikes.js
-import { useState, useEffect, useReducer, useCallback } from 'react';
+import { useEffect, useReducer, useCallback } from 'react';
 import { db, auth } from '@/firebase/FirebaseConfig';
 import { collection, getDocs, doc, getDoc, addDoc, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
 
@@ -36,7 +35,6 @@ const commentsReducer = (state, action) => {
   }
 };
 
-// Custom Hook
 const useCommentsAndLikes = (image) => {
   const [state, dispatch] = useReducer(commentsReducer, initialState);
   const { comments, newComment, editedCommentText, likesData, userName, userProfileImage } = state;
@@ -45,18 +43,18 @@ const useCommentsAndLikes = (image) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch comments
+        // fetch comments
         const commentsRef = collection(db, 'community', image.id, 'comments');
         const querySnapshot = await getDocs(commentsRef);
         const fetchedComments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Fetch likes
+        // fetch likes
         const likesRef = collection(db, 'community', image.id, 'likes');
         const likeSnapshot = await getDocs(likesRef);
         const fetchedLikes = likeSnapshot.docs.map(doc => doc.id);
-        const hasUserLiked = fetchedLikes.includes(user?.uid);
+        const hasUserLiked = user ? fetchedLikes.includes(user.uid) : false;
 
-        // Fetch user profile image and name
+        // fetch user profile image and name
         const communityRef = doc(db, 'community', image.id);
         const communityDoc = await getDoc(communityRef);
         if (!communityDoc.exists()) return;
@@ -68,7 +66,7 @@ const useCommentsAndLikes = (image) => {
         const userProfileImage = userDoc.exists() ? userDoc.data().photoURL : null;
         const userName = userDoc.exists() ? userDoc.data().name : null;
 
-        // Dispatch state updates in one go
+        // state updates in one go
         dispatch({
           type: 'SET_COMMENTS',
           payload: fetchedComments
@@ -90,13 +88,13 @@ const useCommentsAndLikes = (image) => {
       }
     };
 
-    if (image && user) {
+    if (image) {
       fetchData();
     }
   }, [image, user]);
 
-  // Handle Like Toggle
   const handleLikeToggle = async () => {
+    if (!user) return; // cannot like if user is not authenticated
     try {
       const likesRef = doc(db, 'community', image.id, 'likes', user.uid);
       const { hasLiked } = likesData;
@@ -118,16 +116,15 @@ const useCommentsAndLikes = (image) => {
       console.error("Error toggling like: ", e);
     }
   };
-  // Inside useCommentsAndLikes.js
-
-    const handleNewCommentChange = (e) => {
-        dispatch({ type: 'SET_NEW_COMMENT', payload: e.target.value });
-    };
   
-  // Handle Comment Submit
+
+  const handleNewCommentChange = (e) => {
+      dispatch({ type: 'SET_NEW_COMMENT', payload: e.target.value });
+  };
+  
   const handleCommentSubmit = useCallback(async (e) => {
     e.preventDefault();
-    if (newComment.trim() === '') return;
+    if (!user || newComment.trim() === '') return; // prevent comment submission
 
     try {
       const commentsRef = collection(db, 'community', image.id, 'comments');
@@ -152,18 +149,15 @@ const useCommentsAndLikes = (image) => {
     }
   }, [newComment, user, image.id, comments]);
 
-  // Handle Edit Comment
   const handleEditComment = (commentId, currentText) => {
     dispatch({ type: 'SET_EDITING_COMMENT_ID', payload: commentId });
     dispatch({ type: 'SET_EDITED_COMMENT_TEXT', payload: currentText });
   };
 
-  // Handle Edited Comment Change
   const handleEditedCommentChange = (newText) => {
     dispatch({ type: 'SET_EDITED_COMMENT_TEXT', payload: newText });
   };
 
-  // Handle Save Edit
   const handleSaveEdit = async (e, commentId) => {
     e.preventDefault();
     if (editedCommentText.trim() === '') return;
@@ -186,7 +180,6 @@ const useCommentsAndLikes = (image) => {
     }
   };
 
-  // Handle Delete Comment
   const handleDeleteComment = async (commentId) => {
     try {
       const commentRef = doc(db, 'community', image.id, 'comments', commentId);

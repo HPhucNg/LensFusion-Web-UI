@@ -56,7 +56,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy, updateImag
             if (!imageStatus) {
                 const communityRef = await addDoc(collection(db, 'community'), {
                     created_by: users_data.created_by,
-                    title: users_data.title,
+                    title: users_data.title || 'Untitled',
                     prompt: users_data.prompt,
                     img_data: users_data.img_data,
                     userImageId: selectedImage.uid,
@@ -171,7 +171,7 @@ function Modal({ closeModal, add_community, selectedImage, createdBy, updateImag
                                 alt="Selected"  // Image alt text
                                 width={300}  // Specify the width
                                 height={300}  // Specify the height
-                                className="object-cover rounded-xl w-full h-full"  // Optional class for styling
+                                className="object-contain rounded-xl w-full h-full"  // Optional class for styling
                             />       
                         )}
                     </div>

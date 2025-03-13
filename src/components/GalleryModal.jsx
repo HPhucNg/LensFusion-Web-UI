@@ -177,7 +177,7 @@ function GalleryModal({ closeModal, image, createdBy, imageStatus, updateImageSt
                                 alt="Selected" 
                                 width={300} 
                                 height={300} 
-                                className="object-cover w-full h-full" // Make sure the image fills the container
+                                className="object-contain w-full h-full" // Make sure the image fills the container
                             />
                         ) : (
                             <p>No image selected</p>
