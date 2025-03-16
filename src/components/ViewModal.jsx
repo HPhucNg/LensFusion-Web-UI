@@ -5,6 +5,7 @@ import Image from 'next/image';
 import useCommentsAndLikes from '@/hooks/useCommentsAndLikes';
 
 function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) {
+    console.log(image);
     const selectedPost = posts[currentIndex];
     const { 
         state,

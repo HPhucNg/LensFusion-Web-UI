@@ -603,6 +603,7 @@ export default function UserProfile() {
                 <GalleryModal
                     closeModal={closeModal}
                     image={selectedImage}
+                    userPic={user.photoURL}
                     createdBy={user?.displayName}
                     imageStatus={imageStatus}  // Pass imageStatus as prop
                     updateImageStatus={setImageStatus}  // Pass function to update imageStatus

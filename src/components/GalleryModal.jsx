@@ -2,28 +2,25 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/modal_styles.css';
 import Image from 'next/image';  // Import Image component from next/image
-import { getFirestore, collection, doc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, doc, deleteDoc, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { getStorage, ref, deleteObject } from 'firebase/storage';
 import { db } from '@/firebase/FirebaseConfig';
 import Modal from '@/components/Modal';
 
 
 
-function GalleryModal({ closeModal, image, createdBy, imageStatus, updateImageStatus, onDelete}) {  // Accept the 'image' prop
+function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, updateImageStatus, onDelete}) {  // Accept the 'image' prop
     /*const [showModalPin, setShowModalPin] = useState(false);*/
     const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false); // State to control the community modal visibility
 
-
-    // Trigger Post Modal when "Post to Community" is clicked
-    const handleCommunityClick = () => {
+    // trigger Post Modal when "Post to Community" is clicked
+    const handleCommunityClick = async () => {
        //updateImageStatus(true); 
-        setIsCommunityModalOpen(true);  // Open the Community Modal
-
+        setIsCommunityModalOpen(true);  
     };
 
-    // Function to close the Community Modal
     const closeCommunityModal = () => {
-        setIsCommunityModalOpen(false); // Close the Community Modal
+        setIsCommunityModalOpen(false); 
         //updateImageStatus(true); // Ensure the status is updated to reflect the community post
     };
 
@@ -49,8 +46,8 @@ function GalleryModal({ closeModal, image, createdBy, imageStatus, updateImageSt
     
         querySnapshot.forEach(async (docSnap) => {
             const communityDocId = docSnap.id;
-            await deleteSubcollections(communityDocId); // Delete subcollections (likes, comments)
-            await deleteDoc(doc(db, 'community', communityDocId)); // Delete the community post
+            await deleteSubcollections(communityDocId); // delete subcollections (likes, comments)
+            await deleteDoc(doc(db, 'community', communityDocId)); // delete the community post
         });
     };
     
@@ -60,20 +57,20 @@ function GalleryModal({ closeModal, image, createdBy, imageStatus, updateImageSt
             return;
         }
     
-        // Log the image URL for debugging
+        //for debugging
         console.log('Image URL:', imageUrl);
     
-        // Ensure the URL contains '/o/', which indicates the storage path
+        // ensure the URL contains '/o/', which indicates the storage path
         if (!imageUrl.includes('/o/')) {
             console.error('Error: URL does not contain the expected "/o/" path:', imageUrl);
             return;
         }
     
         try {
-            // Extract the file path from the URL after '/o/'
+            // extract the file path from the URL after '/o/'
             const storagePath = imageUrl.split('/o/')[1]?.split('?')[0];
     
-            // If the storagePath is undefined or empty, log an error
+            // if the storagePath is undefined or empty, log an error
             if (!storagePath) {
                 console.error('Error: Unable to extract storage path from URL');
                 return;
@@ -81,36 +78,33 @@ function GalleryModal({ closeModal, image, createdBy, imageStatus, updateImageSt
     
             console.log('Extracted storage path:', storagePath);
     
-            // Decode the URL-encoded path (replaces %2F with / and other encoded characters)
+            // Ddecode the URL-encoded path (replaces %2F with / and other encoded characters)
             const decodedPath = decodeURIComponent(storagePath);
     
             console.log('Decoded path:', decodedPath);
     
-            // Get the Firebase Storage reference for the image
+            // Firebase Storage reference for the image
             const storage = getStorage();
-            const imageRef = ref(storage, decodedPath);  // Use the decoded path
+            const imageRef = ref(storage, decodedPath);  // the decoded path
     
-            // Delete the image from Firebase Storage
+            // delete the image from Firebase Storage
             await deleteObject(imageRef);
             console.log('Image deleted from Firebase Storage.');
         } catch (error) {
             console.error('Error deleting image from Firebase Storage:', error);
         }
     };
-    
-
 
     const deleteImageFromUserImages = async (imageId) => {
         const userImagesRef = doc(db, 'user_images', imageId);
         try {
-            await deleteDoc(userImagesRef); // Delete the image from user_images collection
+            await deleteDoc(userImagesRef); // delete the image from user_images collection
             console.log('Image deleted from Firestore.');
         } catch (error) {
             console.error('Error deleting image from Firestore:', error);
         }
     };
     
-
 
     const handleDeleteClick = () => {
         if (!image || !image.img_data) {
@@ -119,7 +113,7 @@ function GalleryModal({ closeModal, image, createdBy, imageStatus, updateImageSt
             return;
         }
     
-        // Check if the image has the required properties for deletion
+        // check if the image has the required properties for deletion
         console.log('Image to delete:', image);
         if (image.communityPost) {
             const userConfirmed = window.confirm(
@@ -127,11 +121,11 @@ function GalleryModal({ closeModal, image, createdBy, imageStatus, updateImageSt
             );
             if (userConfirmed) {
                 console.log("Deleting image from user_images, community, and storage...");
-                deleteImageFromCommunity(image.uid);  // Remove from the community collection
-                deleteImageFromStorage(image.img_data);  // Remove from Firebase Storage
-                deleteImageFromUserImages(image.uid);  // Remove from the user's images collection
+                deleteImageFromCommunity(image.uid);  // remove from the community collection
+                deleteImageFromStorage(image.img_data);  // remove from Firebase Storage
+                deleteImageFromUserImages(image.uid);  // remove from the user's images collection
                 alert("Image deleted.");
-                // Call onDelete to update the parent state (UserProfile)
+                // update the parent state (UserProfile)
                 if (onDelete) {
                     onDelete(image.uid);
                 }
@@ -144,10 +138,10 @@ function GalleryModal({ closeModal, image, createdBy, imageStatus, updateImageSt
             );
             if (userConfirmed) {
                 console.log("Deleting image from user_images and storage...");
-                deleteImageFromStorage(image.img_data);  // Remove from Firebase Storage
-                deleteImageFromUserImages(image.uid);  // Remove from the user's images collection
+                deleteImageFromStorage(image.img_data);  // remove from Firebase Storage
+                deleteImageFromUserImages(image.uid);  // remove from the user's images collection
                 alert("Image deleted.");
-                // Call onDelete to update the parent state (UserProfile)
+                //  update the parent state (UserProfile)
                 if (onDelete) {
                     onDelete(image.uid);
                 }
@@ -177,7 +171,7 @@ function GalleryModal({ closeModal, image, createdBy, imageStatus, updateImageSt
                                 alt="Selected" 
                                 width={300} 
                                 height={300} 
-                                className="object-contain w-full h-full" // Make sure the image fills the container
+                                className="object-contain w-full h-full" // image fills the container
                             />
                         ) : (
                             <p>No image selected</p>
@@ -209,9 +203,10 @@ function GalleryModal({ closeModal, image, createdBy, imageStatus, updateImageSt
                 closeModal={closeCommunityModal} 
                 add_community={() => {}}
                 selectedImage={image} 
+                userPic={userPic}
                 createdBy={createdBy}
                 imageStatus={imageStatus}
-                updateImageStatus={updateImageStatus} // Pass this function to update image status
+                updateImageStatus={updateImageStatus} 
             />)}
         </div>
     );

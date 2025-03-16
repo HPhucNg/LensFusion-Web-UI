@@ -9,7 +9,7 @@ function Pin({ image }) {
 
     return (
         <div className="relative w-full group"> {/* group class added for hover */}
-            {/* Image container */}
+            {/* image container */}
             <div className="relative w-full h-auto">
                 <Image 
                     src={image.img_data} 
@@ -19,7 +19,7 @@ function Pin({ image }) {
                     className="object-cover w-full h-full rounded-xl" 
                 />
 
-                {/* User Info positioned at the bottom of the image */}
+                {/* user info positioned at the bottom of the image */}
                 <div className="absolute bottom-0 left-0 right-0 pl-4 pr-4 pb-2 bg-gradient-to-t from-black/50 to-transparent flex justify-between items-center rounded-b-xl z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="flex items-center overflow-hidden">
                         {userProfileImage ? (

@@ -19,7 +19,7 @@ function Page() {
   const [selectedCategory, setSelectedCategory] = useState(null);  // track the selected category
   const [lastVisible, setLastVisible] = useState(null); // store the last fetched document for pagination
   const [currentIndex, setCurrentIndex] = useState(null); // hold the current image's index
-
+  const [fetchingMore, setFetchingMore] = useState(false);  // state for fetching more posts
 
   const [columns, setColumns] = useState(4); // default to 4 columns
 
@@ -29,8 +29,11 @@ function Page() {
         setColumns(2);  // 2 column on small screens
       } else if (window.innerWidth <= 1024) { // medium screens
         setColumns(3);  // 3 columns on medium screens
+      }
+        else if (window.innerWidth <= 1200) { // medium-large screens
+          setColumns(4); 
       } else { // large screens
-        setColumns(4);  // 4 columns on large screens
+        setColumns(5);  // 5 columns on large screens
       }
     };
 
@@ -49,61 +52,88 @@ function Page() {
     { id: 'jewellery', label: 'Jewellery' },
     { id: 'bags', label: 'Bags' },
   ];
-  const scrollContainerRef = useRef(null);  // reference to the scroll container
- 
-  useEffect(() => {
-    // fetch initial posts from Firestore
-    const fetchPosts = async () => {
-      setLoading(true);
-      try {
-        const postsQuery = query(
-          collection(db, 'community'),
-          orderBy('createdAt'),  // order by timestamp or any field for pagination
-          limit(20)  // fetch only the first 20 posts for the initial load
-        );
-        const querySnapshot = await getDocs(postsQuery);
-        const postsArray = [];
-        querySnapshot.forEach((doc) => {
-          postsArray.push({ id: doc.id, ...doc.data() });
-        });
-        setPosts(postsArray);  // set posts to state
-        setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);  // Save the last visible document for pagination
-      } catch (e) {
-        console.error("Error fetching posts: ", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPosts();
-  }, []);
-
-  const fetchMorePosts = async () => {
-    if (loading || !lastVisible) return;  // prevent multiple fetches at once
-
-    setLoading(true);
+  
+  //  fetch posts from Firebase with a limit of 8, and store the lastVisible document for pagination
+  const fetchPosts = async () => {
     try {
-      const postsQuery = query(
+      setLoading(true);
+      
+      const q = query(
         collection(db, 'community'),
         orderBy('createdAt'),
-        startAfter(lastVisible),  // start after the last visible document
-        limit(20)  // fetch the next 20 posts
+        limit(8)
       );
-
-      const querySnapshot = await getDocs(postsQuery);
+      
+      const querySnapshot = await getDocs(q);
       const postsArray = [];
+      
       querySnapshot.forEach((doc) => {
         postsArray.push({ id: doc.id, ...doc.data() });
       });
-
-      setPosts((prevPosts) => [...prevPosts, ...postsArray]);  // append the new posts to the existing ones
-      setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);  // update last visible document
-    } catch (e) {
-      console.error("Error fetching more posts: ", e);
+  
+      setPosts(postsArray);
+      setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
+      
+    } catch (error) {
+      console.error('Error fetching posts: ', error);
     } finally {
       setLoading(false);
     }
   };
+  //  scroll near the bottom, fetch more posts
+  const fetchMorePosts = async () => {
+    if (fetchingMore || !lastVisible) return;
+  
+    setFetchingMore(true);
+  
+    try {
+      const q = query(
+        collection(db, 'community'),
+        orderBy('createdAt'),
+        startAfter(lastVisible),
+        limit(8)
+      );
+  
+      const querySnapshot = await getDocs(q);
+      const newPosts = [];
+  
+      querySnapshot.forEach((doc) => {
+        newPosts.push({ id: doc.id, ...doc.data() });
+      });
+  
+      setPosts((prevPosts) => [...prevPosts, ...newPosts]);
+      setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
+    } catch (error) {
+      console.error('Error fetching more posts: ', error);
+    } finally {
+      setFetchingMore(false);
+    }
+  };
+  
+  // detect when the user has scrolled near the bottom of the page to trigger the next fetch
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 200 &&
+        !loading &&
+        !fetchingMore
+      ) {
+        fetchMorePosts();
+      }
+    };
+  
+    window.addEventListener('scroll', handleScroll);
+  
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [loading, fetchingMore]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+  
+  
 
   const modalRef = useRef(null); // to handle jumping up to viewmodal
   const handleImageClick = (image, index) => {
@@ -129,19 +159,7 @@ function Page() {
     ? posts.filter((post) => post.category === selectedCategory)
     : posts;  // all posts if no category is selected
 
-  // scroll event to detect when to fetch more posts
-  const handleScroll = () => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
 
-    // if the user is near the bottom of the page 
-    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
-      // trigger fetching more posts when scrolled near the bottom
-      fetchMorePosts();
-    }
-  };
-
-  
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -185,8 +203,8 @@ function Page() {
             </div>
         </div>
         
-        <div className="flex justify-center px-4"> {/* to center */}
-          <div className="p-2 max-w-[1270px] w-full"> {/* make width is responsive */}
+        <div className="flex justify-center px-4 w-full"> {/* to center */}
+          <div className="p-2 w-full max-w-[1550px]"> {/* make width is responsive */}
             {/* masonry grid container */}
             <Masonry columnsCount={columns} gutter="10px">
               {filteredPosts.map((post, index) => (
@@ -197,6 +215,11 @@ function Page() {
             </Masonry>
           </div>
         </div>
+        
+        {/*!loading && !fetchingMore && (
+          <button onClick={() => fetchMorePosts()} className="btn__default">More Posts</button>
+        )*/}
+
         <Footer />
 
       {/*{selectedImage && <Pin image={selectedImage} />}*/}

@@ -55,11 +55,12 @@ const useCommentsAndLikes = (image) => {
         const hasUserLiked = user ? fetchedLikes.includes(user.uid) : false;
 
         // fetch user profile image and name
-        const communityRef = doc(db, 'community', image.id);
-        const communityDoc = await getDoc(communityRef);
-        if (!communityDoc.exists()) return;
-        const userId = communityDoc.data()?.userId;
-        if (!userId) return;
+        //const communityRef = doc(db, 'community', image.id);
+        //const communityDoc = await getDoc(communityRef);
+        //if (!communityDoc.exists()) return;
+        //const userId = communityDoc.data()?.userId;
+        //if (!userId) return;
+        const userId = image.userId;
 
         const userRef = doc(db, 'users', userId);
         const userDoc = await getDoc(userRef);
