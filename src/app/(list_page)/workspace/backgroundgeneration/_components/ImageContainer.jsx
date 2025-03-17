@@ -1,6 +1,5 @@
 import React from 'react';
 import Image from 'next/image';
-import DownloadOptions from '@/components/DownloadOptions';
 
 export const ImageContainer = ({ 
   imageSrc, 
@@ -13,49 +12,49 @@ export const ImageContainer = ({
 }) => (
   <div className="group relative flex-1 rounded-2xl p-1 shadow-xl hover:shadow-2xl transition-all duration-300">
     <div className="h-full w-full flex flex-col items-center justify-center rounded-xl backdrop-blur-sm">
-      {/* Image Container */}
       <div className="w-full h-[500px] flex items-center justify-center relative">
         {imageSrc ? (
-          <div className="space-y-4 w-full">
-            <div className="relative w-full h-[500px] rounded-lg overflow-hidden">
-              <Image
-                src={imageSrc}
-                alt={altText}
-                fill
-                className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105"
-                style={{ imageRendering: 'auto' }}
-              />
-            </div>
+          <div className="relative w-full h-full rounded-lg overflow-hidden">
+            <Image
+              src={imageSrc}
+              alt={altText}
+              fill
+              className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105"
+              style={{ imageRendering: 'auto' }}
+            />
             
-            {/* Action Buttons and Download Options */}
-            <div className="flex flex-col gap-4">
-              <div className="flex justify-end gap-2">
+            {/* Action Buttons */}
+            <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <button
+                onClick={onFullscreen}
+                className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                title="View fullscreen"
+              >
+                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              </button>
+              
+              {isInput ? (
                 <button
-                  onClick={onFullscreen}
-                  className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
-                  title="View fullscreen"
+                  onClick={onClear}
+                  className="p-2 bg-gray-900/80 hover:bg-red-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                  title="Remove image"
                 >
                   <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-                
-                {isInput && (
-                  <button
-                    onClick={onClear}
-                    className="p-2 bg-gray-900/80 hover:bg-red-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
-                    title="Remove image"
-                  >
-                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-
-              {/* Download Options */}
-              {!isInput && (
-                <DownloadOptions imageUrl={imageSrc} filename="generated-image" />
+              ) : (
+                <button
+                  onClick={onDownload}
+                  className="p-2 bg-gray-900/80 hover:bg-blue-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                  title="Download image"
+                >
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </button>
               )}
             </div>
           </div>
