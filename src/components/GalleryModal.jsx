@@ -336,18 +336,18 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
                             </button>
                         </div>
                         </div>
-                        <button className="w-full p-3 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] w-[300px] text-white transition-all duration-100">
+                        {/*<button className="w-full p-3 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] w-[300px] text-white transition-all duration-100">
                             Open Workflow
-                        </button>
+                        </button>*/}
                         <button
                             onClick={handleCommunityClick}
-                            className="w-full p-3 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
+                            className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
                         >
                             {imageStatus ? "Manage Post to Community" : "Post to Community"}
                         </button>
                         <button
                             onClick={handleDeleteClick}
-                            className="w-full p-3 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
+                            className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
                         >
                             Delete
                         </button>

@@ -901,6 +901,20 @@ export default function UserProfile() {
   const [user, setUser] = useState(null);
   const [imageStatus, setImageStatus] = useState(false);  // Track image's posted status
   const [currentPage, setCurrentPage] = useState(1); // Default to first page
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [userImages, setUserImages] = useState([]); 
+  const [showModal, setShowModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showCommunityModal, setShowCommunityModal] = useState(false);
+  const [theme, setTheme] = useState("dark");
+  const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
+  const [userSettings, setUserSettings] = useState({
+    interfaceSettings: {
+      gridViewType: 'compact',
+    }
+  });
+
   const imagesPerPage = 8;
   const totalPages = Math.ceil(userImages.length / imagesPerPage);
   // Paginate the images
@@ -917,20 +931,7 @@ export default function UserProfile() {
   const handleImageDelete = (imageId) => {
     setUserImages((prevImages) => prevImages.filter(image => image.uid !== imageId));
   };
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingImages, setIsLoadingImages] = useState(false);
-  const [userImages, setUserImages] = useState([]); 
-  const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [showCommunityModal, setShowCommunityModal] = useState(false);
-  const [theme, setTheme] = useState("dark");
-  const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
-  const [userSettings, setUserSettings] = useState({
-    interfaceSettings: {
-      gridViewType: 'compact',
-    }
-  });
-
+  
   // 2. All context hooks
   const { tokens, loading: subscriptionLoading } = useSubscription();
 
@@ -1080,11 +1081,11 @@ export default function UserProfile() {
     setShowModal(false);
 }
 
-  const handleImageDeleted = (deletedImageId) => {
+  {/*const handleImageDeleted = (deletedImageId) => {
     setUserImages(prevImages => prevImages.filter(image => 
       (image.uid !== deletedImageId && image.id !== deletedImageId)
     ));
-  };
+  };*/}
 
   // Loading states
   if (isLoading || subscriptionLoading || isLoadingImages) {
@@ -1173,12 +1174,13 @@ export default function UserProfile() {
             {/* Gallery Section */}
             <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
               <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
-             {/* <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {paginatedImages.length > 0 ? (
-                  paginatedImages.map((image, index) => (*/}
-              <div className={`grid ${getGridViewClasses(userSettings?.interfaceSettings?.gridViewType || 'compact')}`}>
+             {/* <div className={`grid ${getGridViewClasses(userSettings?.interfaceSettings?.gridViewType || 'compact')}`}>
                 {userImages.length > 0 ? (
-                  userImages.map((image, index) => (
+                  userImages.map((image, index) => (*/}
+             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {paginatedImages.length > 0 ? (
+                  paginatedImages.map((image, index) => (
+              
                 <HoverCard key={index}>
                   <HoverCardTrigger asChild>
                     <div
