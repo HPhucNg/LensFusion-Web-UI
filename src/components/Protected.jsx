@@ -1,11 +1,10 @@
 "use client";
 
-import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-const DashboardLayout = ({children}) => {
+export default function Protected({ children }) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -27,7 +26,5 @@ const DashboardLayout = ({children}) => {
     return null;
   }
 
-  return <div>{children}</div>;
-};
-
-export default DashboardLayout;
+  return <>{children}</>;
+}

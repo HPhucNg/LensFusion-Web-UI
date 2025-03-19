@@ -16,8 +16,8 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
     const [pinDetails, setPinDetails] = useState({
         created_by: createdBy,
         title: '',
-        prompt: selectedImage.prompt,
-        img_data: selectedImage.img_data,
+        prompt: selectedImage?.prompt || 'No prompt available',
+        img_data: selectedImage?.img_data,
         category: '',  // new category field in pin details state
     });
     
@@ -63,7 +63,7 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
                 const communityRef = await addDoc(collection(db, 'community'), {
                     created_by: users_data.created_by,
                     title: users_data.title || 'Untitled',
-                    prompt: users_data.prompt,
+                    prompt: users_data.prompt || 'No prompt available',
                     img_data: users_data.img_data,
                     userImageId: selectedImage.uid,
                     createdAt: new Date(), // Timestamp
@@ -87,7 +87,7 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
                 // if communityPost is true, update the existing post
                 const communityPostRef = doc(db, 'community', selectedImage.communityPostId);
                 await updateDoc(communityPostRef, {
-                    title: users_data.title,
+                    title: users_data.title || 'Untitled',
                     category: users_data.category,  // update the category when editing the post
                 });
                 console.log('Community Post updated with ID: ', selectedImage.communityPostId);

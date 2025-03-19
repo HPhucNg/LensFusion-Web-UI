@@ -2,16 +2,78 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/modal_styles.css';
 import Image from 'next/image';  // Import Image component from next/image
-import { getFirestore, collection, doc, deleteDoc, query, where, getDocs, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, doc, deleteDoc, query, where, getDocs} from 'firebase/firestore';
 import { getStorage, ref, deleteObject } from 'firebase/storage';
-import { db } from '@/firebase/FirebaseConfig';
 import Modal from '@/components/Modal';
-
+import { db, storage } from '@/firebase/FirebaseConfig';
+import { ref, deleteObject, getDownloadURL } from 'firebase/storage';
+import { saveAs } from 'file-saver';
 
 
 function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, updateImageStatus, onDelete}) {  // Accept the 'image' prop
     /*const [showModalPin, setShowModalPin] = useState(false);*/
     const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false); // State to control the community modal visibility
+    const [selectedFormat, setSelectedFormat] = useState('png');
+    const [selectedQuality, setSelectedQuality] = useState('high');
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [conversionProgress, setConversionProgress] = useState(0);
+
+    // Handle download with format and quality
+    const handleDownload = async () => {
+        if (isDownloading) return;
+        setIsDownloading(true);
+        setConversionProgress(10);
+
+        try {
+            // If the image is from Firebase Storage, get a fresh download URL
+            let imageUrl = image.img_data;
+            if (imageUrl.includes('firebase') || imageUrl.includes('googleapis')) {
+                const storageRef = ref(storage, imageUrl);
+                imageUrl = await getDownloadURL(storageRef);
+            }
+            setConversionProgress(30);
+
+            // Call our conversion API
+            const response = await fetch('/api/convert-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    imageUrl,
+                    format: selectedFormat,
+                    quality: selectedQuality,
+                }),
+            });
+
+            setConversionProgress(70);
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to convert image');
+            }
+
+            // Convert base64 to blob
+            const base64Response = await fetch(result.data);
+            const blob = await base64Response.blob();
+            
+            setConversionProgress(90);
+
+            // Generate filename with timestamp and format
+            const timestamp = new Date().toISOString().split('T')[0];
+            const filename = `image-${timestamp}.${selectedFormat}`;
+            
+            // Download the image using file-saver
+            saveAs(blob, filename);
+            setConversionProgress(100);
+        } catch (error) {
+            console.error('Error downloading image:', error);
+            alert('Failed to download image. Please try again.');
+        } finally {
+            setIsDownloading(false);
+            setTimeout(() => setConversionProgress(0), 1000); // Reset progress after 1 second
+        }
+    };
 
     // trigger Post Modal when "Post to Community" is clicked
     const handleCommunityClick = async () => {
@@ -152,6 +214,7 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
     
     const postButtonText = imageStatus ? "Manage Post to Community" : "Post to Community";
 
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 text-white flex justify-center items-center">
             <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto sm:h-[500px] p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
@@ -180,6 +243,100 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
 
                     {/* Right side - menu */}
                     <div className="flex flex-col gap-4">
+                        <div>
+                                                    {/* Download options */}
+                        <div className="w-full mb-4 space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm text-gray-400">Format</label>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => setSelectedFormat('jpg')}
+                                        className={`px-3 py-1 rounded-lg ${
+                                            selectedFormat === 'jpg' 
+                                                ? 'bg-purple-600 text-white' 
+                                                : 'bg-gray-800 text-gray-400'
+                                        }`}
+                                    >
+                                        JPG
+                                    </button>
+                                    <button 
+                                        onClick={() => setSelectedFormat('png')}
+                                        className={`px-3 py-1 rounded-lg ${
+                                            selectedFormat === 'png' 
+                                                ? 'bg-purple-600 text-white' 
+                                                : 'bg-gray-800 text-gray-400'
+                                        }`}
+                                    >
+                                        PNG
+                                    </button>
+                                    <button 
+                                        onClick={() => setSelectedFormat('webp')}
+                                        className={`px-3 py-1 rounded-lg ${
+                                            selectedFormat === 'webp' 
+                                                ? 'bg-purple-600 text-white' 
+                                                : 'bg-gray-800 text-gray-400'
+                                        }`}
+                                    >
+                                        WebP
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm text-gray-400">Quality</label>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => setSelectedQuality('low')}
+                                        className={`px-3 py-1 rounded-lg ${
+                                            selectedQuality === 'low' 
+                                                ? 'bg-purple-600 text-white' 
+                                                : 'bg-gray-800 text-gray-400'
+                                        }`}
+                                    >
+                                        Low
+                                    </button>
+                                    <button 
+                                        onClick={() => setSelectedQuality('medium')}
+                                        className={`px-3 py-1 rounded-lg ${
+                                            selectedQuality === 'medium' 
+                                                ? 'bg-purple-600 text-white' 
+                                                : 'bg-gray-800 text-gray-400'
+                                        }`}
+                                    >
+                                        Medium
+                                    </button>
+                                    <button 
+                                        onClick={() => setSelectedQuality('high')}
+                                        className={`px-3 py-1 rounded-lg ${
+                                            selectedQuality === 'high' 
+                                                ? 'bg-purple-600 text-white' 
+                                                : 'bg-gray-800 text-gray-400'
+                                        }`}
+                                    >
+                                        High
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Add progress bar */}
+                            {conversionProgress > 0 && (
+                                <div className="w-full bg-gray-800 rounded-full h-2.5 mb-4">
+                                    <div 
+                                        className="bg-purple-600 h-2.5 rounded-full transition-all duration-300"
+                                        style={{ width: `${conversionProgress}%` }}
+                                    />
+                                </div>
+                            )}
+
+                            <button 
+                                className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
+                                onClick={handleDownload}
+                                disabled={isDownloading}
+                            >
+                                {isDownloading ? 'Converting...' : 'Download Image'}
+                            </button>
+                        </div>
+                        </div>
                         <button className="w-full p-3 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] w-[300px] text-white transition-all duration-100">
                             Open Workflow
                         </button>
