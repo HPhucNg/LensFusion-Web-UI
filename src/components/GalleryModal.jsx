@@ -3,10 +3,9 @@ import React, { useState, useEffect } from 'react';
 import '../styles/modal_styles.css';
 import Image from 'next/image';  // Import Image component from next/image
 import { getFirestore, collection, doc, deleteDoc, query, where, getDocs} from 'firebase/firestore';
-import { getStorage, ref, deleteObject } from 'firebase/storage';
+import { getStorage, ref, deleteObject, getDownloadURL } from 'firebase/storage';
 import Modal from '@/components/Modal';
 import { db, storage } from '@/firebase/FirebaseConfig';
-import { ref, deleteObject, getDownloadURL } from 'firebase/storage';
 import { saveAs } from 'file-saver';
 
 
