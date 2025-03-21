@@ -9,7 +9,8 @@ export const ImageContainer = ({
   onDownload, 
   onFullscreen, 
   uploadHandler,
-  isInput 
+  isInput,
+  onResize
 }) => (
   <div className="group relative flex-1 rounded-2xl p-1 shadow-xl hover:shadow-2xl transition-all duration-300">
     <div className="h-full w-full flex flex-col items-center justify-center rounded-xl backdrop-blur-sm">
@@ -109,6 +110,17 @@ export const ImageContainer = ({
           </label>
         )}
       </div>
+      {imageSrc && onResize && isInput && (
+          <div className="w-full mt-3">
+            <button
+              onClick={onResize}
+              className="flex px-4 py-2 bg-gray-800 hover:bg-gray-700/90 rounded-lg border border-gray-600/50 shadow-md transition-all hover:scale-110"
+              title="Resize image"
+            >
+              <span className="text-sm text-white">Resize Image</span>
+            </button>
+          </div>
+        )}
     </div>
   </div>
 );

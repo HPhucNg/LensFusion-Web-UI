@@ -9,29 +9,64 @@ const getDomain = () => {
   return process.env.NEXT_PUBLIC_DOMAIN || 'http://localhost:3000'; //test
 };
 
+//api route handeling
 export async function POST(req) {
   try {
-    const { priceId, userId, userEmail } = await req.json();
+    const { priceId, amount, tokens, userId, userEmail, type } = await req.json();
     const domain = getDomain();
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'], 
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      mode: 'subscription',
-      success_url: `${domain}/payment/success`,
-      cancel_url: `${domain}/payment/cancel`,  // i will add more to this page later
-      metadata: {
-        userId: userId,
-        userEmail: userEmail
-      },
-    });
+    //credit purchase handler - create 1 time payment at checkout
+    if (type === 'credit_purchase') {
+      const numericAmount = Number(amount);
 
-    return NextResponse.json({ sessionId: session.id });
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `${tokens} Credits`,
+                description: `Purchase ${tokens} credits`,
+              },
+              unit_amount: Math.round(numericAmount * 100),
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${domain}/payment/success`,
+        metadata: {
+          userId,
+          userEmail,
+          tokens: tokens.toString(),
+          amount: amount.toString(),
+          type: 'credit_purchase'
+        },
+      });
+      return NextResponse.json({ sessionId: session.id });
+    }else{
+      
+      //subscription handler
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'], 
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        success_url: `${domain}/payment/success`,
+        cancel_url: `${domain}/payment/cancel?subscription={CHECKOUT_SESSION_ID}`,
+        metadata: {
+          userId: userId,
+          userEmail: userEmail,
+        },
+      });
+  
+      return NextResponse.json({ sessionId: session.id });}
+    
   } catch (error) {
     console.error('Error creating checkout session:', error);
     return NextResponse.json(
