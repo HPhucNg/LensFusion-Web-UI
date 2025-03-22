@@ -13,9 +13,13 @@ export function SubscriptionProvider({ children }) {
     currentPlan: null,
     planCycle: null,
     tokens: 0,
+    subscriptionId: null,
+    cancelAtPeriodEnd: false,
+    cancellationDate: null,
     loading: true
   });
 
+  //authentication and data sync
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
@@ -23,12 +27,17 @@ export function SubscriptionProvider({ children }) {
         const unsubscribeSnapshot = onSnapshot(userRef, (userDoc) => {
           if (userDoc.exists()) {
             const userData = userDoc.data();
+            console.log('Firestore user data:', userData); // Debug log
+
             setSubscriptionData({
               status: userData.subscriptionStatus || 'inactive',
               currentPlan: userData.currentPlan || 'No Plan',
               planCycle: userData.planCycle || null,
               tokens: userData.tokens || 0,
               customerId: userData.customerId || null,
+              subscriptionId: userData.subscriptionId,
+              cancelAtPeriodEnd: userData.cancelAtPeriodEnd || false,
+              cancellationDate: userData.cancellationDate || null,
               loading: false
             });
           } else {
@@ -40,18 +49,25 @@ export function SubscriptionProvider({ children }) {
               planCycle: null,
               tokens: 0,
               customerId: null,
+              subscriptionId: null,
+              cancelAtPeriodEnd: false,
+              cancellationDate: null,
               loading: false
             });
           }
         });
         return () => unsubscribeSnapshot();
       } else {
+        //this resets the states when user not authenticated
         setSubscriptionData({
           status: 'inactive',
           currentPlan: 'No Plan',
           planCycle: null,
           tokens: 0,
           customerId: null,
+          subscriptionId: null,
+          cancelAtPeriodEnd: false,
+          cancellationDate: null,
           loading: false
         });
       }
@@ -60,13 +76,14 @@ export function SubscriptionProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
+  //context provider rendering
   return (
     <SubscriptionContext.Provider value={subscriptionData}>
       {children}
     </SubscriptionContext.Provider>
   );
 }
-
+//custom hook for using context
 export const useSubscription = () => {
   const context = useContext(SubscriptionContext);
   if (context === undefined) {

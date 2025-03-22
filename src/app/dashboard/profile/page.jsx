@@ -899,6 +899,8 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
 export default function UserProfile() {
   // 1. All useState hooks first
   const [user, setUser] = useState(null);
+  const [imageStatus, setImageStatus] = useState(false);  // Track image's posted status
+  const [currentPage, setCurrentPage] = useState(1); // Default to first page
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
   const [userImages, setUserImages] = useState([]); 
@@ -913,6 +915,23 @@ export default function UserProfile() {
     }
   });
 
+  const imagesPerPage = 8;
+  const totalPages = Math.ceil(userImages.length / imagesPerPage);
+  // Paginate the images
+  const startIndex = (currentPage - 1) * imagesPerPage;
+  const endIndex = startIndex + imagesPerPage;
+  const paginatedImages = userImages.slice(startIndex, endIndex);
+
+  // Handle page click
+  const handlePageClick = (page) => {
+  setCurrentPage(page);
+  };
+
+  // Handle delete image in child component and show in parent
+  const handleImageDelete = (imageId) => {
+    setUserImages((prevImages) => prevImages.filter(image => image.uid !== imageId));
+  };
+  
   // 2. All context hooks
   const { tokens, loading: subscriptionLoading } = useSubscription();
 
@@ -986,29 +1005,87 @@ export default function UserProfile() {
     document.documentElement.classList.add(newTheme);
   };
 
+  useEffect(() => {
+    // Check for saved theme
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  
+  // Fetch user images when user changes
+  useEffect(() => {
+    if (user) {
+      fetchUserImages(user);
+    }
+  }, [user, imageStatus]);
+  
+
+  const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId = null, subscriptionStatus = 'inactive', currentPlan = null) => {
+    try {
+      if (!userData || !userData.uid) {
+        console.error("User data is missing essential properties.");
+        return;
+      }
+      const userRef = doc(db, 'users', userData.uid); 
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) {
+        const newUser = {
+          email: userData.email,
+          name: userData.displayName || "guest",
+          photoURL: userData.photoURL,
+          lastLogin: serverTimestamp(),
+          tokens: tokensToAdd, 
+          customerId: customerId || null, 
+          subscriptionStatus: subscriptionStatus,
+          currentPlan: currentPlan ,
+        };
+        await setDoc(userRef, newUser);
+        console.log("New user created in Firebase");
+      } else {
+        const existingData = userDoc.data();
+        const updatedData = {
+          email: userData.email,
+          name: userData.displayName || existingData.name || "guest",
+          photoURL: userData.photoURL,
+          lastLogin: serverTimestamp(),
+          tokens: (existingData.tokens || 0) + tokensToAdd,
+          customerId: customerId || existingData.customerId || null, 
+          subscriptionStatus: subscriptionStatus || existingData.subscriptionStatus,
+          currentPlan: currentPlan || existingData.currentPlan,
+        };
+
+        await setDoc(userRef, updatedData);
+        console.log("User saved to Firebase");
+      }
+    } catch (error) {
+      console.error("Error saving user data:", error);
+    }
+  };
+
+  // Handle image click to open gallery modal
   const handleImageClick = (image) => {
     setSelectedImage(image);
     setShowModal(true);
+    setImageStatus(image?.communityPost || false);  // Update the imageStatus when an image is clicked
+    console.log(image?.communityPost);
   };
 
   const closeModal = () => {
     setShowModal(false);
-  };
+}
 
-  const openCommunityModal = () => {
-    setShowModal(false);
-    setShowCommunityModal(true);
-  };
-
-  const closeCommunityModal = () => {
-    setShowCommunityModal(false);
-  };
-
-  const handleImageDeleted = (deletedImageId) => {
+  {/*const handleImageDeleted = (deletedImageId) => {
     setUserImages(prevImages => prevImages.filter(image => 
       (image.uid !== deletedImageId && image.id !== deletedImageId)
     ));
-  };
+  };*/}
 
   // Loading states
   if (isLoading || subscriptionLoading || isLoadingImages) {
@@ -1058,11 +1135,11 @@ export default function UserProfile() {
                 </h3>
               </div>
               <div className="w-full space-y-3">
-                <Button variant="outline" onClick={() => setIsManageAccountOpen(true)} className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
+                <Button variant="outline" onClick={() => setIsManageAccountOpen(true)} className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700 overflow-hidden transition-all duration-300">
                   <Settings className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Account</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700  transition-all duration-300 text-white">
+                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700  transition-all duration-300 overflow-hidden">
                   <User2 className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Subscription</span>
                 </Button>
@@ -1097,9 +1174,13 @@ export default function UserProfile() {
             {/* Gallery Section */}
             <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
               <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
-              <div className={`grid ${getGridViewClasses(userSettings?.interfaceSettings?.gridViewType || 'compact')}`}>
+             {/* <div className={`grid ${getGridViewClasses(userSettings?.interfaceSettings?.gridViewType || 'compact')}`}>
                 {userImages.length > 0 ? (
-                  userImages.map((image, index) => (
+                  userImages.map((image, index) => (*/}
+             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {paginatedImages.length > 0 ? (
+                  paginatedImages.map((image, index) => (
+              
                 <HoverCard key={index}>
                   <HoverCardTrigger asChild>
                     <div
@@ -1111,13 +1192,13 @@ export default function UserProfile() {
                         alt={`Gallery item ${index}`}
                         width={400}
                         height={400}
-                        className="object-cover"
+                        className="object-cover w-full h-full"
                         placeholder="blur"
                         blurDataURL={`data:image/svg+xml;base64,...`}  // Optional for blur effect
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
                         <div className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                        <Check className="w-5 h-5 text-white" />
+                          <Check className="w-5 h-5 text-white" />
                         </div>
                       </div>
                     </div>
@@ -1129,29 +1210,28 @@ export default function UserProfile() {
                   </div>
                 </HoverCardContent>
               </HoverCard>
-      ))
-    ) : (
-      <p className="text-gray-400">No images available.</p>
-    )}
-  </div>
-             
-           
+                ))
+              ) : (
+                <p className="text-gray-400">No images available.</p>
+              )}
+            </div>
 
-              {/* Pagination */}
-              <div className="flex justify-center items-center gap-3 mt-8">
-                {[1, 2, 3, 4, 5].map((page) => (
-                  <Button
-                    key={page}
-                    variant="outline"
-                    className={`w-10 h-10 text-lg font-medium ${
-                      page === 1 
-                        ? 'bg-white text-black hover:bg-gray-200' 
-                        : 'border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700'
-                    } shadow-lg transition-all duration-300`}
-                  >
-                    {page}
-                  </Button>
-                ))}
+            {/* Pagination */}
+            <div className="flex justify-center items-center gap-3 mt-8">
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant="outline"
+                  className={`w-10 h-10 text-lg font-medium ${
+                    page === currentPage
+                    ? 'bg-white text-black hover:bg-gray-200 hover:text-[#c792ff]'
+                    : 'border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700'
+                  } shadow-lg transition-all duration-300`}
+                  onClick={() => handlePageClick(page)}
+                >
+                  {page}
+                </Button>
+              ))}
               </div>
             </div>
           </div>
@@ -1171,20 +1251,15 @@ export default function UserProfile() {
                 <GalleryModal
                     closeModal={closeModal}
                     image={selectedImage}
-                    openCommunityModal={openCommunityModal}
-                    onImageDeleted={handleImageDeleted}
+                    userPic={user.photoURL}
+                    createdBy={user?.displayName}
+                    imageStatus={imageStatus}  // Pass imageStatus as prop
+                    updateImageStatus={setImageStatus}  // Pass function to update imageStatus
+                    onDelete={handleImageDelete}  // Pass the delete function
                 />
             )}
 
-            {/* Community Modal */}
-            {showCommunityModal && (
-                <Modal
-                    closeModal={closeCommunityModal}
-                    add_community={() => {}}
-                    selectedImage={selectedImage}
-                    createdBy={user?.displayName}
-                />
-      )}
+            
     </div>
   );
 }

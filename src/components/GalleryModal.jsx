@@ -1,13 +1,17 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/modal_styles.css';
-import { getFirestore, collection, doc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
+import Image from 'next/image';  // Import Image component from next/image
+import { getFirestore, collection, doc, deleteDoc, query, where, getDocs} from 'firebase/firestore';
+import { getStorage, ref, deleteObject, getDownloadURL } from 'firebase/storage';
+import Modal from '@/components/Modal';
 import { db, storage } from '@/firebase/FirebaseConfig';
-import { ref, deleteObject, getDownloadURL } from 'firebase/storage';
 import { saveAs } from 'file-saver';
 
-function GalleryModal({ closeModal, image, openCommunityModal, onImageDeleted }) {
-    const [isDeleting, setIsDeleting] = useState(false);
+
+function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, updateImageStatus, onDelete}) {  // Accept the 'image' prop
+    /*const [showModalPin, setShowModalPin] = useState(false);*/
+    const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false); // State to control the community modal visibility
     const [selectedFormat, setSelectedFormat] = useState('png');
     const [selectedQuality, setSelectedQuality] = useState('high');
     const [isDownloading, setIsDownloading] = useState(false);
@@ -70,135 +74,176 @@ function GalleryModal({ closeModal, image, openCommunityModal, onImageDeleted })
         }
     };
 
-    // Trigger Post Modal when "Post to Community" is clicked
-    const handleCommunityClick = () => {
-        openCommunityModal();  // This will open the CommunityModal in UserProfile
-        closeModal();     // Close the Gallery Modal
+    // trigger Post Modal when "Post to Community" is clicked
+    const handleCommunityClick = async () => {
+       //updateImageStatus(true); 
+        setIsCommunityModalOpen(true);  
     };
 
-    const deleteImageFromCommunity = async (imageId) => {
-        try {
-            const communityRef = collection(db, 'community');
-            const q = query(communityRef, where('userImageId', '==', imageId));
-            const querySnapshot = await getDocs(q);
-        
-            const deletePromises = querySnapshot.docs.map(doc => 
-                deleteDoc(doc.ref)
-            );
-            
-            await Promise.all(deletePromises);
-            return true;
-        } catch (error) {
-            console.error('Error deleting from community:', error);
-            return false;
+    const closeCommunityModal = () => {
+        setIsCommunityModalOpen(false); 
+        //updateImageStatus(true); // Ensure the status is updated to reflect the community post
+    };
+
+    const deleteSubcollections = async (communityDocId) => {
+        const likesRef = collection(db, 'community', communityDocId, 'likes');
+        const likesSnapshot = await getDocs(likesRef);
+        for (const doc of likesSnapshot.docs) {
+            await deleteDoc(doc.ref);
         }
+    
+        const commentsRef = collection(db, 'community', communityDocId, 'comments');
+        const commentsSnapshot = await getDocs(commentsRef);
+        for (const doc of commentsSnapshot.docs) {
+            await deleteDoc(doc.ref);
+        }
+    };
+    
+
+    const deleteImageFromCommunity = async (imageId) => {
+        const communityRef = collection(db, 'community');
+        const q = query(communityRef, where('userImageId', '==', imageId));
+        const querySnapshot = await getDocs(q);
+    
+        querySnapshot.forEach(async (docSnap) => {
+            const communityDocId = docSnap.id;
+            await deleteSubcollections(communityDocId); // delete subcollections (likes, comments)
+            await deleteDoc(doc(db, 'community', communityDocId)); // delete the community post
+        });
     };
     
     const deleteImageFromStorage = async (imageUrl) => {
-        try {
-            // Create a reference to the file to delete
-            const storageRef = ref(storage, imageUrl);
-            await deleteObject(storageRef);
-            return true;
-        } catch (error) {
-            console.error('Error deleting from storage:', error);
-            return false;
-        }
-    };
-    
-    const deleteImageFromUserImages = async (imageId) => {
-        try {
-            const userImagesRef = doc(db, 'user_images', imageId);
-            await deleteDoc(userImagesRef);
-            return true;
-        } catch (error) {
-            console.error('Error deleting from user_images:', error);
-            return false;
-        }
-    };
-
-    const handleDeleteClick = async () => {
-        if (isDeleting) return; // Prevent multiple clicks
-
-        const confirmMessage = image.communityPost
-            ? "This image is posted in the community. Are you sure you want to delete it?"
-            : "Once you delete this image, it cannot be recovered. Are you sure you want to delete it?";
-
-        const userConfirmed = window.confirm(confirmMessage);
-        if (!userConfirmed) {
-            console.log("Deletion canceled.");
+        if (!imageUrl || typeof imageUrl !== 'string') {
+            console.error('Error: Invalid image URL');
             return;
         }
-
-        setIsDeleting(true);
+    
+        //for debugging
+        console.log('Image URL:', imageUrl);
+    
+        // ensure the URL contains '/o/', which indicates the storage path
+        if (!imageUrl.includes('/o/')) {
+            console.error('Error: URL does not contain the expected "/o/" path:', imageUrl);
+            return;
+        }
+    
         try {
-            const imageId = image.uid || image.id; // Handle both ID formats
-            let success = true;
-
-            // Delete from community if posted there
-            if (image.communityPost) {
-                success = await deleteImageFromCommunity(imageId);
+            // extract the file path from the URL after '/o/'
+            const storagePath = imageUrl.split('/o/')[1]?.split('?')[0];
+    
+            // if the storagePath is undefined or empty, log an error
+            if (!storagePath) {
+                console.error('Error: Unable to extract storage path from URL');
+                return;
             }
-
-            // Delete from user_images collection
-            if (success) {
-                success = await deleteImageFromUserImages(imageId);
-            }
-
-            // Delete the actual image file from storage if URL exists
-            if (success && image.img_data) {
-                success = await deleteImageFromStorage(image.img_data);
-            }
-
-            if (success) {
-                // Notify parent component about the deletion
-                if (onImageDeleted) {
-                    onImageDeleted(imageId);
-                }
-                alert("Image successfully deleted.");
-                closeModal();
-            } else {
-                alert("There was an error deleting the image. Please try again.");
-            }
+    
+            console.log('Extracted storage path:', storagePath);
+    
+            // Ddecode the URL-encoded path (replaces %2F with / and other encoded characters)
+            const decodedPath = decodeURIComponent(storagePath);
+    
+            console.log('Decoded path:', decodedPath);
+    
+            // Firebase Storage reference for the image
+            const storage = getStorage();
+            const imageRef = ref(storage, decodedPath);  // the decoded path
+    
+            // delete the image from Firebase Storage
+            await deleteObject(imageRef);
+            console.log('Image deleted from Firebase Storage.');
         } catch (error) {
-            console.error('Error during deletion:', error);
-            alert("There was an error deleting the image. Please try again.");
-        } finally {
-            setIsDeleting(false);
+            console.error('Error deleting image from Firebase Storage:', error);
+        }
+    };
+
+    const deleteImageFromUserImages = async (imageId) => {
+        const userImagesRef = doc(db, 'user_images', imageId);
+        try {
+            await deleteDoc(userImagesRef); // delete the image from user_images collection
+            console.log('Image deleted from Firestore.');
+        } catch (error) {
+            console.error('Error deleting image from Firestore:', error);
         }
     };
     
-    const postButtonText = image.communityPost ? "Manage Post to Community" : "Post to Community";
+
+    const handleDeleteClick = () => {
+        if (!image || !image.img_data) {
+            console.error('Error: Image data is missing.');
+            alert('Error: Image data is missing.');
+            return;
+        }
+    
+        // check if the image has the required properties for deletion
+        console.log('Image to delete:', image);
+        if (image.communityPost) {
+            const userConfirmed = window.confirm(
+                "This image is posted in the community. Are you sure you want to delete it?"
+            );
+            if (userConfirmed) {
+                console.log("Deleting image from user_images, community, and storage...");
+                deleteImageFromCommunity(image.uid);  // remove from the community collection
+                deleteImageFromStorage(image.img_data);  // remove from Firebase Storage
+                deleteImageFromUserImages(image.uid);  // remove from the user's images collection
+                alert("Image deleted.");
+                // update the parent state (UserProfile)
+                if (onDelete) {
+                    onDelete(image.uid);
+                }
+                closeModal();
+
+            }
+        } else {
+            const userConfirmed = window.confirm(
+                "Once you delete this image, it cannot be recovered. Are you sure you want to delete it?"
+            );
+            if (userConfirmed) {
+                console.log("Deleting image from user_images and storage...");
+                deleteImageFromStorage(image.img_data);  // remove from Firebase Storage
+                deleteImageFromUserImages(image.uid);  // remove from the user's images collection
+                alert("Image deleted.");
+                //  update the parent state (UserProfile)
+                if (onDelete) {
+                    onDelete(image.uid);
+                }
+                closeModal();
+            }
+        }
+    };
+    
+    const postButtonText = imageStatus ? "Manage Post to Community" : "Post to Community";
+
 
     return (
-        <div className='add_pin_modal'>
-            <div className='add_pin_container'>
-                <div className="side" id="left_side">
-                    <div className="topsection">
-                        <div className="post_to">Manage Image</div>
-                    </div>
-                
-                    <div className="midsection">
-                        <div>
-                            {/* Render the selected image */}
-                            {image ? (
-                                <img src={image.img_data} alt="Selected" className="object-cover w-full max-h-[calc(100%-50px) rounded-xl" />
-                            ) : (
-                                <p>No image selected</p>
-                            )}
-                        </div>
-                    </div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 text-white flex justify-center items-center">
+            <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto sm:h-[500px] p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
+                <div className="flex justify-between items-center mb-4">
+                    <h1 className="text-2xl font-extrabold">Manage Image</h1>
+                    <button onClick={closeModal} className="w-8 h-8 transform hover:scale-90">
+                        <img src="/Vector.png" alt="close icon" />
+                    </button>
                 </div>
 
-                <div className="side" id="right_side">
-                    <div className="topsection">
-                        <div onClick={closeModal} className="w-10">
-                            <img src="/Vector.png" alt="close_pin" />
-                        </div>
+                <div className="flex flex-col md:flex-row justify-between items-center">
+                    {/* Left side - image */}
+                    <div className="mb-4 md:mb-0 w-full md:w-[300px] h-[300px] mt-4 overflow-hidden rounded-xl">
+                        {image ? (
+                            <Image 
+                                src={image.img_data} 
+                                alt="Selected" 
+                                width={300} 
+                                height={300} 
+                                className="object-contain w-full h-full" // image fills the container
+                            />
+                        ) : (
+                            <p>No image selected</p>
+                        )}
                     </div>
 
-                    <div className="midsection items-center">
-                        {/* Download options */}
+                    {/* Right side - menu */}
+                    <div className="flex flex-col gap-4">
+                        <div>
+                                                    {/* Download options */}
                         <div className="w-full mb-4 space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm text-gray-400">Format</label>
@@ -289,24 +334,36 @@ function GalleryModal({ closeModal, image, openCommunityModal, onImageDeleted })
                             >
                                 {isDownloading ? 'Converting...' : 'Download Image'}
                             </button>
-
-                            <button 
-                                className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center text-[#1a202c] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100" 
-                                onClick={handleCommunityClick}
-                            >
-                                {postButtonText}
-                            </button>
-                            <button 
-                                className="w-[240px] h-[40px] mb-4 rounded-[22px] flex justify-center items-center bg-red-600 hover:bg-red-700 text-white transition-all duration-100"
-                                onClick={handleDeleteClick}
-                                disabled={isDeleting}
-                            >
-                                {isDeleting ? 'Deleting...' : 'Delete Image'}
-                            </button>
                         </div>
+                        </div>
+                        {/*<button className="w-full p-3 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] w-[300px] text-white transition-all duration-100">
+                            Open Workflow
+                        </button>*/}
+                        <button
+                            onClick={handleCommunityClick}
+                            className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
+                        >
+                            {imageStatus ? "Manage Post to Community" : "Post to Community"}
+                        </button>
+                        <button
+                            onClick={handleDeleteClick}
+                            className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
+                        >
+                            Delete
+                        </button>
                     </div>
                 </div>
             </div>
+            {isCommunityModalOpen && (
+            <Modal 
+                closeModal={closeCommunityModal} 
+                add_community={() => {}}
+                selectedImage={image} 
+                userPic={userPic}
+                createdBy={createdBy}
+                imageStatus={imageStatus}
+                updateImageStatus={updateImageStatus} 
+            />)}
         </div>
     );
 }

@@ -2,8 +2,8 @@
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./FirebaseConfig";
 
-
-export const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId = null, subscriptionStatus = 'inactive', currentPlan = 'No Plan', planCycle = null) => {    
+//saves users and updates data to firebase
+export const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId = null, subscriptionStatus = 'inactive', currentPlan = 'No Plan', planCycle = null, subscriptionId = null) => {    
     if (!userData || !userData.uid) {
         console.error("User data is missing essential properties.");
         return;
@@ -24,7 +24,8 @@ export const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId =
                 customerId: customerId ?? existingData.customerId ?? null,
                 subscriptionStatus: subscriptionStatus ?? existingData.subscriptionStatus ?? 'inactive',
                 currentPlan: currentPlan ?? existingData.currentPlan ?? 'No Plan',
-                planCycle: planCycle ?? existingData.planCycle ?? null 
+                planCycle: planCycle ?? existingData.planCycle ?? null,
+                subscriptionId: subscriptionId ?? existingData.subscriptionId ?? null          
             };
             await setDoc(userRef, updatedData, { merge: true });
             console.log(`User ${userDoc.exists() ? 'updated' : 'created'} in Firebase`);
