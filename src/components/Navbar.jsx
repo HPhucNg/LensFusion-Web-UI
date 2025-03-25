@@ -43,8 +43,8 @@ export default function Navbar() {
 
   const authenticatedLinks = [
     { href: '/dashboard', label: 'Dashboard' },
-    { href: '/resources', label: 'Resources' },
     { href: '/community', label: 'Community' },
+    { href: '/resources', label: 'Resources' },
     { href: '/contact', label: 'Contact' },
     { href: '/solutions', label: 'Solutions' },
     { href: '/pricing', label: 'Pricing' },
@@ -52,9 +52,9 @@ export default function Navbar() {
   ];
   
   const unauthenticatedLinks = [
+    { href: '/community', label: 'Community' },
     { href: '/solutions', label: 'Solutions' },
     { href: '/resources', label: 'Resources' },
-    { href: '/community', label: 'Community' },
     { href: '/pricing', label: 'Pricing' },
     { href: '/contact', label: 'Contact' },
     { href: '/about', label: 'About' }

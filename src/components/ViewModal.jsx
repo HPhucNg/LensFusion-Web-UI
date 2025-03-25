@@ -61,7 +61,7 @@ function ViewModal({ closeModal, image }) {
         if (user) {
             setUserName(user.displayName || user.email || 'Anonymous');
         } else {
-            alert("No user is authenticated.");
+            setUserName('Anonymous');
         }
     }, [user]);
 
@@ -90,14 +90,13 @@ function ViewModal({ closeModal, image }) {
     useEffect(() => {
         const fetchLikes = async () => {
             try {
-                console.log(image.id)
                 const likesRef = collection(db, 'community', image.id, 'likes');
                 const querySnapshot = await getDocs(likesRef);
                 const fetchedLikes = querySnapshot.docs.map(doc => doc.id);
                 setLikes(fetchedLikes);
 
                 // Check if the current user has liked the image
-                if (fetchedLikes.includes(user?.uid)) {
+                if (user && fetchedLikes.includes(user.uid)) {
                     setHasLiked(true);
                 } else {
                     setHasLiked(false);
@@ -107,12 +106,17 @@ function ViewModal({ closeModal, image }) {
             }
         };
 
-        if (image && user) {
+        if (image) {
             fetchLikes();
         }
     }, [image, user]);
 
     const handleLikeToggle = async () => {
+        if (!user) {
+            alert('Please log in to like posts');
+            return;
+        }
+
         try {
             const likesRef = doc(db, 'community', image.id, 'likes', user.uid);
 
@@ -151,6 +155,11 @@ function ViewModal({ closeModal, image }) {
 
     const handleCommentSubmit = async (e) => {
         e.preventDefault();
+    
+        if (!user) {
+            alert('Please log in to comment');
+            return;
+        }
     
         if (newComment.trim() === '') {
             return;

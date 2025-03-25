@@ -9,6 +9,12 @@ export function middleware(request) {
   const isPublicPath = path === '/login' || 
                       path === '/register' || 
                       path === '/' || 
+                      path === '/community' ||
+                      // path === '/solutions' ||
+                      // path === '/resources' ||
+                      path === '/pricing' ||
+                      path === '/contact' ||
+                      path === '/about' ||
                       path.startsWith('/_next') || 
                       path.startsWith('/api') ||
                       path.includes('.mp4') ||  // Allow video files

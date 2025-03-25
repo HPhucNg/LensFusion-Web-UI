@@ -13,11 +13,14 @@ function Page() {
   const [loading, setLoading] = useState(true);  // State for loading state
   const [showModal, setShowModal] = useState(false);  // To control modal visibility
   const [selectedImage, setSelectedImage] = useState(null);  // Store selected image data
+  const [error, setError] = useState(null);  // State for error handling
 
   useEffect(() => {
     // Fetch community posts from the correct Firestore collection
     const fetchPosts = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const querySnapshot = await getDocs(collection(db, 'community'));
         const postsArray = [];
         querySnapshot.forEach((doc) => {
@@ -26,6 +29,7 @@ function Page() {
         setPosts(postsArray);  // Set posts to state
       } catch (e) {
         console.error("Error fetching community posts: ", e);
+        setError("Failed to load community posts. Please try again later.");
       } finally {
         setLoading(false);  // Set loading to false after fetching
       }
@@ -43,10 +47,30 @@ function Page() {
   const closeModal = () => {
     setShowModal(false);  // Hide modal
     setSelectedImage(null); // Reset selected image
-}
+  }
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -70,6 +94,7 @@ function Page() {
         <ViewModal
             closeModal={closeModal}
             image={selectedImage}
+            isPublic={true}
         />
       )}
     </main>
