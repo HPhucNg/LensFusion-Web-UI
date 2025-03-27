@@ -423,7 +423,7 @@ export default function ObjectRemovalUI() {
   }, []);
 
   return (
-    <div className="w-full p-8 bg-gradient-to-br from-gray-900 to-black text-white min-h-screen">
+    <div className="w-full p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-gray-900 to-black text-white">
       <h1 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
         AI Object Remover
       </h1>
@@ -433,7 +433,7 @@ export default function ObjectRemovalUI() {
         <ActionButtons clearMask={clearMask} handleRemoveObject={handleRemoveObject} originalImage={originalImage} processing={processing} uploadLoading={uploadLoading} />
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
         {/* Input Section */}
         <div className="bg-gray-800/30 rounded-2xl overflow-hidden shadow-xl relative p-0 m-0" ref={imageContainerRef}>
           <ImageUploader 
@@ -457,7 +457,7 @@ export default function ObjectRemovalUI() {
           <CanvasSetup originalImage={originalImage} setOriginalDimensions={setOriginalDimensions} canvasRef={canvasRef} maskCanvasRef={maskCanvasRef} imageContainerRef={imageContainerRef} setPaddingMetadata={setPaddingMetadata} />
         </div>
 
-        {/* Output Section - Also need to adjust the result section to match */}
+        {/* Output Section - Ensure ResultViewer handles image scaling */}
         <ResultViewer 
           resultImage={resultImage} 
           isProcessing={processing}
@@ -467,9 +467,9 @@ export default function ObjectRemovalUI() {
       </div>
       
       {/* Tips Section */}
-      <div className="mt-6 p-4 rounded-xl backdrop-blur-sm bg-gray-800/50 border border-gray-700">
+      <div className="mt-10 pt-4 px-4 pb-2 rounded-xl backdrop-blur-sm bg-gray-800/50 border border-gray-700">
         <h3 className="text-sm font-semibold mb-2 text-purple-400">Tips for best results:</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm text-gray-300">
           <div className="flex items-start gap-2">
             <span className="bg-purple-500/20 p-1 rounded-full">
               <svg className="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

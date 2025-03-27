@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 export default function DrawingTools({ isEraser, setIsEraser, brushSize, setBrushSize }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center flex-wrap gap-3">
       {/* Drawing mode selector */}
       <div className="flex border border-gray-700 rounded-lg overflow-hidden">
         <button
@@ -36,7 +36,7 @@ export default function DrawingTools({ isEraser, setIsEraser, brushSize, setBrus
           max="50" 
           value={brushSize}
           onChange={(e) => setBrushSize(parseInt(e.target.value))}
-          className="w-32 accent-purple-500" 
+          className="w-24 sm:w-32 accent-purple-500"
         />
         <span className="text-sm bg-gray-800 px-2 py-0.5 rounded">{brushSize}px</span>
       </div>
