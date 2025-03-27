@@ -423,17 +423,32 @@ export default function ObjectRemovalUI() {
         // Create an image element to load the result
         const img = new Image();
         img.onload = () => {
-          // Calculate the dimensions to crop the padding
-          const { originalWidth, originalHeight, paddingLeft, paddingTop } = paddingMetadata;
+          console.log("Result image loaded with dimensions:", { width: img.width, height: img.height });
+          
+          // Get the original dimensions and padding information
+          const { originalWidth, originalHeight, paddingLeft, paddingTop, squareSize } = paddingMetadata;
+          console.log("Using padding metadata for cropping:", { originalWidth, originalHeight, paddingLeft, paddingTop, squareSize });
+          
+          // Create a canvas with the original dimensions
           const canvas = document.createElement('canvas');
           canvas.width = originalWidth;
           canvas.height = originalHeight;
           const ctx = canvas.getContext('2d');
           
+          // Calculate scaling factor if the returned image size differs from our padded size
+          const scale = img.width / squareSize;
+          console.log("Scale factor for cropping:", scale);
+          
+          // Adjust padding based on scale
+          const scaledPaddingLeft = paddingLeft * scale;
+          const scaledPaddingTop = paddingTop * scale;
+          const scaledOriginalWidth = originalWidth * scale;
+          const scaledOriginalHeight = originalHeight * scale;
+          
           // Draw the image onto the canvas, cropping the padding
           ctx.drawImage(
             img,
-            paddingLeft, paddingTop, originalWidth, originalHeight,
+            scaledPaddingLeft, scaledPaddingTop, scaledOriginalWidth, scaledOriginalHeight,
             0, 0, originalWidth, originalHeight
           );
           
@@ -442,6 +457,10 @@ export default function ObjectRemovalUI() {
           setResultImage(croppedDataUrl);
           setResultDimensions({ width: originalWidth, height: originalHeight });
           console.log("Cropped result image dimensions:", { width: originalWidth, height: originalHeight });
+        };
+        img.onerror = (err) => {
+          console.error("Error loading result image:", err);
+          alert("Failed to load result image from the API");
         };
         img.src = result;
       } else {
