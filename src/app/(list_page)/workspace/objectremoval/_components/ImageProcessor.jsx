@@ -420,16 +420,30 @@ export default function ObjectRemovalUI() {
       console.log("Received result from API");
       
       if (result) {
-        // Get dimensions of the result image to apply correct cropping
+        // Create an image element to load the result
         const img = new Image();
         img.onload = () => {
-          setResultDimensions({ width: img.width, height: img.height });
-          console.log("Result image dimensions:", { width: img.width, height: img.height });
+          // Calculate the dimensions to crop the padding
+          const { originalWidth, originalHeight, paddingLeft, paddingTop } = paddingMetadata;
+          const canvas = document.createElement('canvas');
+          canvas.width = originalWidth;
+          canvas.height = originalHeight;
+          const ctx = canvas.getContext('2d');
+          
+          // Draw the image onto the canvas, cropping the padding
+          ctx.drawImage(
+            img,
+            paddingLeft, paddingTop, originalWidth, originalHeight,
+            0, 0, originalWidth, originalHeight
+          );
+          
+          // Convert the cropped image back to a data URL
+          const croppedDataUrl = canvas.toDataURL('image/png');
+          setResultImage(croppedDataUrl);
+          setResultDimensions({ width: originalWidth, height: originalHeight });
+          console.log("Cropped result image dimensions:", { width: originalWidth, height: originalHeight });
         };
         img.src = result;
-        
-        console.log("Setting result image");
-        setResultImage(result);
       } else {
         console.error("No result data received from API");
         alert("No result data received from the API");
@@ -593,7 +607,36 @@ export default function ObjectRemovalUI() {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Input Section */}
-        <div className="bg-gray-800/30 rounded-2xl overflow-hidden shadow-xl">
+        <div className="bg-gray-800/30 rounded-2xl overflow-hidden shadow-xl relative">
+          {/* Action Buttons - positioned at the top-right corner OUTSIDE the image area */}
+          {originalImage && (
+            <div className="absolute top-2 right-2 flex gap-2 z-40">
+              <button
+                onClick={() => viewFullscreen(originalImage)}
+                className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all"
+                title="View fullscreen"
+              >
+                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setOriginalImage(null);
+                  clearMask();
+                  if (originalFileInputRef.current) originalFileInputRef.current.value = '';
+                }}
+                className="p-2 bg-gray-900/80 hover:bg-red-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all"
+                title="Remove image"
+              >
+                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+          
           <div className="w-full h-[500px] flex items-center justify-center p-4" ref={imageContainerRef}>
             {originalImage ? (
               <div className="relative max-w-full max-h-full">
@@ -604,13 +647,13 @@ export default function ObjectRemovalUI() {
                     style={{ display: 'block' }}
                   />
                   
-                  {/* Drawing canvas - now with proper event handling */}
+                  {/* Drawing canvas */}
                   <canvas 
                     ref={maskCanvasRef}
                     className="absolute top-0 left-0 z-10"
                     style={{ 
                       cursor: 'none',
-                      pointerEvents: 'auto' // Always capture events on the canvas
+                      pointerEvents: 'auto'
                     }}
                     onMouseEnter={() => {
                       setIsCanvasHovered(true);
@@ -625,15 +668,12 @@ export default function ObjectRemovalUI() {
                       const x = e.clientX - rect.left;
                       const y = e.clientY - rect.top;
                       
-                      // Make sure we're not clicking on the action buttons area
-                      if (y > 40) { // Approximate height of the buttons area
-                        startDrawing({
-                          nativeEvent: {
-                            offsetX: x,
-                            offsetY: y
-                          }
-                        });
-                      }
+                      startDrawing({
+                        nativeEvent: {
+                          offsetX: x,
+                          offsetY: y
+                        }
+                      });
                     }}
                     onMouseMove={(e) => {
                       const rect = e.target.getBoundingClientRect();
@@ -656,7 +696,7 @@ export default function ObjectRemovalUI() {
                     onMouseUp={stopDrawing}
                   />
                   
-                  {/* Custom cursor overlay - show when either hovering over canvas or actively drawing */}
+                  {/* Custom cursor overlay */}
                   {originalImage && (isCanvasHovered || isDrawing) && (
                     <div 
                       className={`absolute pointer-events-none z-20 rounded-full border-2 ${isEraser ? 'border-red-400' : 'border-white'}`}
@@ -670,33 +710,6 @@ export default function ObjectRemovalUI() {
                       }}
                     />
                   )}
-                </div>
-                
-                {/* Action Buttons - with proper z-index and pointer-events */}
-                <div className="absolute top-3 right-3 flex gap-2 z-30 pointer-events-auto">
-                  <button
-                    onClick={() => viewFullscreen(originalImage)}
-                    className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all"
-                    title="View fullscreen"
-                  >
-                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                    </svg>
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      setOriginalImage(null);
-                      clearMask();
-                      if (originalFileInputRef.current) originalFileInputRef.current.value = '';
-                    }}
-                    className="p-2 bg-gray-900/80 hover:bg-red-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all"
-                    title="Remove image"
-                  >
-                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
                 </div>
               </div>
             ) : (
@@ -733,109 +746,59 @@ export default function ObjectRemovalUI() {
           </div>
         </div>
 
-        {/* Output Section with Improved CSS Cropping */}
-        <div className="bg-gray-800/30 rounded-2xl overflow-hidden shadow-xl">
+        {/* Output Section - Also need to adjust the result section to match */}
+        <div className="bg-gray-800/30 rounded-2xl overflow-hidden shadow-xl relative">
+          {/* Result Action Buttons - positioned at the top-right corner OUTSIDE the image area */}
+          {resultImage && (
+            <div className="absolute top-2 right-2 flex gap-2 z-40">
+              <button
+                onClick={() => viewFullscreen(resultImage)}
+                className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all"
+                title="View fullscreen"
+              >
+                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              </button>
+              
+              <button
+                onClick={downloadResult}
+                className="p-2 bg-gray-900/80 hover:bg-blue-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all"
+                title="Download image"
+              >
+                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              </button>
+            </div>
+          )}
+          
           <div className="w-full h-[500px] flex items-center justify-center p-4">
             {resultImage ? (
-              <div className="relative max-w-full max-h-full">
-                {/* Use percentages for positioning to handle high-res result images */}
-                <div className="relative" style={{
-                  width: canvasRef.current ? canvasRef.current.width + 'px' : 'auto',
-                  height: canvasRef.current ? canvasRef.current.height + 'px' : 'auto',
-                  overflow: 'hidden'
-                }}>
-                  {paddingMetadata && (
-                    <img 
-                      ref={resultImageRef}
-                      src={resultImage} 
-                      alt="Generated result" 
-                      style={{
-                        position: 'absolute',
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        objectPosition: `center`
-                      }}
-                      onLoad={(e) => {
-                        console.log("Result image loaded, dimensions:", {
-                          width: e.target.naturalWidth,
-                          height: e.target.naturalHeight
-                        });
-                        
-                        // Update positioning with percentage calculations
-                        if (resultImageRef.current && paddingMetadata) {
-                          const { 
-                            originalWidth, originalHeight, 
-                            squareSize, paddingLeftPercent, paddingTopPercent 
-                          } = paddingMetadata;
-                          
-                          const aspectRatio = originalWidth / originalHeight;
-                          const containerWidth = canvasRef.current.width;
-                          const containerHeight = canvasRef.current.height;
-                          
-                          // Determine if result should be cropped by width or height
-                          let scale, offsetX, offsetY;
-                          
-                          if (originalWidth < originalHeight) {
-                            // Portrait image
-                            scale = containerHeight / originalHeight;
-                            const scaledSquareSize = squareSize * scale;
-                            const scaledPaddingLeft = (paddingLeftPercent / 100) * scaledSquareSize;
-                            
-                            resultImageRef.current.style.width = scaledSquareSize + 'px';
-                            resultImageRef.current.style.height = scaledSquareSize + 'px';
-                            resultImageRef.current.style.left = -scaledPaddingLeft + 'px';
-                            resultImageRef.current.style.top = '0';
-                          } else {
-                            // Landscape image
-                            scale = containerWidth / originalWidth;
-                            const scaledSquareSize = squareSize * scale;
-                            const scaledPaddingTop = (paddingTopPercent / 100) * scaledSquareSize;
-                            
-                            resultImageRef.current.style.width = scaledSquareSize + 'px';
-                            resultImageRef.current.style.height = scaledSquareSize + 'px';
-                            resultImageRef.current.style.left = '0';
-                            resultImageRef.current.style.top = -scaledPaddingTop + 'px';
-                          }
-                          
-                          console.log("Applied result image positioning:", {
-                            width: resultImageRef.current.style.width,
-                            height: resultImageRef.current.style.height,
-                            left: resultImageRef.current.style.left,
-                            top: resultImageRef.current.style.top
-                          });
-                        }
-                      }}
-                      onError={(e) => {
-                        console.error("Error loading result image:", e);
-                        alert("Failed to load result image. The URL might be invalid.");
-                      }}
-                    />
-                  )}
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="absolute top-3 right-3 flex gap-2">
-                  <button
-                    onClick={() => viewFullscreen(resultImage)}
-                    className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all"
-                    title="View fullscreen (full square result)"
-                  >
-                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                    </svg>
-                  </button>
-                  
-                  <button
-                    onClick={downloadResult}
-                    className="p-2 bg-gray-900/80 hover:bg-blue-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all"
-                    title="Download image (full square result)"
-                  >
-                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                  </button>
-                </div>
+              <div className="relative max-w-full max-h-full" style={{
+                width: originalDimensions ? `${originalDimensions.width}px` : 'auto',
+                height: originalDimensions ? `${originalDimensions.height}px` : 'auto'
+              }}>
+                <img 
+                  ref={resultImageRef}
+                  src={resultImage} 
+                  alt="Generated result" 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain'
+                  }}
+                  onLoad={(e) => {
+                    console.log("Result image loaded, dimensions:", {
+                      width: e.target.naturalWidth,
+                      height: e.target.naturalHeight
+                    });
+                  }}
+                  onError={(e) => {
+                    console.error("Error loading result image:", e);
+                    alert("Failed to load result image. The URL might be invalid.");
+                  }}
+                />
               </div>
             ) : (
               <div className="w-full h-full flex items-center justify-center rounded-xl border-2 border-dashed border-gray-600">

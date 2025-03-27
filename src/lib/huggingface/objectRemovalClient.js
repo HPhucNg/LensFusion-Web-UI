@@ -15,8 +15,8 @@ async function dataURLToFile(dataURL, fileName) {
   const blob = await res.blob();
   return new File([blob], fileName, { type: blob.type });
 }
-
-// Helper function to convert a blob to a base64 data URL using Node.js Buffer
+ 
+// convert a blob to a base64 data URL using Node.js Buffer
 async function blobToBase64(blob) {
   const arrayBuffer = await blob.arrayBuffer();
   const base64String = Buffer.from(arrayBuffer).toString('base64');
