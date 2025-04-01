@@ -8,60 +8,110 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-import Image from 'next/image';  // Import Image component from next/image
-import { auth, db } from '@/firebase/FirebaseConfig'; // Firebase config import
+import Image from 'next/image'; 
+import { auth, db } from '@/firebase/FirebaseConfig'; 
 import { collection, addDoc, doc, updateDoc, getDoc, getDocs, deleteDoc } from 'firebase/firestore';
 
-function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, updateImageStatus, imageStatus }) {
+function Modal({ closeModal, add_community, selectedImage, initialStatus, setImageStatus }) {
     const [pinDetails, setPinDetails] = useState({
-        created_by: createdBy,
+        created_by: '',
         title: '',
         prompt: selectedImage?.prompt || 'No prompt available',
         img_data: selectedImage?.img_data,
         category: '',  // new category field in pin details state
     });
-    
+    //console.log(selectedImage.communityPostId);
+    const [userData, setUserData] = useState({ created_by: '', userPic: '' });
+
     const [isEditing, setIsEditing] = useState(false); // is editing an existing post
-
     // check if the post is being managed or new (based on communityPost flag)
-    const headingText = imageStatus ? "Manage Post to Community" : "Post to Community";
+    const headingText = initialStatus ? "Manage Post to Community" : "Post to Community";
+    const [isLoading, setIsLoading] = useState(false);
+    const [communityPostId, setCommunityPostId] = useState(selectedImage?.communityPostId);
 
-    // Fetch post data if communityPost is true
+    // first fetch user data from 'users' collection using selectedImage.userID (userId)
     useEffect(() => {
-        const fetchCommunityPost = async () => {
-            if (imageStatus) {
-                const communityPostRef = doc(db, 'community', selectedImage.communityPostId);
-                const communityPostDoc = await getDoc(communityPostRef);
-                const userId = communityPostDoc.data().userId;
-                
-                if (communityPostDoc.exists()) {
-                    const communityPostData = communityPostDoc.data();
-                    setPinDetails({
-                        created_by: createdBy,
-                        title: communityPostData.title || '',
-                        prompt: communityPostData.prompt || '',
-                        img_data: selectedImage.img_data, // keep the selected image data
-                        category: communityPostData.category || '',  // keep the category data
-                    });
-                    setIsEditing(true); // editing mode
+        const fetchUserData = async () => {
+            if (selectedImage?.userID) {
+                setIsLoading(true);
+                try {
+                    const userRef = doc(db, 'users', selectedImage.userID);  // fetch by ID from 'users' collection
+                    const userDoc = await getDoc(userRef);
+
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        setUserData({
+                            created_by: userData.name || 'Unknown',  // set the user's name
+                            userPic: userData.photoURL || '',  // set the user's photoURL
+                        });
+                    } else {
+                        console.log("User not found.");
+                    }
+                } catch (error) {
+                    console.error("Error fetching user data: ", error);
                 }
+                setIsLoading(false);
             }
         };
 
-        fetchCommunityPost();
-    }, [selectedImage, createdBy]);
+        fetchUserData();
+    }, [selectedImage]);
+
+    // then fetch community post data after user data is fetched // fetch post data if communityPost is true
+    useEffect(() => {
+        const fetchCommunityPost = async () => {
+            if (selectedImage?.uid) {
+                setIsLoading(true);
+                try {
+                    const userImageRef = doc(db, 'user_images', selectedImage.uid);
+                    const userImageDoc = await getDoc(userImageRef);
+
+                    if (userImageDoc.exists()) {
+                        const userImageData = userImageDoc.data();
+                        setCommunityPostId(userImageData.communityPostId);
+
+                        if (userImageData.communityPostId) {
+                            //console.log("heree", userImageData.communityPostId)
+                            //console.log("post", communityPostId)
+                            const communityPostRef = doc(db, 'community', userImageData.communityPostId);
+                            const communityPostDoc = await getDoc(communityPostRef);
+                            if (communityPostDoc.exists()) {
+                                const communityPostData = communityPostDoc.data();
+                                setPinDetails({
+                                    created_by: communityPostData.created_by || '',
+                                    title: communityPostData.title || '',
+                                    prompt: communityPostData.prompt || '',
+                                    img_data: communityPostData.img_data || selectedImage?.img_data,
+                                    category: communityPostData.category || '',
+                                });
+                                setIsEditing(true);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error fetching community post data: ", error);
+                }
+                setIsLoading(false);
+            }
+        };
+
+        if (userData.created_by) {  // only fetch community post once user data is set
+            fetchCommunityPost();
+        }
+    }, [userData, selectedImage]);
+
 
     const save_community = async () => {
         const users_data = {
             ...pinDetails,
-            title: document.querySelector('#community_title').value,
+            
         };
 
         try {
             // communityPost is false, save as a new post
-            if (!imageStatus) {
+            if (!initialStatus) {
                 const communityRef = await addDoc(collection(db, 'community'), {
-                    created_by: users_data.created_by,
+                    created_by: userData.created_by,
                     title: users_data.title || 'Untitled',
                     prompt: users_data.prompt || 'No prompt available',
                     img_data: users_data.img_data,
@@ -79,18 +129,21 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
                     communityPost: true,  
                     communityPostId: communityRef.id, 
                 });
+                setCommunityPostId(communityRef.id);
+                setImageStatus(true);
                 // update the image status in the parent component
-                updateImageStatus(true);  
                 add_community(users_data); 
                 closeModal(); 
+
             } else {
                 // if communityPost is true, update the existing post
-                const communityPostRef = doc(db, 'community', selectedImage.communityPostId);
+                const communityPostRef = doc(db, 'community', communityPostId);
+                console.log("editing", communityPostId)
                 await updateDoc(communityPostRef, {
                     title: users_data.title || 'Untitled',
                     category: users_data.category,  // update the category when editing the post
                 });
-                console.log('Community Post updated with ID: ', selectedImage.communityPostId);
+                console.log('Community Post updated with ID: ', communityPostId);
                 add_community(users_data); 
                 closeModal();
             }
@@ -128,8 +181,9 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
                 communityPostId: null, // clear the reference to the community post
             });
             // update the parent component's state
-            updateImageStatus(false); // update status to "not posted"
+            
             alert("Image removed from community successfully!");
+            setImageStatus(false);
             closeModal(); 
         } catch (error) {
             console.error("Error removing image from community: ", error);
@@ -159,7 +213,7 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
                     </div>
                     <h1 className="text-2xl font-extrabold flex-grow text-center">{headingText}</h1>
                     {/* show the Remove from Community button only if the image is in the community */}
-                    {imageStatus && (
+                    {initialStatus && (
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button className="w-8 transform hover:scale-90">
@@ -201,8 +255,8 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
                             />
                         </div>
                         <div className=' flex items-center font-bold text-md'>
-                            {userPic ? (
-                                <img src={userPic} alt="User Photo" className="w-10 h-10 rounded-full mr-2" />
+                            {userData.userPic ? (
+                                <img src={userData.userPic} alt="User Photo" className="w-10 h-10 rounded-full mr-2" />
                             ) : (
                                 <div className="w-10 h-10 bg-gray-500 rounded-full mr-2"></div>
                             )}
@@ -232,7 +286,7 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
                                 onClick={save_community} 
                                 className="bg-[#8d5aed] w-full sm:w-[200px] h-[40px] rounded-[22px] hover:bg-[#b69aef] transition-colors duration-300"
                             >
-                                {imageStatus ? 'Update' : 'Publish'}
+                                {initialStatus ? 'Update' : 'Publish'}
                             </button>
 
                         </div>

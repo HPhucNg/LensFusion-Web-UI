@@ -1,21 +1,44 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import '../styles/modal_styles.css';
-import Image from 'next/image';  // Import Image component from next/image
-import { getFirestore, collection, doc, deleteDoc, query, where, getDocs} from 'firebase/firestore';
+import Image from 'next/image';  
+import { getFirestore, collection, doc, deleteDoc, query, where, getDocs, getDoc} from 'firebase/firestore';
 import { getStorage, ref, deleteObject, getDownloadURL } from 'firebase/storage';
 import Modal from '@/components/Modal';
 import { db, storage } from '@/firebase/FirebaseConfig';
 import { saveAs } from 'file-saver';
 
 
-function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, updateImageStatus, onDelete}) {  // Accept the 'image' prop
+function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' prop
     /*const [showModalPin, setShowModalPin] = useState(false);*/
-    const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false); // State to control the community modal visibility
+    const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false); // control the community modal visibility
     const [selectedFormat, setSelectedFormat] = useState('png');
     const [selectedQuality, setSelectedQuality] = useState('high');
     const [isDownloading, setIsDownloading] = useState(false);
     const [conversionProgress, setConversionProgress] = useState(0);
+    const [imageStatus, setImageStatus] = useState(image?.communityPost);
+
+     useEffect(() => {
+            const fetchUserImageData = async () => {
+                if (image) {
+                    try {
+                        const userImageRef = doc(db, 'user_images', image.uid);  // fetch user by ID from 'users' collection
+                        const userDoc = await getDoc(userImageRef);
+    
+                        if (userDoc.exists()) {
+                            const userImageData = userDoc.data();
+                            setImageStatus(userImageData.communityPost)
+                        } else {
+                            console.log("User Image not found.");
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user data: ", error);
+                    }
+                }
+            };
+    
+            fetchUserImageData();
+        }, [image]);
 
     // Handle download with format and quality
     const handleDownload = async () => {
@@ -347,7 +370,7 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
                         </button>
                         <button
                             onClick={handleDeleteClick}
-                            className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
+                            className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-red-500 hover:bg-red-300 text-white transition-all duration-100"
                         >
                             Delete
                         </button>
@@ -358,11 +381,9 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
             <Modal 
                 closeModal={closeCommunityModal} 
                 add_community={() => {}}
-                selectedImage={image} 
-                userPic={userPic}
-                createdBy={createdBy}
-                imageStatus={imageStatus}
-                updateImageStatus={updateImageStatus} 
+                selectedImage={image}
+                initialStatus={imageStatus} 
+                setImageStatus={setImageStatus}
             />)}
         </div>
     );

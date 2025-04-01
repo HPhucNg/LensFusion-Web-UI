@@ -139,7 +139,8 @@ function Page() {
   const handleImageClick = (image, index) => {
     setSelectedImage(image);
     setCurrentIndex(index); 
-    setShowModal(true);  
+    setShowModal(true); 
+    {/* comment out below for in-place */} 
     if (modalRef.current) {
       modalRef.current.scrollIntoView({
         behavior: 'smooth', // smooth scroll to modal
@@ -168,19 +169,16 @@ function Page() {
   return (
      <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black font-sans relative overflow-hidden">
         <Navbar />
-        <div className='flex justify-center mb-6' ref={modalRef}>
-          {showModal && (
-          <ViewModal
-              closeModal={closeModal}
-              image={selectedImage}
-              posts={posts} 
-              currentIndex={currentIndex} 
-              setCurrentIndex={setCurrentIndex} 
-          />
-        )}
-        </div>
         <div className='flex justify-center pb-4'>
           <div className="flex flex-wrap justify-center gap-4 rounded-full bg-[var(--card-background)] p-2">
+            {/* all images button */}
+            <button
+                className={cn('px-6 py-2 text-base sm:text-lg transition-all rounded-full relative', 
+                  selectedCategory === null ? 'bg-[#EBDDF7] text-black' : 'text-gray-400 hover:text-white')}
+                onClick={() => setSelectedCategory(null)} // all posts
+              >
+                All Images
+              </button>
             {/* category buttons */}
             {categories.map((category) => (
               <button
@@ -192,15 +190,20 @@ function Page() {
                 {category.label}
               </button>
             ))}
-            {/* all images button */}
-              <button
-                className={cn('px-6 py-2 text-base sm:text-lg transition-all rounded-full relative', 
-                  selectedCategory === null ? 'bg-[#EBDDF7] text-black' : 'text-gray-400 hover:text-white')}
-                onClick={() => setSelectedCategory(null)} // all posts
-              >
-                All Images
-              </button>
+            
             </div>
+        </div>
+        {/* modal scroll to top */}
+        <div className='flex justify-center mb-6' ref={modalRef}>
+          {showModal && (
+          <ViewModal
+              closeModal={closeModal}
+              image={selectedImage}
+              posts={posts} 
+              currentIndex={currentIndex} 
+              setCurrentIndex={setCurrentIndex} 
+          />
+        )}
         </div>
         
         <div className="flex justify-center px-4 w-full"> {/* to center */}
@@ -215,6 +218,20 @@ function Page() {
             </Masonry>
           </div>
         </div>
+
+        {/* open modal in-place instead of scroll to top */}
+        {/*  {showModal && (
+            <div className='fixed inset-0 bg-black bg-opacity-90 z-50 flex justify-center items-center'>
+              <ViewModal
+                closeModal={closeModal}
+                image={selectedImage}
+                posts={posts} 
+                currentIndex={currentIndex} 
+                setCurrentIndex={setCurrentIndex} 
+              />
+            </div>
+        )}*/}
+       
         
         {/*!loading && !fetchingMore && (
           <button onClick={() => fetchMorePosts()} className="btn__default">More Posts</button>
