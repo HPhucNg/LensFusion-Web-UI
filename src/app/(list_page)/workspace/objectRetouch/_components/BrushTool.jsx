@@ -160,7 +160,7 @@ const BrushTool = ({
       //update to pass to callback function
       if (onMaskCreated) {
         const imageData = imageCanvasRef.current.toDataURL('image/png', 1.0);
-        const emptyMask = maskCanvasRef.current.toDataURL('mask/png', 1.0);
+        const emptyMask = maskCanvasRef.current.toDataURL('image/png', 1.0);
         onMaskCreated({ imageData, maskData: emptyMask });
       }
     }
