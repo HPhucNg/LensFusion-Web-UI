@@ -1,5 +1,5 @@
 /* 
-  reused code from /backgroundgeneration/_components/ImageContainer
+  Modified ImageContainer to handle external Hugging Face URLs
 */ 
 import React from 'react';
 import Image from 'next/image';
@@ -16,7 +16,7 @@ export const ImageContainer = ({
 
   toggleBrushMode,
   isBrushMode,
-  showBrushToggle
+  showBrushToggle,
 }) => (
   <div className="group relative flex-1 rounded-2xl p-1 shadow-xl hover:shadow-2xl transition-all duration-300">
     <div className="h-full w-full flex flex-col items-center justify-center rounded-xl backdrop-blur-sm">
@@ -25,13 +25,22 @@ export const ImageContainer = ({
         {imageSrc ? (
           <div className="space-y-4 w-full">
             <div className="relative w-full h-[500px] rounded-lg overflow-hidden">
-              <Image
-                src={imageSrc}
-                alt={altText}
-                fill
-                className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105"
-                style={{ imageRendering: 'auto' }}
-              />
+              {imageSrc.includes('hf.space') ? (
+                <img
+                  src={imageSrc}
+                  alt={altText}
+                  className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105 w-full h-full"
+                  style={{ imageRendering: 'auto' }}
+                />
+              ) : (
+                <Image
+                  src={imageSrc}
+                  alt={altText}
+                  fill
+                  className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105"
+                  style={{ imageRendering: 'auto' }}
+                />
+              )}
             </div>
             
             {/* Action Buttons and Download Options */}

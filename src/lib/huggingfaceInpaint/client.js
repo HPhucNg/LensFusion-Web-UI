@@ -45,6 +45,35 @@ export async function processImage(imageFile, params = {}) {
       processParams
     );
         
+    //url format
+    let imageUrl = null;
+    if (Array.isArray(result.data) && 
+         result.data.length > 0 && 
+         Array.isArray(result.data[0]) && 
+         result.data[0].length > 0 && 
+         result.data[0][0]?.image) {
+      imageUrl = result.data[0][0].image.url;
+    }
+    
+    if (imageUrl) {
+      const response = await fetch(imageUrl, {
+        headers: {
+          'Authorization': `Bearer ${HF_TOKEN}`
+        }
+      });
+      
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        const base64Image = Buffer.from(arrayBuffer).toString('base64');
+        const contentType = response.headers.get('content-type') || 'image/png';
+        const dataUrl = `data:${contentType};base64,${base64Image}`;
+        
+        return [
+          [{ image: { url: dataUrl } }],
+          result.data[1]
+        ];
+      }
+    }
     return result.data;
   } catch (error) {
     console.error("Error in processImage:", error);

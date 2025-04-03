@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useCallback, useRef } from "react";
 import { processImage } from '@/lib/huggingfaceInpaint/client';
 import { defaultParams, parameterDefinitions } from '@/lib/huggingfaceInpaint/clientConfig';
 import { useClickAway } from 'react-use';
+import { saveAs } from 'file-saver';
 
 
 import { GenerateButton } from '../../backgroundgeneration/_components/GenerateButton';
@@ -28,6 +29,7 @@ export default function Inpaint() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState(null);
   const [webpImage, setWebpImage] = useState(null);
+  const [preprocessedImage, setPreprocessedImage] = useState(null);
 
   //brush Tool states
   const [isBrushMode, setIsBrushMode] = useState(false);
@@ -48,23 +50,13 @@ export default function Inpaint() {
   });
 
   //preview uploaded input image
-  const createInputPreview = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      
-      const img = new Image();
-      const objectUrl = URL.createObjectURL(file);
-      const reader = new FileReader();
-
-      img.src = objectUrl;
-      
-      reader.onload = () => {
-        setInputPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const createInputPreview = useCallback((file) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setInputPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }, []);
 
   // Generates a random seed between 1 and 100000
   const generateRandomSeed = () => {
@@ -80,36 +72,45 @@ export default function Inpaint() {
     }));
   };
 
-  //modify the url to fit 
-  const blobToDataURL = (blob) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
+  //image uploaded
+  const handleImageUpload = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      createInputPreview(file);
 
+      //reset when new images uploaded
+      setMaskData(null);
+      setProcessableImageData(null);
+    }
+  }, [createInputPreview]);
+
+  
   //handle generate image
   const handleGenerate = async () => {
-    if (!selectedFile && !inputPreview) {
+    if (!selectedFile) {
       setError("Please upload an image first");
       return;
     }
-    
+
+    if (!maskData) {
+      setError("Please create a mask");
+      return;
+    }
+
     // Reset states
     setIsProcessing(true);
     setError(null);
     setOutputImage(null);
-    setOutputBlob(null);
+    setPreprocessedImage(null);
     setWebpImage(null);
     setStatus('Processing your image...');
-  
+
     try {
       setStatus("Processing with Hugging Face...");
       const processParams = { ...params };
       //if the image is masked then create URL for both image and mask file
-      if (isBrushMode && maskData && processableImageData) {
+      if (maskData && processableImageData) {
         const backgroundImage = dataURLtoFile(processableImageData, 'background.png');
         const maskImage = dataURLtoFile(maskData, 'mask.png');
         
@@ -120,67 +121,55 @@ export default function Inpaint() {
         };
       }
       const fileToProcess = selectedFile || (inputPreview ? dataURLtoFile(inputPreview, 'input.png') : null);
+
+      processParams.responseType = 'base64';
       
       const result = await processImage(fileToProcess, processParams);
     
       if (result && typeof result === 'object') {
 
         //if no base64 data, handle the response
-        if (Array.isArray(result) && result.length >= 2) {
+        if (Array.isArray(result) && result.length >= 1) {
           const [imageArray] = result;
           
           if (Array.isArray(imageArray) && imageArray.length > 0) {
             const firstImage = imageArray[0];
-            
+
             if (firstImage && firstImage.image && firstImage.image.base64) {
               const base64Data = firstImage.image.base64;
               // Convert base64 to blob for download - fixes the error (no image data)
-              const byteString = atob(base64Data.split(',')[1]);
-              const mimeType = base64Data.split(',')[0].split(':')[1].split(';')[0];
-              const ab = new ArrayBuffer(byteString.length);
-              const ia = new Uint8Array(ab);
-              for (let i = 0; i < byteString.length; i++) {
-                ia[i] = byteString.charCodeAt(i);
+              try {
+                const byteString = atob(base64Data.split(',')[1]);
+                const mimeType = base64Data.split(',')[0].split(':')[1].split(';')[0];
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                  ia[i] = byteString.charCodeAt(i);
+                }
+                const blob = new Blob([ab], { type: mimeType });
+                setOutputBlob(blob);
+                setOutputImage(base64Data);
+                setStatus("Processing complete!");
+                return;
+              } catch (e) {
+                console.error("Error processing base64:", e);
               }
-              const blob = new Blob([ab], { type: mimeType });
-              setOutputBlob(blob);
-              setOutputImage(base64Data);
-              setStatus("Processing complete!");
-              return;
             }
             //if the first one dont work, that means URL is temporary - retreieve image from temporary URL
             if (firstImage && firstImage.image && firstImage.image.url) {
-              try {
-                let imageUrl = firstImage.image.url;
-                if (imageUrl.startsWith('/')) {
-                  const baseUrl = new URL(window.location.href);
-                  imageUrl = `${baseUrl.origin}${imageUrl}`;
-                }
-                //added to avoid caching issues
-                const cacheBuster = `?t=${Date.now()}`;
-                const urlWithCacheBuster = `${imageUrl}${imageUrl.includes('?') ? '&' : ''}${cacheBuster}`;
-                
-                const response = await fetch(urlWithCacheBuster, {
-                  credentials: 'include',
-                  mode: 'cors',
-                  headers: {
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
-                  }
-                });
-                
-                const imageBlob = await response.blob();
-                const dataUrl = await blobToDataURL(imageBlob);
-                
-                setOutputBlob(imageBlob);
-                setOutputImage(dataUrl);
-                setStatus("Processing complete!");
-              } catch (fetchError) {
-                console.error("Error fetching result image:", fetchError);
-              }
-            } else {
-              setError("Unable to extract usable image data from the API response");
+              setOutputImage(firstImage.image.url);
+              setStatus("Processing complete! (URL mode)");
+              return;
             }
+            
+            if (firstImage && firstImage.image) {
+              console.log("Using direct image data");
+              setOutputImage(firstImage.image);
+              setStatus("Processing complete! (Direct mode)");
+              return;
+            }
+            
+            setError("Unable to extract usable image data from the API response");
           } else {
             setError("No image data in response");
           }
@@ -191,6 +180,7 @@ export default function Inpaint() {
         setError("Invalid response from API");
       }
     } catch (error) {
+      console.error("Generate error:", error);
       setError(error.message || "Failed to process image");
       setStatus("Processing failed");
     } finally {
@@ -233,13 +223,14 @@ export default function Inpaint() {
       return null;
     }
   };
-  
+
   //clear image from input
   const clearImage = () => {
     setSelectedFile(null);
     setInputPreview(null);
     setOutputImage(null);
-    setOutputBlob(null);
+    //setOutputBlob(null);
+    setPreprocessedImage(null);
     setMaskData(null);
     setProcessableImageData(null);
     setWebpImage(null);
@@ -253,14 +244,16 @@ export default function Inpaint() {
   
   //handle download of generated image
   const handleDownload = () => {
-    const url = URL.createObjectURL(outputBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'generated-image.png'; 
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (outputBlob) {
+      const url = URL.createObjectURL(outputBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'generated-image.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   };
 
   //fullscreen when open image
@@ -325,7 +318,7 @@ export default function Inpaint() {
           <GenerateButton
             handleGenerate={handleGenerate}
             isProcessing={isProcessing}
-            selectedFile={selectedFile || inputPreview}
+            selectedFile={selectedFile}
           />
         </div>
       </div>
@@ -358,7 +351,7 @@ export default function Inpaint() {
                 altText="Input preview"
                 onClear={clearImage}
                 onFullscreen={() => openFullscreen(inputPreview)}
-                uploadHandler={createInputPreview}
+                uploadHandler={handleImageUpload}
                 isInput={true}
                 toggleBrushMode={toggleBrushMode}
                 isBrushMode={isBrushMode}
@@ -368,7 +361,7 @@ export default function Inpaint() {
             <ImageContainer
               imageSrc={outputImage}
               altText="Generated output"
-              onDownload={handleDownload}
+              onDownload={() => handleDownload(outputImage)}
               onFullscreen={() => openFullscreen(outputImage)}
               isInput={false}
             />
