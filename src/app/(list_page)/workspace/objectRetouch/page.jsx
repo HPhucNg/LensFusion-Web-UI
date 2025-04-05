@@ -9,7 +9,7 @@ export default function Home() {
       <BackButton /> {/* Use the BackButton component */}
 
       <h1 className="text-2xl font-bold mb-6">
-        Object Retouch with HuggingFace
+        Object Retouch Tool
       </h1>
       <Inpaint />
     </main>

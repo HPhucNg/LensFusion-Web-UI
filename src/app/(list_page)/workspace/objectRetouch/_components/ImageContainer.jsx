@@ -13,10 +13,6 @@ export const ImageContainer = ({
   onFullscreen, 
   uploadHandler,
   isInput,
-
-  toggleBrushMode,
-  isBrushMode,
-  showBrushToggle,
 }) => (
   <div className="group relative flex-1 rounded-2xl p-1 shadow-xl hover:shadow-2xl transition-all duration-300">
     <div className="h-full w-full flex flex-col items-center justify-center rounded-xl backdrop-blur-sm">
@@ -25,50 +21,28 @@ export const ImageContainer = ({
         {imageSrc ? (
           <div className="space-y-4 w-full">
             <div className="relative w-full h-[500px] rounded-lg overflow-hidden">
-              {imageSrc.includes('hf.space') ? (
-                <img
-                  src={imageSrc}
-                  alt={altText}
-                  className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105 w-full h-full"
-                  style={{ imageRendering: 'auto' }}
-                />
-              ) : (
-                <Image
-                  src={imageSrc}
-                  alt={altText}
-                  fill
-                  className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105"
-                  style={{ imageRendering: 'auto' }}
-                />
-              )}
-            </div>
-            
-            {/* Action Buttons and Download Options */}
-            <div className="flex flex-col gap-4">
-              <div className="flex justify-end gap-2">
-                {/* Brush button -  show for input image when showBrushToggle is true */}
-                {isInput && showBrushToggle && (
+              <Image
+                src={imageSrc}
+                alt={altText}
+                fill
+                className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105"
+                style={{ imageRendering: 'auto' }}
+              />
+              
+              {/* Overlay Controls - positioned absolute on top of the image */}
+              <div className="absolute top-4 right-4 flex gap-2 z-10">
+                {onFullscreen && (
                   <button
-                    onClick={toggleBrushMode}
-                    className={`p-2 ${isBrushMode ? 'bg-purple-700/90 hover:bg-purple-600/90' : 'bg-gray-900/80 hover:bg-gray-700/90'} rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110`}
-                    title={isBrushMode ? "Exit brush mode" : "Enter brush mode"}
+                    onClick={onFullscreen}
+                    className="p-2 bg-gray-900/80 hover:bg-blue-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                    title="View fullscreen"
                   >
                     <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
                     </svg>
                   </button>
                 )}
-                <button
-                  onClick={onFullscreen}
-                  className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
-                  title="View fullscreen"
-                >
-                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                  </svg>
-                </button>
-                
-                {isInput && (
+                {isInput && onClear && (
                   <button
                     onClick={onClear}
                     className="p-2 bg-gray-900/80 hover:bg-red-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
@@ -80,12 +54,14 @@ export const ImageContainer = ({
                   </button>
                 )}
               </div>
-
-              {/* Download Options */}
-              {!isInput && (
-                <DownloadOptions imageUrl={imageSrc} filename="generated-image" />
-              )}
             </div>
+
+            {/* Download Options */}
+            {!isInput && (
+              <div className="mt-4">
+                <DownloadOptions imageUrl={imageSrc} filename="generated-image" />
+              </div>
+            )}
           </div>
         ) : (
           <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-gray-600 hover:border-purple-900 transition-all duration-300">

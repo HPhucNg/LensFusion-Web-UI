@@ -1,34 +1,79 @@
 "use client";
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { setupCanvas, renderImage } from './CanvasSetup'
 
-const BrushTool = ({ 
+const BrushTool = forwardRef(({ 
   inputImage,
   onMaskCreated,
   initialSize = 25,
   initialColor = '#ffffff',
-  maxWidth = 800,
-  maxHeight = 600
-}) => {
+  maxWidth = 1000,
+  maxHeight = 700,
+  isEraser = false
+},ref) => {
   const [brushColor] = useState(initialColor);
   const [brushSize, setBrushSize] = useState(initialSize);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
-  const [containerStyle, setContainerStyle] = useState({ width: '100%', height: 'auto'});
-  
+  const [canvasSize, setCanvasSize] = useState({ width: 1000, height: 700 });
+  const [isLoading, setIsLoading] = useState(false);
   const imageCanvasRef = useRef(null);
   const maskCanvasRef = useRef(null);
   const containerRef = useRef(null);
+  const imageObjRef = useRef(null);
+  const lastPositionRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    setBrushSize(initialSize);
+  }, [initialSize]);
+
+  //used with forwardRef - to clear the mask
+  useImperativeHandle(ref, () => ({
+    resetCanvas: () => clearMask()
+  }));
+
+  //loads and render of an image 
+  useEffect(() => {
+    if (!inputImage) return;
+    
+    setIsLoading(true);
+    const img = new Image();
+    
+    img.onload = () => {
+      imageObjRef.current = img;
+      const dimensions = setupCanvas(img, containerRef.current, { maxWidth, maxHeight });
+      
+      if (renderImage(img, dimensions, { imageCanvasRef, maskCanvasRef })) {
+        setCanvasSize(dimensions);
+        setIsLoading(false);
+      }
+    };
+    
+    img.onerror = () => {
+      console.error("Failed to load image");
+      setIsLoading(false);
+    };
+    
+    img.src = inputImage;
+  }, [inputImage, maxWidth, maxHeight]);
+
+
   
   useEffect(() => {
     const handleResize = () => {
-      if (inputImage) {
+      if (inputImage && imageObjRef.current && !isLoading) {
         updateCanvasSize();
       }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [inputImage]);
+  }, [inputImage, isLoading]);
+
+  useEffect(() => {
+    if (maskCanvasRef.current) {
+      maskCanvasRef.current.style.cursor = isEraser ? 'pointer' : 'pointer';
+    }
+  }, [isEraser]);
 
   //scale image to fit
   const calculateAspectRatioFit = (oriWidth, oriHeight, maxWidth, maxHeight) => {
@@ -50,64 +95,38 @@ const BrushTool = ({
   
   //function to update canvas size based on container and window size
   const updateCanvasSize = () => {
-    if (!inputImage) return;
+    if (!imageObjRef.current) return;
     
-    const img = new Image();
-    img.onload = () => {
-      let availableWidth = 0;
-      
-      if (containerRef.current && containerRef.current.parentElement) {
-        const parentWidth = containerRef.current.parentElement.clientWidth;
-        availableWidth = parentWidth * 0.9;
-      } else {
-        availableWidth = Math.min(maxWidth, window.innerWidth * 0.85);
-      }
-      
-      const availableHeight = Math.min(maxHeight, window.innerHeight * 0.5);
-      
-      const newSize = calculateAspectRatioFit(
-        img.width,
-        img.height,
-        availableWidth,
-        availableHeight
-      );
-      
-      setCanvasSize(newSize);
-      setContainerStyle({
-        width: `${newSize.width}px`,
-        height: `${newSize.height}px`,
-        maxWidth: '100%'
-      });
-      
-      //re-render the image on the canvas with new dimensions
-      if (imageCanvasRef.current) {
-        const ctx = imageCanvasRef.current.getContext('2d');
-        ctx.clearRect(0, 0, newSize.width, newSize.height);
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, newSize.width, newSize.height);
-      }
-      
-      //clear and resize the mask canvas
-      if (maskCanvasRef.current) {
-        const ctx = maskCanvasRef.current.getContext('2d');
-        ctx.clearRect(0, 0, newSize.width, newSize.height);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0)';
-        ctx.fillRect(0, 0, newSize.width, newSize.height);
-      }
-    };
-    img.src = inputImage;
+    const dimensions = setupCanvas(imageObjRef.current, containerRef.current, { maxWidth, maxHeight });
+    if (renderImage(imageObjRef.current, dimensions, { imageCanvasRef, maskCanvasRef })) {
+      setCanvasSize(dimensions);
+    }
   };
   
-  //gets the image to resize when it is in brush mode
-  useEffect(() => {
-    if (inputImage) {
-      updateCanvasSize();
+  const getCanvasCoordinates = (e, canvas) => {
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+    
+    if (e.type.includes('touch')) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
     }
-  }, [inputImage]);
+    
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  };  
   
   const startDrawing = (e) => {
+    if (!maskCanvasRef.current) return;
     setIsDrawing(true);
+    const canvas = maskCanvasRef.current;
+    const coords = getCanvasCoordinates(e, canvas);
+    lastPositionRef.current = coords;
     draw(e);
   };
   
@@ -135,10 +154,17 @@ const BrushTool = ({
     const canvas = maskCanvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    //cursor position on canvas
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-    
+    const coords = getCanvasCoordinates(e, canvas);
+
+    if (isEraser) {
+      //eraser mode
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.strokeStyle = 'rgba(0,0,0,0)';
+    } else {
+      //brush mode
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = brushColor;
+    }
     //brush properties
     ctx.fillStyle = brushColor;
     ctx.strokeStyle = brushColor;
@@ -147,8 +173,9 @@ const BrushTool = ({
     ctx.lineCap = 'round';
     
     ctx.beginPath();
-    ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+    ctx.arc(coords.x, coords.y, brushSize / 2, 0, Math.PI * 2);
     ctx.fill();
+    lastPositionRef.current = coords;
   };
   
   //removes all drawing (mask) from canvas 
@@ -167,60 +194,42 @@ const BrushTool = ({
   };
   
   return (
-    <div className="brush-tool-container w-full overflow-hidden">
-      <div className="flex flex-col space-y-4">
-        <div className="rounded-lg">
-          <h3 className="text-lg font-semibold mb-3">Brush Tool</h3>
-          <div className="mb-3">
-            <label className="block text-sm mb-1">Brush Size: {brushSize}px</label>
-            <input
-              type="range"
-              min="1"
-              max="50"
-              value={brushSize}
-              onChange={(e) => setBrushSize(parseInt(e.target.value))}
-              className="w-full"
-            />
-          </div>
-          <button 
-            onClick={clearMask}
-            className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded-md text-white"
-          >
-            Clear Mask
-          </button>
-        </div>
-        
-        <div className="w-full flex justify-center">
-          <div 
-            ref={containerRef}
-            className="relative rounded overflow-hidden" 
-            style={containerStyle}
-          >
-            <canvas
-              ref={imageCanvasRef}
-              width={canvasSize.width}
-              height={canvasSize.height}
-              className="absolute top-0 left-0"
-            />
-            <canvas
-              ref={maskCanvasRef}
-              width={canvasSize.width}
-              height={canvasSize.height}
-              className="absolute top-0 left-0 cursor-pointer"
-              onMouseDown={startDrawing}
-              onTouchStart={startDrawing}
-              onMouseMove={draw}
-              onTouchMove={draw}
-              onMouseUp={stopDrawing}
-              onTouchEnd={stopDrawing}
-              onMouseOut={stopDrawing}
-              onTouchCancel={stopDrawing}
-            />
+    <div className="brush-tool-container w-full h-full flex justify-center items-center" ref={containerRef}>
+      {isLoading ? (
+        <div className="h-64 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mx-auto mb-4"></div>
+            <p>Loading...</p>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="relative rounded-md overflow-hidden border-2 border-gray-700" style={{
+          width: canvasSize.width + 'px',
+          height: canvasSize.height + 'px',
+          maxWidth: '100%',
+          maxHeight: '100%'
+        }}>
+          <canvas
+            ref={imageCanvasRef}
+            className="absolute top-0 left-0 w-full h-full"
+          />
+          <canvas
+            ref={maskCanvasRef}
+            className="absolute top-0 left-0 w-full h-full cursor-pointer"
+            onMouseDown={startDrawing}
+            onTouchStart={startDrawing}
+            onMouseMove={draw}
+            onTouchMove={draw}
+            onMouseUp={stopDrawing}
+            onTouchEnd={stopDrawing}
+            onMouseOut={stopDrawing}
+            onTouchCancel={stopDrawing}
+          />
+        </div>
+      )}
     </div>
   );
-};
+});
+
 
 export default BrushTool;

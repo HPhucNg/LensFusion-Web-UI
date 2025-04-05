@@ -6,13 +6,11 @@ import { defaultParams, parameterDefinitions } from '@/lib/huggingfaceInpaint/cl
 import { useClickAway } from 'react-use';
 import { saveAs } from 'file-saver';
 
-
-import { GenerateButton } from '../../backgroundgeneration/_components/GenerateButton';
 import { ImageContainer } from './ImageContainer';
-import { SettingSidebar } from './SettingSidebar';
+import { PromptField } from './PromptField';
 import { FullscreenModal } from '../../backgroundgeneration/_components/FullscreenModal';
-import { MobileMenuButton } from '../../backgroundgeneration/_components/MobileMenuButton';
 import BrushTool from './BrushTool';
+import DrawingTools from './DrawingTools';
 
 export default function Inpaint() {
   //inpainting states
@@ -32,9 +30,13 @@ export default function Inpaint() {
   const [preprocessedImage, setPreprocessedImage] = useState(null);
 
   //brush Tool states
-  const [isBrushMode, setIsBrushMode] = useState(false);
+  const [isBrushMode, setIsBrushMode] = useState(true);
+  const [isEraser, setIsEraser] = useState(false);
+  const [brushSize, setBrushSize] = useState(20); 
   const [maskData, setMaskData] = useState(null);
   const [processableImageData, setProcessableImageData] = useState(null);
+
+  const brushToolRef = useRef(null);
 
   //get mask data
   const handleMaskCreated = ({ imageData, maskData }) => {    
@@ -58,6 +60,19 @@ export default function Inpaint() {
     reader.readAsDataURL(file);
   }, []);
 
+
+  const clearMask = () => {
+    setMaskData(null);
+    setProcessableImageData(null);
+    setError(null);
+    
+    if (brushToolRef.current && typeof brushToolRef.current.resetCanvas === 'function') {
+      brushToolRef.current.resetCanvas();
+    }
+    
+    setStatus("Mask cleared. Draw a new mask to continue.");
+  };
+  
   // Generates a random seed between 1 and 100000
   const generateRandomSeed = () => {
     const randomSeed = Math.floor(Math.random() * 100000) + 1;
@@ -268,104 +283,103 @@ export default function Inpaint() {
     setFullscreenImage(null);
   };
 
-  //brush mode
-  const toggleBrushMode = () => {
-    if (!isBrushMode && inputPreview) {
-      setIsBrushMode(true);
-    } else {
-      setIsBrushMode(false);
-    }
-  };
-
-
   return (
-    <div className="h-screen flex bg-gray-900 text-white">
-      {/* Mobile menu button */}
-      <MobileMenuButton 
-        setIsSidebarOpen={setIsSidebarOpen} 
-        isSidebarOpen={isSidebarOpen} 
-      />
+    <div className="w-full p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-gray-900 to-black text-white">
+      <h1 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
+        AI Object Retouch
+      </h1>
 
       {/* Sidebar */}
-      <div
-        ref={sidebarRef}
-        className={`fixed lg:relative inset-y-0 left-0 z-40 w-80 transform ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 transition-transform duration-300 ease-in-out bg-gray-900 border-r border-gray-700/50 shadow-xl`}
+      <div className="pt-4 px-4 pb-2 rounded-xl backdrop-blur-sm bg-gray-800/50 border border-gray-700"
+      ref={sidebarRef}
       >
-
-        <div className="flex flex-col">
-          {/* Sidebar Header */}
-          <div className="px-6 py-4">
-            <h1 className="text-2xl font-bold text-white flex items-center">
-              Inpainting Tool
-            </h1>
-          </div>
-
-          {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto pb-4 scrollbar">
-            <SettingSidebar
-              params={params}
-              handleParamChange={handleParamChange}
-              generateRandomSeed={generateRandomSeed}
-              parameterDefinitions={parameterDefinitions}
-              status={status}
-              error={error}
-            />
-          </div>
-
-          {/* Generate Button */}
-          <GenerateButton
-            handleGenerate={handleGenerate}
-            isProcessing={isProcessing}
-            selectedFile={selectedFile}
-          />
-        </div>
+      {/* Prompt field */}
+        <PromptField
+          params={params}
+          handleParamChange={handleParamChange}
+          generateRandomSeed={generateRandomSeed}
+          parameterDefinitions={parameterDefinitions}
+          status={status}
+          error={error}
+        />
       </div>
+
+      {/* Drawing tools */}
+      <div className="mt-4 mb-4">
+        <DrawingTools 
+          isEraser={isEraser}
+          setIsEraser={setIsEraser}
+          brushSize={brushSize}
+          setBrushSize={setBrushSize}
+          clearMask={clearMask}
+          handleGenerate={handleGenerate}
+          isProcessing={isProcessing}
+          selectedFile={selectedFile}
+          maskData={maskData}
+        />
+      </div>
+      
 
       {/* Image Processing Area */}
       <div className="flex-1 p-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
-            {isBrushMode && inputPreview ? (
-              <div className="bg-gray-900 rounded-xl overflow-hidden shadow-xl border border-gray-700/50 transition-all duration-300 hover:shadow-indigo-900/20 hover:shadow-2xl">
-                <div className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+          {inputPreview ? (
+            <div className="relative flex-1 rounded-2xl p-1 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <div className="h-full w-full rounded-xl backdrop-blur-sm">
+                <div className="absolute top-4 right-4 flex gap-2 z-10">
+                  <button
+                    onClick={() => openFullscreen(inputPreview)}
+                    className="p-2 bg-gray-900/80 hover:bg-blue-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                    title="View fullscreen"
+                  >
+                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={clearImage}
+                    className="p-2 bg-gray-900/80 hover:bg-red-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                    title="Remove image"
+                  >
+                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                {/* BrushTool */}
+                <div className="w-full h-full">
                   <BrushTool 
+                    ref={brushToolRef}
                     inputImage={inputPreview} 
-                    onMaskCreated={handleMaskCreated} 
+                    onMaskCreated={handleMaskCreated}
+                    initialSize={brushSize}
+                    initialColor="#ffffff"
+                    isEraser={isEraser}
+                    maxWidth={1000}  
+                    maxHeight={700} 
                   />
-                  {/* will add eraser mode here later*/}
-                  <div className="mt-4 flex justify-center">
-                    <button
-                      onClick={toggleBrushMode}
-                      className="px-4 py-2 bg-purple-700 hover:bg-purple-600 rounded-lg shadow-md transition-all"
-                    >
-                      Exit
-                    </button>
-                  </div>
                 </div>
               </div>
-            ) : (
-              <ImageContainer
-                imageSrc={inputPreview}
-                altText="Input preview"
-                onClear={clearImage}
-                onFullscreen={() => openFullscreen(inputPreview)}
-                uploadHandler={handleImageUpload}
-                isInput={true}
-                toggleBrushMode={toggleBrushMode}
-                isBrushMode={isBrushMode}
-                showBrushToggle={!!inputPreview}
-              />
-            )}
+            </div>
+          ) : (
             <ImageContainer
-              imageSrc={outputImage}
-              altText="Generated output"
-              onDownload={() => handleDownload(outputImage)}
-              onFullscreen={() => openFullscreen(outputImage)}
-              isInput={false}
+              imageSrc={inputPreview}
+              altText="Input preview"
+              onClear={clearImage}
+              onFullscreen={() => openFullscreen(inputPreview)}
+              uploadHandler={handleImageUpload}
+              isInput={true}
+              isBrushMode={isBrushMode}
             />
-          </div>
+          )}
+          <ImageContainer
+            imageSrc={outputImage}
+            altText="Generated output"
+            onDownload={handleDownload}
+            onFullscreen={() => openFullscreen(outputImage)}
+            isInput={false}
+          />
         </div>
       </div>
       
