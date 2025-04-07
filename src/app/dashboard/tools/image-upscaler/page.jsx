@@ -20,7 +20,7 @@ const upscaleImage = async (imageFile) => {
     const response = await fetch('https://app.imggen.ai/v1/upscale-image', {
       method: 'POST',
       headers: {
-        'X-IMGGEN-KEY': '75f2321b-6ae4-4733-962d-e14f4fb95261',
+        'X-IMGGEN-KEY': process.env.NEXT_PUBLIC_IMGGEN_API_KEY,
       },
       body: formData
     });
