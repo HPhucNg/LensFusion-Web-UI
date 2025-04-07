@@ -1,3 +1,6 @@
+"Acquire API key from: https://imggen.ai/api"
+
+
 'use client';
 import React, { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar"

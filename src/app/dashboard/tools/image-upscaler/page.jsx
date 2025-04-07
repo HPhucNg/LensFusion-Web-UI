@@ -11,13 +11,13 @@ import { useRouter } from 'next/navigation';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import DownloadOptions from '@/components/DownloadOptions';
 
-// ImgGen AI API function for image upscaling and restoration
+// ImgGen AI API function for image upscaling
 const upscaleImage = async (imageFile) => {
   try {
     const formData = new FormData();
     formData.append('image', imageFile);
 
-    const response = await fetch('https://app.imggen.ai/v1/image-restoration', {
+    const response = await fetch('https://app.imggen.ai/v1/upscale-image', {
       method: 'POST',
       headers: {
         'X-IMGGEN-KEY': '75f2321b-6ae4-4733-962d-e14f4fb95261',
@@ -29,11 +29,11 @@ const upscaleImage = async (imageFile) => {
     
     if (!response.ok) {
       console.error('ImgGen API Error:', data);
-      throw new Error(data.message || 'Unable to restore image');
+      throw new Error(data.message || 'Unable to upscale image');
     }
 
     if (!data.success || !data.image) {
-      throw new Error(data.message || 'Image restoration failed');
+      throw new Error(data.message || 'Image upscaling failed');
     }
 
     // Convert base64 to blob URL
@@ -214,9 +214,9 @@ export default function ImageUpscaler() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold app-accent-color">
-            Image Upscaler & Restorer
+            Image Upscaler
           </h1>
-          <p className="text-gray-400 mt-2">Enhance and restore your images using AI</p>
+          <p className="text-gray-400 mt-2">Upscale your images up to 4K resolution using AI</p>
           <div className="mt-4 p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
             <p className="text-sm">Available tokens: <span className="font-bold">{tokens}</span></p>
           </div>
