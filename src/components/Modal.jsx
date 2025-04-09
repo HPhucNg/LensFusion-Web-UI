@@ -209,7 +209,9 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
             <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto sm:h-[500px] p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
                 <div className="flex items-center mb-4 justify-between w-full">
                     <div onClick={closeModal} className="w-4 transform hover:scale-90">
-                        <img src="/back-arrow.png" alt="close icon" />
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-white">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
                     </div>
                     <h1 className="text-2xl font-extrabold flex-grow text-center">{headingText}</h1>
                     {/* show the Remove from Community button only if the image is in the community */}
@@ -217,7 +219,9 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button className="w-8 transform hover:scale-90">
-                            <img src="/ellipsis.png" alt="remove icon" />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-white">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 12h12M6 6h12m-6 12h6"></path>
+                            </svg>
                         </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56 bg-[#0D161F] border-gray-800">

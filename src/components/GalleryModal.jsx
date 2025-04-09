@@ -105,6 +105,7 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
 
     const closeCommunityModal = () => {
         setIsCommunityModalOpen(false); 
+        
         //updateImageStatus(true); // Ensure the status is updated to reflect the community post
     };
 
@@ -242,8 +243,10 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
             <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto sm:h-[500px] p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-extrabold">Manage Image</h1>
-                    <button onClick={closeModal} className="w-8 h-8 transform hover:scale-90">
-                        <img src="/Vector.png" alt="close icon" />
+                    <button onClick={closeModal} className="w-6 h-7 transform hover:scale-90 cursor-pointer bg-[var(--border-gray)] rounded-lg backdrop-blur-sm border">
+                        <svg className="w-6 h-6 " viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
 
@@ -264,19 +267,19 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
                     </div>
 
                     {/* Right side - menu */}
-                    <div className="flex flex-col gap-4">
+                {!isCommunityModalOpen && ( <>   <div className="flex flex-col gap-4">
                         <div>
                                                     {/* Download options */}
                         <div className="w-full mb-4 space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Format</label>
+                                <label className="text-sm">Format</label>
                                 <div className="flex gap-2">
                                     <button 
                                         onClick={() => setSelectedFormat('jpg')}
                                         className={`px-3 py-1 rounded-lg ${
                                             selectedFormat === 'jpg' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-gray-800 text-gray-400'
+                                                : 'bg-[var(--border-gray)] text-gray-400'
                                         }`}
                                     >
                                         JPG
@@ -286,7 +289,7 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
                                         className={`px-3 py-1 rounded-lg ${
                                             selectedFormat === 'png' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-gray-800 text-gray-400'
+                                                : 'bg-[var(--border-gray)] text-gray-400'
                                         }`}
                                     >
                                         PNG
@@ -296,7 +299,7 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
                                         className={`px-3 py-1 rounded-lg ${
                                             selectedFormat === 'webp' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-gray-800 text-gray-400'
+                                                : 'bg-[var(--border-gray)] text-gray-400'
                                         }`}
                                     >
                                         WebP
@@ -305,14 +308,14 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Quality</label>
+                                <label className="text-sm">Quality</label>
                                 <div className="flex gap-2">
                                     <button 
                                         onClick={() => setSelectedQuality('low')}
                                         className={`px-3 py-1 rounded-lg ${
                                             selectedQuality === 'low' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-gray-800 text-gray-400'
+                                                : 'bg-[var(--border-gray)] text-gray-400'
                                         }`}
                                     >
                                         Low
@@ -322,7 +325,7 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
                                         className={`px-3 py-1 rounded-lg ${
                                             selectedQuality === 'medium' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-gray-800 text-gray-400'
+                                                : 'bg-[var(--border-gray)] text-gray-400'
                                         }`}
                                     >
                                         Medium
@@ -332,7 +335,7 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
                                         className={`px-3 py-1 rounded-lg ${
                                             selectedQuality === 'high' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-gray-800 text-gray-400'
+                                                : 'bg-[var(--border-gray)] text-gray-400'
                                         }`}
                                     >
                                         High
@@ -375,6 +378,7 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
                             Delete
                         </button>
                     </div>
+                    </>)}
                 </div>
             </div>
             {isCommunityModalOpen && (
