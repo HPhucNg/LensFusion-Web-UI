@@ -63,3 +63,21 @@ services:
       - NEXT_PUBLIC_STRIPE_CREDIT_PURCHASE_LINK=${NEXT_PUBLIC_STRIPE_CREDIT_PURCHASE_LINK}
       - NEXT_PUBLIC_REMOVE_BG_API_KEY=${NEXT_PUBLIC_REMOVE_BG_API_KEY}
       - HUGGINGFACE=${HUGGINGFACE} 
+    networks:
+      - lensfusion
+
+  stripe-listener:
+    image: stripe/stripe-cli:latest
+    container_name: stripe-webhook
+    command: listen --forward-to http://lensfusion-web:3000/api/webhook/stripe
+    environment:
+      - STRIPE_API_KEY=${NEXT_PUBLIC_STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+    depends_on:
+      - lensfusion-web
+    restart: unless-stopped
+    networks:
+      - lensfusion
+
+networks:
+  lensfusion:
