@@ -9,8 +9,15 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  doc
+  doc,
+  writeBatch,
+  Timestamp
 } from 'firebase/firestore';
+
+// Constants
+const SESSION_EXPIRY_DAYS = 14;
+const LAST_ACTIVE_UPDATE_INTERVAL = 5 * 60 * 1000; // 5 minutes in milliseconds
+const MAX_SESSIONS_PER_USER = 5;
 
 /**
  * Get device info for tracking sessions
@@ -25,11 +32,49 @@ export const getDeviceInfo = () => {
 };
 
 /**
+ * Calculate expiration timestamp
+ */
+const getExpirationTimestamp = () => {
+  const expirationDate = new Date();
+  expirationDate.setDate(expirationDate.getDate() + SESSION_EXPIRY_DAYS);
+  return Timestamp.fromDate(expirationDate);
+};
+
+/**
+ * Clean up expired sessions for a user
+ */
+const cleanupExpiredSessions = async (userId) => {
+  try {
+    const sessionsRef = collection(db, 'user_sessions');
+    const expiredQuery = query(
+      sessionsRef,
+      where('userId', '==', userId),
+      where('expiresAt', '<=', serverTimestamp())
+    );
+    
+    const expiredSessions = await getDocs(expiredQuery);
+    
+    if (!expiredSessions.empty) {
+      const batch = writeBatch(db);
+      expiredSessions.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+    }
+  } catch (error) {
+    console.error('Error cleaning up expired sessions:', error);
+  }
+};
+
+/**
  * Create or update a user session
  */
 export const createSession = async (userId, deviceInfo) => {
   try {
     const sessionsRef = collection(db, 'user_sessions');
+    
+    // Clean up expired sessions first
+    await cleanupExpiredSessions(userId);
 
     // Find if a session already exists for the same device
     const existingQuery = query(
@@ -41,24 +86,32 @@ export const createSession = async (userId, deviceInfo) => {
     const existingSessions = await getDocs(existingQuery);
 
     if (!existingSessions.empty) {
-      // Update lastActive if session already exists
       const existingDoc = existingSessions.docs[0];
-      await updateDoc(doc(db, 'user_sessions', existingDoc.id), {
-        lastActive: serverTimestamp()
-      });
+      const sessionData = existingDoc.data();
+      
+      // Only update lastActive if more than LAST_ACTIVE_UPDATE_INTERVAL has passed
+      if (!sessionData.lastActive || 
+          (Date.now() - sessionData.lastActive.toDate().getTime()) > LAST_ACTIVE_UPDATE_INTERVAL) {
+        await updateDoc(doc(db, 'user_sessions', existingDoc.id), {
+          lastActive: serverTimestamp(),
+          expiresAt: getExpirationTimestamp()
+        });
+      }
       return existingDoc.id;
     }
 
-    // Limit to 5 sessions per user
-    const allSessionsQuery = query(
+    // Get all active sessions for user
+    const activeSessionsQuery = query(
       sessionsRef,
       where('userId', '==', userId),
-      orderBy('createdAt', 'asc')
+      where('expiresAt', '>', serverTimestamp()),
+      orderBy('expiresAt', 'asc')
     );
-    const allSessions = await getDocs(allSessionsQuery);
+    const activeSessions = await getDocs(activeSessionsQuery);
 
-    if (allSessions.size >= 5) {
-      const oldestSession = allSessions.docs[0];
+    // If max sessions reached, delete oldest
+    if (activeSessions.size >= MAX_SESSIONS_PER_USER) {
+      const oldestSession = activeSessions.docs[0];
       await deleteDoc(doc(db, 'user_sessions', oldestSession.id));
     }
 
@@ -67,7 +120,8 @@ export const createSession = async (userId, deviceInfo) => {
       userId,
       deviceInfo,
       lastActive: serverTimestamp(),
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      expiresAt: getExpirationTimestamp()
     };
 
     const docRef = await addDoc(sessionsRef, sessionData);
@@ -79,19 +133,24 @@ export const createSession = async (userId, deviceInfo) => {
 };
 
 /**
- * Get all sessions for a user
+ * Get all active sessions for a user
  */
 export const getSessions = async (userId) => {
   try {
     const sessionsRef = collection(db, 'user_sessions');
-    const q = query(sessionsRef, where('userId', '==', userId));
+    const q = query(
+      sessionsRef,
+      where('userId', '==', userId),
+      where('expiresAt', '>', serverTimestamp())
+    );
     const querySnapshot = await getDocs(q);
 
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       lastActive: doc.data().lastActive?.toDate(),
-      createdAt: doc.data().createdAt?.toDate()
+      createdAt: doc.data().createdAt?.toDate(),
+      expiresAt: doc.data().expiresAt?.toDate()
     }));
   } catch (error) {
     console.error('Error getting sessions:', error);
