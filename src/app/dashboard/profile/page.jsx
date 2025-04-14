@@ -381,18 +381,18 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                 <h3 className="text-lg font-medium text-white">Profile Information</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">
-                      Display Name
-                    </label>
-                    <input
-                      type="text"
-                      value={profileData.displayName}
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    Display Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profileData.displayName}
                       onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
                       className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                  
+                  />
+                </div>
+                
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">
                       First Name
@@ -415,8 +415,8 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
                       className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
-                  </div>
-                  
+                </div>
+                
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">
                       Location
@@ -429,7 +429,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     />
                   </div>
                 </div>
-                
+
                 <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">
                   Profile Picture
@@ -488,7 +488,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               <div className="space-y-6">
                 <h3 className="text-lg font-medium text-white">Security Settings</h3>
                 
-                <div className="space-y-4">                  
+                <div className="space-y-4">
                   <div className="p-4 bg-gray-800/50 rounded-lg">
                     <div className="mb-3">
                       <h4 className="font-medium text-white">Active Sessions</h4>
@@ -1150,9 +1150,9 @@ export default function UserProfile() {
                   <Moon className="mr-3 h-5 w-5 " />
                 )}
                   <span className="text-lg">{theme === "dark" ? "Light" : "Dark"} Mode</span>
-                </Button>
+              </Button>
 
-                </div>
+              </div>
             </div>
           </div>
 
@@ -1198,7 +1198,7 @@ export default function UserProfile() {
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
                         <div className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                          <Check className="w-5 h-5 text-white" />
+                        <Check className="w-5 h-5 text-white" />
                         </div>
                       </div>
                     </div>
@@ -1210,28 +1210,28 @@ export default function UserProfile() {
                   </div>
                 </HoverCardContent>
               </HoverCard>
-                ))
-              ) : (
-                <p className="text-gray-400">No images available.</p>
-              )}
-            </div>
+      ))
+    ) : (
+      <p className="text-gray-400">No images available.</p>
+    )}
+  </div>
 
-            {/* Pagination */}
-            <div className="flex justify-center items-center gap-3 mt-8">
+              {/* Pagination */}
+              <div className="flex justify-center items-center gap-3 mt-8">
               {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant="outline"
-                  className={`w-10 h-10 text-lg font-medium ${
+                  <Button
+                    key={page}
+                    variant="outline"
+                    className={`w-10 h-10 text-lg font-medium ${
                     page === currentPage
                     ? 'bg-white text-black hover:bg-gray-200 hover:text-[#c792ff]'
-                    : 'border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700'
-                  } shadow-lg transition-all duration-300`}
+                        : 'border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700'
+                    } shadow-lg transition-all duration-300`}
                   onClick={() => handlePageClick(page)}
-                >
-                  {page}
-                </Button>
-              ))}
+                  >
+                    {page}
+                  </Button>
+                ))}
               </div>
             </div>
           </div>
@@ -1257,7 +1257,7 @@ export default function UserProfile() {
                     updateImageStatus={setImageStatus}  // Pass function to update imageStatus
                     onDelete={handleImageDelete}  // Pass the delete function
                 />
-            )}
+      )}
 
             
     </div>

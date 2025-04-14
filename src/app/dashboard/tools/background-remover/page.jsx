@@ -172,12 +172,12 @@ export default function BackgroundRemover() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
         <button
           onClick={() => router.back()}
-          className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors mb-6"
+          className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors mb-6 backdrop-blur-sm bg-white/5 rounded-lg px-4 py-2 border border-white/10 hover:bg-white/10 hover:border-white/20"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Back</span>
@@ -185,26 +185,26 @@ export default function BackgroundRemover() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold app-accent-color">
+          <h1 className="text-4xl font-bold text-white mb-4">
             Background Remover
           </h1>
-          <p className="text-gray-400 mt-2">Remove backgrounds from your images instantly using AI</p>
-          <div className="mt-4 p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
-            <p className="text-sm">Available tokens: <span className="font-bold">{tokens}</span></p>
+          <p className="text-lg text-white/80">Remove backgrounds from your images instantly using AI</p>
+          <div className="mt-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-white/20 transition-colors">
+            <p className="text-sm text-white/90">Available tokens: <span className="font-bold text-white">{tokens}</span></p>
           </div>
         </div>
 
         {/* Success Message */}
         {success && (
-          <div className="mb-4 p-4 bg-green-500/10 border border-green-500 rounded-lg">
-            <p className="text-green-500">{success}</p>
+          <div className="mb-4 p-4 bg-green-500/10 backdrop-blur-sm rounded-xl border border-green-500/20 animate-fade-in">
+            <p className="text-white">{success}</p>
           </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-4 bg-red-500/10 border border-red-500 rounded-lg">
-            <p className="text-red-500">{error}</p>
+          <div className="mb-4 p-4 bg-red-500/10 backdrop-blur-sm rounded-xl border border-red-500/20 animate-fade-in">
+            <p className="text-white">{error}</p>
           </div>
         )}
 
@@ -212,8 +212,8 @@ export default function BackgroundRemover() {
         <div className="grid md:grid-cols-2 gap-8">
           {/* Input Section */}
           <div className="space-y-4">
-            <div className="group relative flex-1 rounded-2xl p-1 shadow-xl hover:shadow-2xl transition-all duration-300">
-              <div className="h-full w-full flex flex-col items-center justify-center rounded-xl backdrop-blur-sm">
+            <div className="group relative flex-1 rounded-2xl p-1 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-white/10 shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
+              <div className="h-full w-full flex flex-col items-center justify-center rounded-xl">
                 <div className="w-full h-[500px] flex items-center justify-center relative">
                   {inputImage ? (
                     <div className="relative w-full h-full rounded-lg overflow-hidden">
@@ -227,7 +227,7 @@ export default function BackgroundRemover() {
                       <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <button
                           onClick={() => window.open(inputImage, '_blank')}
-                          className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                          className="p-2 bg-black/50 hover:bg-black/70 rounded-lg backdrop-blur-sm border border-white/10 shadow-md transition-all hover:scale-110"
                           title="View fullscreen"
                         >
                           <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -236,7 +236,7 @@ export default function BackgroundRemover() {
                         </button>
                         <button
                           onClick={clearImages}
-                          className="p-2 bg-gray-900/80 hover:bg-red-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                          className="p-2 bg-black/50 hover:bg-red-500/70 rounded-lg backdrop-blur-sm border border-white/10 shadow-md transition-all hover:scale-110"
                           title="Remove image"
                         >
                           <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -246,7 +246,7 @@ export default function BackgroundRemover() {
                       </div>
                     </div>
                   ) : (
-                    <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-gray-600 hover:border-accent transition-all duration-300">
+                    <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-white/20 hover:border-white/40 transition-all duration-300 group">
                       <input
                         type="file"
                         accept="image/*"
@@ -256,20 +256,22 @@ export default function BackgroundRemover() {
                       <div className="text-center p-6 space-y-4">
                         <div className="relative">
                           <div className="flex flex-col items-center justify-center space-y-3">
-                            <svg 
-                              className="w-16 h-16 text-white/70 group-hover:scale-110 transition-transform duration-300" 
-                              viewBox="0 0 24 24" 
-                              fill="none" 
-                              stroke="currentColor" 
-                              strokeWidth="2" 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round"
-                            >
-                              <path d="M12 13v8" />
-                              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
-                              <path d="m8 17 4-4 4 4" />
-                            </svg>
-                            <p className="text-sm text-gray-400 font-medium">Drag & drop image<br/>or click to upload</p>
+                            <div className="relative w-16 h-16">
+                              <svg 
+                                className="w-16 h-16 text-white/70 group-hover:scale-110 transition-transform duration-300" 
+                                viewBox="0 0 24 24" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                strokeWidth="2" 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round"
+                              >
+                                <path d="M12 13v8" />
+                                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+                                <path d="m8 17 4-4 4 4" />
+                              </svg>
+                            </div>
+                            <p className="text-sm text-white font-medium">Drag & drop image<br/>or click to upload</p>
                           </div>
                         </div>
                       </div>
@@ -282,7 +284,7 @@ export default function BackgroundRemover() {
             <Button
               onClick={handleRemoveBackground}
               disabled={!inputImage || isProcessing || tokens < 1}
-              className="w-full h-12 app-accent-bg hover:opacity-90 text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-base font-medium rounded-xl shadow-lg hover:shadow-purple-500/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
             >
               {isProcessing ? (
                 <div className="flex items-center justify-center space-x-2">
@@ -294,16 +296,17 @@ export default function BackgroundRemover() {
                 </div>
               ) : (
                 <>
-                  <Upload className="w-5 h-5 mr-2" />
-                  Remove Background (1 Token)
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600/0 via-purple-600/20 to-purple-600/0 group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                  <Upload className="w-5 h-5 mr-2 relative z-10" />
+                  <span className="relative z-10">Remove Background (1 Token)</span>
                 </>
               )}
             </Button>
           </div>
 
           {/* Output Section */}
-          <div className="group relative flex-1 rounded-2xl p-1 shadow-xl hover:shadow-2xl transition-all duration-300">
-            <div className="h-full w-full flex flex-col items-center justify-center rounded-xl backdrop-blur-sm">
+          <div className="group relative flex-1 rounded-2xl p-1 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-white/10 shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
+            <div className="h-full w-full flex flex-col items-center justify-center rounded-xl">
               <div className="w-full h-[500px] flex items-center justify-center relative">
                 {outputImage ? (
                   <div className="relative w-full h-full rounded-lg overflow-hidden">
@@ -317,7 +320,7 @@ export default function BackgroundRemover() {
                     <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <button
                         onClick={() => window.open(outputImage, '_blank')}
-                        className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                        className="p-2 bg-black/50 hover:bg-black/70 rounded-lg backdrop-blur-sm border border-white/10 shadow-md transition-all hover:scale-110"
                         title="View fullscreen"
                       >
                         <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -327,7 +330,7 @@ export default function BackgroundRemover() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center space-y-4 text-white">
+                  <div className="flex flex-col items-center justify-center space-y-4">
                     <svg 
                       className="w-16 h-16 text-white/70" 
                       viewBox="0 0 24 24" 
@@ -341,7 +344,7 @@ export default function BackgroundRemover() {
                       <circle cx="9" cy="9" r="2" />
                       <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
                     </svg>
-                    <p className="text-sm text-gray-400 font-medium">Processed Image</p>
+                    <p className="text-sm text-white/70 font-medium">Processed Image</p>
                   </div>
                 )}
               </div>
