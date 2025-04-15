@@ -4,18 +4,52 @@ import { defaultParams, ratioSettings } from './config';
 import { generateImage } from './apiHelper'; 
 import BackButton from '@/components/BackButton';
 import DownloadOptions from '@/components/DownloadOptions';
+import { GenerateButton } from '../backgroundgeneration/_components/GenerateButton';
 
 
 export default function Home() {
     const [selectedImage, setSelectedImage] = useState(null);
     const [ratio, setRatio] = useState('9:16');
-    const [isExpanded, setIsExpanded] = useState(false);
     const [params, setParams] = useState(defaultParams);
     const [generatedImage, setGeneratedImage] = useState(null); 
     const [prevImage, setPrevImage] = useState(null); 
     const [isLoading, setIsLoading] = useState(false);
     const [sliderPosition, setSliderPosition] = useState(50); // for the sliding effect of prev and generated image 
 
+    // Reused function from Peter //
+    // Add function to save image to user gallery
+    const saveToUserGallery = async (imageUrl, userId) => {
+      try {
+        // Create a unique filename
+        const timestamp = Date.now();
+        const filename = `background-expansion-${timestamp}.png`;
+        
+        // Create a reference to the storage location
+        const storageRef = ref(storage, `user_images/${userId}/${filename}`);
+        
+        // Fetch the image and convert to blob
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        
+        // Upload to Firebase Storage
+        await uploadBytes(storageRef, blob);
+        const downloadURL = await getDownloadURL(storageRef);
+        
+        // Add to Firestore user_images collection
+        const userImageRef = collection(db, 'user_images');
+        await addDoc(userImageRef, {
+          userID: userId,
+          img_data: downloadURL,
+          createdAt: serverTimestamp(),
+          type: 'background-expansion'
+        });
+    
+        return true;
+      } catch (error) {
+        console.error('Error saving to gallery:', error);
+        return false;
+      }
+    };
 
     // file input change and set the selected file
     const handleFileChange = (event) => {
@@ -97,14 +131,12 @@ export default function Home() {
         setIsLoading(false); // stop loading once the request completes
 
         if (result) {
-            // Set both images
+            // set both images
             const { image1_url, image2_url } = result;
     
-            // Assuming you want to display both images
             if (image1_url) {
                 setPrevImage(image1_url);
             }
-    
             if (image2_url) {
                 setGeneratedImage(image2_url);
             }
@@ -152,24 +184,24 @@ export default function Home() {
         setRatio('9:16');
         setParams(defaultParams);  // Reset to default parameters
         setSliderPosition(50);
-        setIsExpanded(false);
     };
 
 
 
     return (
         <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black font-sans relative overflow-hidden">
-            <main className='mx-auto max-w-screen-lg px-4 mt-4'>
-                <BackButton />
-                <h2 className='text-2xl font-bold mb-4'>Diffuser Image OutPaint</h2>
-                <p className='text-sm mb-2'>Upload an image and expand the background.</p>
-                <div className='bg-[var(--card-background)] p-4 h-auto'> 
+            <main className="container mx-auto p-4">
+                <BackButton /> {/* Use the BackButton component */}
+                <h1 className="text-2xl font-bold mb-6">
+                    Diffuser Image Outpaint
+                </h1>
+                <div className='bg-[var(--card-background)] p-5 h-auto'> 
                     <h1 className='text-xl font-bold text-purple-500 pb-2'>Background Expansion</h1>
                     {/* conditionally rendering based on availability of prevImage and generatedImage */}
                     {generatedImage ? (
                         <div className=' w-full h-auto'>
                             <div className="flex justify-end mb-2"> 
-                                <button className='p-2 border rounded-md' onClick={handleClear}>Clear</button>
+                                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:bg-accent h-8 rounded-md px-3 text-xs text-red-500 hover:text-red-400" onClick={handleClear}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x w-4 h-4 mr-2"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>Clear</button>
                             </div>
                             <div className="relative w-full h-auto">
                                 {prevImage && (
@@ -203,10 +235,10 @@ export default function Home() {
                             </div>
                         </div>
                     ) : (
-                        <div className='flex gap-[16px]'> {/* user input */}
-                            <div className="flex-1 relative bg-gray-800 p-2 rounded-lg"> {/* upload image */}
+                        <div className='flex gap-[16px] flex-wrap'> {/* user input */}
+                            <div className="flex-1 relative bg-gray-900 p-2 rounded-lg"> {/* upload image */}
                                 {selectedImage ? (
-                                    // If an image is selected, display the image
+                                    // if an image is selected, display the image
                                     <div className="relative w-full h-full">
                                         <img
                                             src={URL.createObjectURL(selectedImage)}
@@ -258,60 +290,86 @@ export default function Home() {
                                     </label>
                                 )}
                             </div>
-                            <div className='flex-1 flex flex-col gap-[16px] p-2 bg-gray-800  rounded-lg'> {/* change settings */}
-                                <div className='flex border border-gray-500 rounded-md text-sm text-gray-300'>
-                                    <div className='flex-grow p-2'> {/* expected ratio */}
+                            <div className='flex-1 flex flex-col gap-[16px] w-full p-2 bg-gray-900 rounded-lg pb-4'> {/* change settings */}
+                                <div className='flex text-xs flex-wrap font-medium text-gray-300'>
+                                    <div className='flex-grow  p-2'> {/* expected ratio */}
                                         <h3 className='pb-2'>Expected Ratio</h3>
-                                        <button className='border mr-2 rounded-md p-1 border-gray-300'>
-                                            <input 
-                                                type='radio' 
-                                                value='9:16' 
-                                                name='ratio' 
-                                                checked={ratio === '9:16'} 
-                                                onChange={handleRatioChange} 
+                                        <div className='flex flex-wrap'>
+                                        {/* 9:16 Radio Button */}
+                                        <label
+                                            htmlFor='9:16'
+                                            className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                        >
+                                            <input
+                                            type='radio'
+                                            id='9:16'
+                                            value='9:16'
+                                            name='ratio'
+                                            checked={ratio === '9:16'}
+                                            onChange={handleRatioChange}
+                                            className='mr-2 accent-purple-500'
                                             />
-                                            <label htmlFor='9:16'> 9:16</label>
-                                        </button>
-                                        <button className='border rounded-md p-1 border-gray-300 mr-2'>
-                                            <input 
-                                                type='radio' 
-                                                value='16:9' 
-                                                name='ratio' 
-                                                checked={ratio === '16:9'} 
-                                                onChange={handleRatioChange} 
-                                            />
-                                            <label htmlFor='16:9'> 16:9</label>
-                                        </button>
-                                        <button className='border rounded-md p-1 border-gray-300 mr-2'>
-                                            <input 
-                                                type='radio' 
-                                                value='1:1' 
-                                                name='ratio' 
-                                                checked={ratio === '1:1'} 
-                                                onChange={handleRatioChange}  
-                                            />
-                                            <label htmlFor='1:1'> 1:1</label>
-                                        </button>
-                                        <button className='border rounded-md p-1 border-gray-300 mr-2'>
-                                            <input 
-                                                type='radio' 
-                                                value='custom' 
-                                                name='ratio' 
-                                                checked={ratio === 'custom'} 
-                                                onChange={handleRatioChange} 
-                                                onClick={() => setIsExpanded(true)}
-                                            />
-                                            <label htmlFor='custom'> Custom</label>
-                                        </button>
-                                    </div>
+                                            9:16
+                                        </label>
 
-                                    <div className="border-l border-gray-500 h-full" /> {/* vertical border */}
+                                        {/* 16:9 Radio Button */}
+                                        <label
+                                            htmlFor='16:9'
+                                            className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                        >
+                                            <input
+                                            type='radio'
+                                            id='16:9'
+                                            value='16:9'
+                                            name='ratio'
+                                            checked={ratio === '16:9'}
+                                            onChange={handleRatioChange}
+                                            className='mr-2 accent-purple-500'
+                                            />
+                                            16:9
+                                        </label>
+
+                                        {/* 1:1 Radio Button */}
+                                        <label
+                                            htmlFor='1:1'
+                                            className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                        >
+                                            <input
+                                            type='radio'
+                                            id='1:1'
+                                            value='1:1'
+                                            name='ratio'
+                                            checked={ratio === '1:1'}
+                                            onChange={handleRatioChange}
+                                            className='mr-2 accent-purple-500'
+                                            />
+                                            1:1
+                                        </label>
+
+                                        {/* Custom Radio Button */}
+                                        <label
+                                            htmlFor='ratio-custom'
+                                            className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                        >
+                                            <input
+                                            type='radio'
+                                            id='ratio-custom'
+                                            value='custom'
+                                            name='ratio'
+                                            checked={ratio === 'custom'}
+                                            onChange={handleRatioChange}
+                                            className='mr-2 accent-purple-500'
+                                            />
+                                            Custom
+                                        </label>
+                                        </div>
+                                    </div>
                                     <div className='flex-grow p-2'> {/* alignment */}
                                         <h3 className='pb-2'>Alignment</h3>
                                         <select
                                             value={params.alignment}
                                             onChange={(e) => handleParamChange('alignment', e.target.value)}
-                                            className="bg-transparent w-full border border-gray-300 rounded-md p-2 text-gray-300"
+                                            className="bg-transparent w-full border border-gray-700 rounded-md p-2 text-gray-300"
                                         >
                                             <option value="Middle">Middle</option>
                                             <option value="Left">Left</option>
@@ -321,14 +379,11 @@ export default function Home() {
                                         </select>
                                     </div>
                                 </div>
-                                <div className='border border-gray-500 rounded-md text-sm p-2 text-gray-300'> {/* advanced settings */}
-                                    <h3 className='flex justify-between'><span>Advanced settings</span><span onClick={() => setIsExpanded(!isExpanded)} className="cursor-pointer">
-                                            {isExpanded ? '◀' : '▼'}</span> 
-                                    </h3>
-                                    {isExpanded && (
-                                        <>
-                                        <div className='flex border border-gray-300 rounded-md mt-2 mb-4'>
-                                            <div className='flex-grow p-2'>
+                                <div className='rounded-md text-xs font-medium p-2 text-gray-300'> {/* advanced settings */}
+                                    <h3 className='flex justify-between text-sm font-semibold text-gray-300'>Advanced settings</h3>
+                        
+                                        <div className='flex rounded-md mt-2 mb-4'>
+                                            <div className='flex-grow '>
                                                 <h3>Target Width: {params.width}</h3>
                                                 <input
                                                     type="range"
@@ -336,10 +391,10 @@ export default function Home() {
                                                     max="1536"
                                                     value={params.width}
                                                     onChange={handleWidthChange}
-                                                    className="w-full mt-4"
+                                                    className="w-full mt-4 accent-purple-500"
                                             />
                                             </div> {/* 720 -1536 */}
-                                            <div className='flex-grow p-2'>
+                                            <div className='flex-grow pl-2'>
                                                 <h3>Target Height: {params.height}</h3>
                                                 <input
                                                     type="range"
@@ -347,11 +402,11 @@ export default function Home() {
                                                     max="1536"
                                                     value={params.height}
                                                     onChange={handleHeightChange}
-                                                    className="w-full mt-4"
+                                                    className="w-full mt-4 accent-purple-500"
                                             />
                                             </div>
                                         </div>
-                                        <div className='border border-gray-300 rounded-md p-2 mb-4'>
+                                        <div className='rounded-md mb-4'>
                                             <h3>Steps: {params.num_inference_steps}</h3>
                                             <input
                                                 type="range"
@@ -359,71 +414,112 @@ export default function Home() {
                                                 max="12"
                                                 value={params.num_inference_steps}
                                                 onChange={(e) => handleParamChange('num_inference_steps', e.target.value)}
-                                                className="w-full mt-4"
+                                                className="w-full mt-4 accent-purple-500"
                                             />                                        
                                         </div>
                                         
-                                        <div className='border border-gray-300 rounded-md p-2 mb-2'>
+                                        <div className='rounded-md mb-2'>
                                             <h3 className='pb-2'>Resize Input Image</h3>
-                                            <button className='border mr-2 rounded-md p-1 border-gray-300'>
-                                                <input 
-                                                    type='radio' 
-                                                    value={params.resize_option} 
-                                                    name='resize' 
-                                                    checked={params.resize_option === 'Full'} 
-                                                    onChange={(e) => handleParamChange('resize_option', e.target.value)} 
-                                                />
-                                                <label htmlFor='Full'> Full</label>
-                                            </button>
-                                            <button className='border rounded-md p-1 border-gray-300 mr-2'>
-                                                <input 
-                                                    type='radio' 
-                                                    value='50' 
-                                                    name='resize' 
-                                                    checked={params.resize_option === '50'} 
-                                                    onChange={(e) => handleParamChange('resize_option', e.target.value)} 
-                                                />
-                                                <label htmlFor='50'> 50%</label>
-                                            </button>
-                                            <button className='border rounded-md p-1 border-gray-300 mr-2'>
-                                                <input 
-                                                    type='radio' 
-                                                    value='33' 
-                                                    name='resize' 
-                                                    checked={params.resize_option === '33'} 
-                                                    onChange={(e) => handleParamChange('resize_option', e.target.value)} 
-                                                />
-                                                <label htmlFor='33'> 33%</label>
-                                            </button>
-                                            <button className='border rounded-md p-1 border-gray-300 mr-2'>
-                                                <input 
-                                                    type='radio' 
-                                                    value='25' 
-                                                    name='resize' 
-                                                    checked={params.resize_option === '25'} 
-                                                    onChange={(e) => handleParamChange('resize_option', e.target.value)} 
-                                                />
-                                                <label htmlFor='25'> 25%</label>
-                                            </button>
-                                            <button className='border rounded-md p-1 border-gray-300 mr-2'>
-                                                <input 
-                                                    type='radio' 
-                                                    value='custom' 
-                                                    name='resize' 
-                                                    checked={params.resize_option === 'custom'} 
-                                                    onChange={(e) => handleParamChange('resize_option', e.target.value)} 
-                                                />
-                                                <label htmlFor='custom'> Custom</label>
-                                            </button>
+                                            <div className='flex flex-wrap'>
+                                                {/* full option */}
+                                                <label
+                                                    htmlFor='Full'
+                                                    className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                                >
+                                                    <input
+                                                    type='radio'
+                                                    id='Full'
+                                                    value='Full'
+                                                    name='resize'
+                                                    checked={params.resize_option === 'Full'}
+                                                    onChange={(e) => handleParamChange('resize_option', e.target.value)}
+                                                    className='mr-2 accent-purple-500'
+                                                    />
+                                                    Full
+                                                </label>
+
+                                                {/* 50% option */}
+                                                <label
+                                                    htmlFor='50'
+                                                    className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                                >
+                                                    <input
+                                                    type='radio'
+                                                    id='50'
+                                                    value='50'
+                                                    name='resize'
+                                                    checked={params.resize_option === '50'}
+                                                    onChange={(e) => handleParamChange('resize_option', e.target.value)}
+                                                    className='mr-2 accent-purple-500'
+                                                    />
+                                                    50%
+                                                </label>
+
+                                                {/* 33% option */}
+                                                <label
+                                                    htmlFor='33'
+                                                    className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                                >
+                                                    <input
+                                                    type='radio'
+                                                    id='33'
+                                                    value='33'
+                                                    name='resize'
+                                                    checked={params.resize_option === '33'}
+                                                    onChange={(e) => handleParamChange('resize_option', e.target.value)}
+                                                    className='mr-2 accent-purple-500'
+                                                    />
+                                                    33%
+                                                </label>
+
+                                                {/* 25% option */}
+                                                <label
+                                                    htmlFor='25'
+                                                    className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                                >
+                                                    <input
+                                                    type='radio'
+                                                    id='25'
+                                                    value='25'
+                                                    name='resize'
+                                                    checked={params.resize_option === '25'}
+                                                    onChange={(e) => handleParamChange('resize_option', e.target.value)}
+                                                    className='mr-2 accent-purple-500'
+                                                    />
+                                                    25%
+                                                </label>
+
+                                                {/* custom option */}
+                                                <label
+                                                    htmlFor='resize-custom'
+                                                    className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                                >
+                                                    <input
+                                                    type='radio'
+                                                    id='resize-custom'
+                                                    value='custom'
+                                                    name='resize'
+                                                    checked={params.resize_option === 'custom'}
+                                                    onChange={(e) => handleParamChange('resize_option', e.target.value)}
+                                                    className='mr-2 accent-purple-500'
+                                                    />
+                                                    Custom
+                                                </label>
+                                            </div>
                                         </div>
-                                        </>
-                                    )}
+                                      
                                 </div> 
-                                <button className='bg-purple-400 p-1 hover:bg-purple-500 rounded-md' onClick={handleGenerateClick}>{isLoading ? 'Generating ...' : 'Generate'}</button>
+                                {/*<button className='bg-purple-400 p-1 hover:bg-purple-500 rounded-md' onClick={handleGenerateClick} disabled={!selectedImage || isLoading}>{isLoading ? 'Generating ...' : 'Generate'}</button>*/}
+                                <GenerateButton 
+                                    handleGenerate={handleGenerateClick} 
+                                    isProcessing={isLoading} 
+                                    selectedFile={selectedImage} 
+                                />
                             </div>
                         </div>
                         )}
                 </div>
+                  
             </main>
         </div>
     )

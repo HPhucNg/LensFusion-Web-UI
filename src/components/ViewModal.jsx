@@ -76,6 +76,14 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
         setVisibleComments((prev) => prev + 3); // load 3 more comments each time
     };
 
+    //const handleMakeSame = () => {
+      // will query db and fetch tool used 
+      // then reroute to that tool
+      // and preset settings fill in prompt
+      // just ask user for image
+      // only for image to image generation and  bg generation??
+    //};
+
     return (
         <div className='md:w-[80%] md:flex-row flex flex-col font-sans relative rounded-xl shadow-md overflow-hidden' style={{ background: 'var(--modal-background)' }}>
             <div className='pt-6 md:pl-2 p-4 flex-1 flex'>
@@ -206,12 +214,12 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
                                 {state.editingCommentId === comment.id ? (
                                     <div>
                                         <textarea 
-                                            className='border h-[40px] p-2 rounded-sm border-[#ccc] bg-transparent'
+                                            className='border h-[35px] p-2 rounded-sm border-[#ccc] bg-transparent'
                                             value={editedCommentText} 
                                             onChange={(e) => handleEditedCommentChange(e.target.value)} // handle change here
                                             rows="2"  
                                         />
-                                        <button onClick={(e) => handleSaveEdit(e, comment.id)}>Save</button>
+                                        <button onClick={(e) => handleSaveEdit(e, comment.id)}>✔️</button>
                                     </div>
                                 ) : (
                                     <div className='text-gray-400 p-2'>{comment.commentText}</div>
@@ -222,7 +230,7 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
 
                     {/* button to load more comments */}
                     {visibleComments < comments.length && (
-                        <button onClick={handleLoadMore} className="text-blue-500 text-sm">
+                        <button onClick={handleLoadMore} className="text-blue-500 text-xs">
                             Load More
                         </button>
                     )}
@@ -255,7 +263,9 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
                             >♡ <span className="text-sm">{likesData.likes.length}</span></button>
                         </div>
                     </form>
-
+                    <div className='flex justify-end'>
+                        <button className='p-2 border rounded-md border-2 text-sm bg-[var(--border-gray)] hover:bg-gray-700'>Make Same</button> {/*onClick={handleMakeSame}*/}
+                    </div>
                 </div>
         
                <button className='absolute top-3 right-2 w-6 md:8 transform hover:scale-90 cursor-pointer rounded-lg bg-[var(--border-gray)] backdrop-blur-sm border' onClick={closeModal}>

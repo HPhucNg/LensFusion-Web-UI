@@ -1,6 +1,17 @@
 "use server"; // server-side execution
+// initialize Client dynamically
+let Client;
+let handleFile;
 
-import { Client, handle_file } from "@gradio/client";
+async function getClient() {
+  if (!Client) {
+    const { Client: ImportedClient, handle_file } = await import("@gradio/client");
+    Client = ImportedClient;
+    handleFile = handle_file;
+    // You can assign handle_file to a variable if you need it in the future
+  }
+  return {Client, handleFile};
+}
 
 // to generate an image
 export const generateImage = async (params) => {
@@ -25,10 +36,21 @@ export const generateImage = async (params) => {
         // parameters for debugging
         console.log("Calling generateImage with params:", params);
 
-        // handle the image file using handle_file (from api_recorder - ensure the proper file handling for Gradio)
-        const imageFile = handle_file(image);  // Assuming `image` is the file URL or file path
+        // get the Client class
+        const { Client: ClientClass, handleFile } = await getClient();
 
-        const client = await Client.connect("fffiloni/diffusers-image-outpaint");
+        const HF_SPACE_NAME = "hpng/diffusers-image-outpaint";
+        const HF_TOKEN = process.env.HUGGING_FACE_TOKEN;
+
+        const client = await ClientClass.connect(
+            HF_SPACE_NAME,
+            {
+                hf_token: HF_TOKEN,
+            }
+        );
+
+         // handle the image file using handle_file (from api_recorder - ensure the proper file handling for Gradio)
+        const imageFile = handleFile(image);  // `image` is the file URL or file path
 
         // prediction request 
         const result = await client.predict("/infer", { 
@@ -51,20 +73,22 @@ export const generateImage = async (params) => {
         console.log("Prediction result:", result);
 
         // check the returned structure - suppose to get two images
-        if (result && result.data && result.data.length > 0) {
-          // destructure both images from the nested array structure
-          const [generatedImage1, generatedImage2] = result.data[0]; // one tuple
-          
-          // log and return both image URLs
-          console.log("Generated Image 1:", generatedImage1);
-          console.log("Generated Image 2:", generatedImage2);
+        if (
+            Array.isArray(result?.data) &&
+            Array.isArray(result.data[0]) &&
+            result.data[0].length >= 2
+            ) {
+            const getUrl = (item) =>
+                typeof item === "object" && item?.url ? item.url : item;
 
-          return { 
-              image1_url: generatedImage1?.url || generatedImage1,
-              image2_url: generatedImage2?.url || generatedImage2
-          };
-      }
+            const image1_url = getUrl(result.data[0][0]);
+            const image2_url = getUrl(result.data[0][1]);
 
+            console.log("Generated Image 1:", image1_url);
+            console.log("Generated Image 2:", image2_url);
+
+            return { image1_url, image2_url };
+            }     
         return null; // if result is not as expected
     } catch (error) {
         console.error("Error generating image:", error.message || error);
