@@ -10,58 +10,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useRouter } from 'next/navigation';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import DownloadOptions from '@/components/DownloadOptions';
+import { upscaleImageClient } from '@/lib/upscaleImage';
 
-// ImgGen AI API function for image upscaling
-const upscaleImage = async (imageFile) => {
-  try {
-    const formData = new FormData();
-    formData.append('image', imageFile);
-
-    const response = await fetch('https://app.imggen.ai/v1/upscale-image', {
-      method: 'POST',
-      headers: {
-        'X-IMGGEN-KEY': process.env.NEXT_PUBLIC_IMGGEN_API_KEY,
-      },
-      body: formData
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error('ImgGen API Error:', data);
-      throw new Error(data.message || 'Unable to upscale image');
-    }
-
-    if (!data.success || !data.image) {
-      throw new Error(data.message || 'Image upscaling failed');
-    }
-
-    // Convert base64 to blob URL
-    const base64Data = data.image;
-    const byteCharacters = atob(base64Data);
-    const byteArrays = [];
-    
-    for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
-      const slice = byteCharacters.slice(offset, offset + 1024);
-      const byteNumbers = new Array(slice.length);
-      
-      for (let i = 0; i < slice.length; i++) {
-        byteNumbers[i] = slice.charCodeAt(i);
-      }
-      
-      const byteArray = new Uint8Array(byteNumbers);
-      byteArrays.push(byteArray);
-    }
-    
-    const blob = new Blob(byteArrays, { type: 'image/png' });
-    return URL.createObjectURL(blob);
-  } catch (error) {
-    console.error('Upscale Error:', error);
-    throw new Error(error.message || 'Failed to upscale image');
-  }
-};
-
-// Add function to save image to user gallery
 const saveToUserGallery = async (imageUrl, userId) => {
   try {
     const timestamp = Date.now();
@@ -164,7 +114,7 @@ export default function ImageUpscaler() {
       const blob = await response.blob();
       const file = new File([blob], 'input-image.jpg', { type: 'image/jpeg' });
       
-      const resultUrl = await upscaleImage(file);
+      const resultUrl = await upscaleImageClient(file);
       setOutputImage(resultUrl);
       
       const userRef = doc(db, 'users', user.uid);
@@ -202,7 +152,6 @@ export default function ImageUpscaler() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <div className="container mx-auto px-4 py-8">
-        {/* Back Button */}
         <button
           onClick={() => router.back()}
           className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors mb-6 backdrop-blur-sm bg-white/5 rounded-lg px-4 py-2 border border-white/10 hover:bg-white/10 hover:border-white/20"
@@ -211,7 +160,6 @@ export default function ImageUpscaler() {
           <span>Back</span>
         </button>
 
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-4">
             Image Upscaler
@@ -222,23 +170,19 @@ export default function ImageUpscaler() {
           </div>
         </div>
 
-        {/* Success Message */}
         {success && (
           <div className="mb-4 p-4 bg-green-500/10 backdrop-blur-sm rounded-xl border border-green-500/20 animate-fade-in">
             <p className="text-white">{success}</p>
           </div>
         )}
 
-        {/* Error Message */}
         {error && (
           <div className="mb-4 p-4 bg-red-500/10 backdrop-blur-sm rounded-xl border border-red-500/20 animate-fade-in">
             <p className="text-white">{error}</p>
           </div>
         )}
 
-        {/* Main Content */}
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Input Section */}
           <div className="space-y-4">
             <div className="group relative flex-1 rounded-2xl p-1 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-white/10 shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
               <div className="h-full w-full flex flex-col items-center justify-center rounded-xl">
@@ -332,7 +276,6 @@ export default function ImageUpscaler() {
             </Button>
           </div>
 
-          {/* Output Section */}
           <div className="group relative flex-1 rounded-2xl p-1 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-white/10 shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
             <div className="h-full w-full flex flex-col items-center justify-center rounded-xl">
               <div className="w-full h-[500px] flex items-center justify-center relative">
