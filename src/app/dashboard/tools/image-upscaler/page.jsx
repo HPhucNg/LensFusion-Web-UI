@@ -7,17 +7,15 @@ import { Button } from "@/components/ui/button";
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { saveAs } from 'file-saver';
 import { useRouter } from 'next/navigation';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import DownloadOptions from '@/components/DownloadOptions';
-import { removeBackgroundClient } from '@/lib/removeBackground';
+import { upscaleImageClient } from '@/lib/upscaleImage';
 
-// Add function to save image to user gallery
 const saveToUserGallery = async (imageUrl, userId) => {
   try {
     const timestamp = Date.now();
-    const filename = `background-removed-${timestamp}.png`;
+    const filename = `upscaled-${timestamp}.png`;
     
     const storageRef = ref(storage, `user_images/${userId}/${filename}`);
     
@@ -32,7 +30,7 @@ const saveToUserGallery = async (imageUrl, userId) => {
       userID: userId,
       img_data: downloadURL,
       createdAt: serverTimestamp(),
-      type: 'background-removed'
+      type: 'upscaled'
     });
 
     return true;
@@ -42,7 +40,7 @@ const saveToUserGallery = async (imageUrl, userId) => {
   }
 };
 
-export default function BackgroundRemover() {
+export default function ImageUpscaler() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [tokens, setTokens] = useState(0);
@@ -104,7 +102,7 @@ export default function BackgroundRemover() {
     }
   };
 
-  const handleRemoveBackground = async () => {
+  const handleUpscaleImage = async () => {
     if (!inputImage || isProcessing || tokens < 1) return;
     
     setIsProcessing(true);
@@ -116,7 +114,7 @@ export default function BackgroundRemover() {
       const blob = await response.blob();
       const file = new File([blob], 'input-image.jpg', { type: 'image/jpeg' });
       
-      const resultUrl = await removeBackgroundClient(file);
+      const resultUrl = await upscaleImageClient(file);
       setOutputImage(resultUrl);
       
       const userRef = doc(db, 'users', user.uid);
@@ -127,12 +125,12 @@ export default function BackgroundRemover() {
       
       const saved = await saveToUserGallery(resultUrl, user.uid);
       if (saved) {
-        setSuccess('Image processed and saved to your gallery successfully!');
+        setSuccess('Image upscaled and saved to your gallery successfully!');
       }
       
     } catch (error) {
       console.error('Error:', error);
-      setError(error.message || 'Failed to remove background');
+      setError(error.message || 'Failed to upscale image');
     } finally {
       setIsProcessing(false);
     }
@@ -154,7 +152,6 @@ export default function BackgroundRemover() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <div className="container mx-auto px-4 py-8">
-        {/* Back Button */}
         <button
           onClick={() => router.back()}
           className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors mb-6 backdrop-blur-sm bg-white/5 rounded-lg px-4 py-2 border border-white/10 hover:bg-white/10 hover:border-white/20"
@@ -163,34 +160,29 @@ export default function BackgroundRemover() {
           <span>Back</span>
         </button>
 
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-4">
-            Background Remover
+            Image Upscaler
           </h1>
-          <p className="text-lg text-white/80">Remove backgrounds from your images instantly using AI</p>
+          <p className="text-lg text-white/80">Enhance your images with AI-powered upscaling and restoration</p>
           <div className="mt-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-white/20 transition-colors">
             <p className="text-sm text-white/90">Available tokens: <span className="font-bold text-white">{tokens}</span></p>
           </div>
         </div>
 
-        {/* Success Message */}
         {success && (
           <div className="mb-4 p-4 bg-green-500/10 backdrop-blur-sm rounded-xl border border-green-500/20 animate-fade-in">
             <p className="text-white">{success}</p>
           </div>
         )}
 
-        {/* Error Message */}
         {error && (
           <div className="mb-4 p-4 bg-red-500/10 backdrop-blur-sm rounded-xl border border-red-500/20 animate-fade-in">
             <p className="text-white">{error}</p>
           </div>
         )}
 
-        {/* Main Content */}
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Input Section */}
           <div className="space-y-4">
             <div className="group relative flex-1 rounded-2xl p-1 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-white/10 shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
               <div className="h-full w-full flex flex-col items-center justify-center rounded-xl">
@@ -262,7 +254,7 @@ export default function BackgroundRemover() {
             </div>
 
             <Button
-              onClick={handleRemoveBackground}
+              onClick={handleUpscaleImage}
               disabled={!inputImage || isProcessing || tokens < 1}
               className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-base font-medium rounded-xl shadow-lg hover:shadow-purple-500/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
             >
@@ -278,13 +270,12 @@ export default function BackgroundRemover() {
                 <>
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-600/0 via-purple-600/20 to-purple-600/0 group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                   <Upload className="w-5 h-5 mr-2 relative z-10" />
-                  <span className="relative z-10">Remove Background (1 Token)</span>
+                  <span className="relative z-10">Upscale & Restore (1 Token)</span>
                 </>
               )}
             </Button>
           </div>
 
-          {/* Output Section */}
           <div className="group relative flex-1 rounded-2xl p-1 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-white/10 shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
             <div className="h-full w-full flex flex-col items-center justify-center rounded-xl">
               <div className="w-full h-[500px] flex items-center justify-center relative">
@@ -324,13 +315,13 @@ export default function BackgroundRemover() {
                       <circle cx="9" cy="9" r="2" />
                       <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
                     </svg>
-                    <p className="text-sm text-white/70 font-medium">Processed Image</p>
+                    <p className="text-sm text-white/70 font-medium">Upscaled Image</p>
                   </div>
                 )}
               </div>
               {outputImage && (
                 <div className="w-full mt-3">
-                  <DownloadOptions imageUrl={outputImage} filename="background-removed" />
+                  <DownloadOptions imageUrl={outputImage} filename="upscaled-image" />
                 </div>
               )}
             </div>
@@ -339,4 +330,4 @@ export default function BackgroundRemover() {
       </div>
     </div>
   );
-}
+} 

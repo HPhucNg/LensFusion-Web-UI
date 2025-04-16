@@ -1,6 +1,12 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Download } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const DownloadOptions = ({ imageUrl, filename = 'image' }) => {
     const downloadImage = (format) => {
@@ -58,31 +64,38 @@ const DownloadOptions = ({ imageUrl, filename = 'image' }) => {
     };
 
     return (
-        <div className="flex flex-col gap-2 w-full">
-            <div className="text-sm font-medium text-gray-400 mb-1">Download Format</div>
-            <div className="flex gap-2">
-                <Button
-                    onClick={() => downloadImage('PNG')}
-                    className="flex-1 bg-gray-800 hover:bg-gray-700 text-white"
-                >
-                    <Download className="w-4 h-4 mr-2" />
-                    PNG
-                </Button>
-                <Button
-                    onClick={() => downloadImage('JPG')}
-                    className="flex-1 bg-gray-800 hover:bg-gray-700 text-white"
-                >
-                    <Download className="w-4 h-4 mr-2" />
-                    JPG
-                </Button>
-                <Button
-                    onClick={() => downloadImage('WEBP')}
-                    className="flex-1 bg-gray-800 hover:bg-gray-700 text-white"
-                >
-                    <Download className="w-4 h-4 mr-2" />
-                    WEBP
-                </Button>
-            </div>
+        <div className="w-full">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button className="w-full h-12 app-accent-bg hover:opacity-90 text-base font-medium">
+                        <Download className="w-5 h-5 mr-2" />
+                        Download Image
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64 bg-gray-800 border-gray-700" align="end">
+                    <DropdownMenuItem 
+                        onClick={() => downloadImage('PNG')}
+                        className="text-white hover:bg-gray-700 cursor-pointer h-10 text-base"
+                    >
+                        <Download className="w-4 h-4 mr-2" />
+                        PNG
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                        onClick={() => downloadImage('JPG')}
+                        className="text-white hover:bg-gray-700 cursor-pointer h-10 text-base"
+                    >
+                        <Download className="w-4 h-4 mr-2" />
+                        JPG
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                        onClick={() => downloadImage('WEBP')}
+                        className="text-white hover:bg-gray-700 cursor-pointer h-10 text-base"
+                    >
+                        <Download className="w-4 h-4 mr-2" />
+                        WEBP
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     );
 };

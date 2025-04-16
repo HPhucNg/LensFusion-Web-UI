@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select"
 import { db } from '@/firebase/FirebaseConfig';
 import { addDoc, collection } from 'firebase/firestore';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from '@/components/ui/button';
 
 function page() {
   const [formData, setFormData] = useState({
@@ -27,7 +29,7 @@ function page() {
   const handleSubmit = async(e) => {
     e.preventDefault();
     //basic validation
-    if (!formData.name || !formData.email || !formData.message) {
+    if (!formData.subject || !formData.name || !formData.email || !formData.message) {
       alert('Please fill in all fields');
       return;
     }
@@ -62,73 +64,91 @@ function page() {
     <>
     <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden'>
       <Navbar />
-      <h1 className='abouth1'>Contact Us</h1>
-      <main className="containerContact">
-        <div className="prompt-container">
-          <h3>We are here to help</h3><br />
-          <p>
-            If you have any questions<br />
-            about LensFusion, or<br />
-            would like to leave us a<br />
-            comment, feel free to<br />
-            contact us.
-          </p><br />
-          <p>
-            Simply, fill out the form<br />
-            and we will get<br />
-            back to you.
-          </p>
-        </div>
+      <div className="container mx-auto px-4 py-12">
+        <h1 className="text-4xl md:text-3xl lg:text-5xl font-bold text-center mb-8">Contact Us</h1>
+        <main className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-2xl text-white">We are here to help</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-gray-300">
+              <p>
+                If you have any questions about LensFusion, or would like to leave us a
+                comment, feel free to contact us.
+              </p>
+              <p>
+                Simply, fill out the form and we will get back to you.
+              </p>
+            </CardContent>
+          </Card>
 
-        <div className="form-container">
-          <form onSubmit={handleSubmit}>
-            <label htmlFor="subject">Subject</label><br />
-            <select 
-              name="subject"
-              id="subject"
-              value={formData.subject}
-              onChange={handleChange}
-              >
-                <option value="">Select Option</option>
-                <option value="trouble-shooting">Trouble-shooting</option>
-                <option value="feedback">Feedback</option>
-                <option value="subscription">Subscription</option>
-              </select><br />
-            
-            <label htmlFor="name">Name</label><br />
-            <Input
-              type="text"
-              id="name"
-              name="name"
-              placeholder="Name"
-              value={formData.name}
-              onChange={handleChange}
-            /><br />
-            
-            <label htmlFor="email">Email Address</label><br />
-            <Input
-              type="email"
-              id="email"
-              name="email"
-              placeholder='Email'
-              value={formData.email}
-              onChange={handleChange}
-            /><br />
-            
-            <label htmlFor="message">Message</label><br />
-            <textarea
-              id="message"
-              name="message"
-              placeholder='Message'
-              value={formData.message}
-              onChange={handleChange}
-              rows="5"  // row size for better UX
-            /><br />
-            
-            <input type="submit" value="Submit"/>
-          </form>
-        </div>
-      </main>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-2xl text-white">Send us a message</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <label>Subject</label>
+                  <select 
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white"
+                  >
+                  <option value="">Select Option</option>
+                  <option value="trouble-shooting">Trouble-shooting</option>
+                  <option value="feedback">Feedback</option>
+                  <option value="subscription">Subscription</option>
+                  <option value="other">Other</option>
+
+                </select><br />
+              </div>
+              <div className="space-y-3">
+                <label htmlFor="name">Name</label><br />
+                <Input
+                  type="text"
+                  id="name"
+                  name="name"
+                  placeholder="Enter your name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="bg-gray-700 border-gray-600 text-white"
+
+                /><br />
+                
+                <label htmlFor="email">Email Address</label><br />
+                <Input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder='Enter your email'
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="bg-gray-700 border-gray-600 text-white"
+
+                /><br />
+                
+                <label htmlFor="message">Message</label><br />
+                <textarea
+                  id="message"
+                  name="message"
+                  placeholder='Message here...'
+                  value={formData.message}
+                  onChange={handleChange}
+                  rows="5"  // row size for better UX
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white"
+
+                /><br />
+              </div>
+              <Button>Submit</Button>
+            </form>
+            </CardContent>
+          </Card>
+          
+        </main>
+    </div>
       <Footer />
       </div>
     </>
