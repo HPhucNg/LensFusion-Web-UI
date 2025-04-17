@@ -2,41 +2,42 @@
 
 import { useState, useCallback, useRef } from "react";
 import { processImage } from '@/lib/huggingfaceInpaint/client';
-import { defaultParams, parameterDefinitions } from '@/lib/huggingfaceInpaint/clientConfig';
-import { useClickAway } from 'react-use';
+import { defaultParams } from '@/lib/huggingfaceInpaint/clientConfig';
 import { saveAs } from 'file-saver';
 
 import { ImageContainer } from './ImageContainer';
 import { PromptField } from './PromptField';
-import { FullscreenModal } from '../../backgroundgeneration/_components/FullscreenModal';
+import { FullscreenModal } from './FullscreenModal'
 import BrushTool from './BrushTool';
 import DrawingTools from './DrawingTools';
 
 export default function Inpaint() {
   //inpainting states
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [params, setParams] = useState(defaultParams);
   const [selectedFile, setSelectedFile] = useState(null);
   const [inputPreview, setInputPreview] = useState(null);
   const [outputImage, setOutputImage] = useState(null);
-  const [outputBlob, setOutputBlob] = useState(null); 
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
-  const sidebarRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState(null);
-  const [webpImage, setWebpImage] = useState(null);
-  const [preprocessedImage, setPreprocessedImage] = useState(null);
 
   //brush Tool states
-  const [isBrushMode, setIsBrushMode] = useState(true);
-  const [isEraser, setIsEraser] = useState(false);
   const [brushSize, setBrushSize] = useState(20); 
+  const [isEraser, setIsEraser] = useState(false);
+
+  //mask states
   const [maskData, setMaskData] = useState(null);
   const [processableImageData, setProcessableImageData] = useState(null);
 
-  const brushToolRef = useRef(null);
+  const useBrushTool = useRef(null);
+
+
+  // Canvas Drawing functionality
+  const handleUseBrushTool = useCallback((methods) => {
+    useBrushTool.current = methods;
+  }, []);
 
   //get mask data
   const handleMaskCreated = ({ imageData, maskData }) => {    
@@ -44,12 +45,21 @@ export default function Inpaint() {
     setMaskData(maskData);
   };
 
-  //click anywhere on screen to go out of sidebar when minimized window
-  useClickAway(sidebarRef, () => {
-    if (window.innerWidth < 1024 && isSidebarOpen) {
-      setIsSidebarOpen(false);
+  // Handle Mask reset
+  const clearMask = () => {
+    setMaskData(null);
+    setProcessableImageData(null);
+    setError(null);
+    
+    if (useBrushTool.current && typeof useBrushTool.current.resetCanvas === 'function') {
+      const success = useBrushTool.current.resetCanvas();
+      if (!success) {
+        setError('Reset mask failed.');
+      }
+    } else {
+      setError('Reset mask failed: Brush tool not available.');
     }
-  });
+  };
 
   //preview uploaded input image
   const createInputPreview = useCallback((file) => {
@@ -57,21 +67,8 @@ export default function Inpaint() {
     reader.onloadend = () => {
       setInputPreview(reader.result);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(file); //base64
   }, []);
-
-
-  const clearMask = () => {
-    setMaskData(null);
-    setProcessableImageData(null);
-    setError(null);
-    
-    if (brushToolRef.current && typeof brushToolRef.current.resetCanvas === 'function') {
-      brushToolRef.current.resetCanvas();
-    }
-    
-    setStatus("Mask cleared. Draw a new mask to continue.");
-  };
   
   // Generates a random seed between 1 and 100000
   const generateRandomSeed = () => {
@@ -92,7 +89,7 @@ export default function Inpaint() {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      createInputPreview(file);
+      createInputPreview(file); //base64
 
       //reset when new images uploaded
       setMaskData(null);
@@ -100,117 +97,25 @@ export default function Inpaint() {
     }
   }, [createInputPreview]);
 
-  
-  //handle generate image
-  const handleGenerate = async () => {
-    if (!selectedFile) {
-      setError("Please upload an image first");
-      return;
-    }
-
-    if (!maskData) {
-      setError("Please create a mask");
-      return;
-    }
-
-    // Reset states
-    setIsProcessing(true);
-    setError(null);
-    setOutputImage(null);
-    setPreprocessedImage(null);
-    setWebpImage(null);
-    setStatus('Processing your image...');
-
-    try {
-      setStatus("Processing with Hugging Face...");
-      const processParams = { ...params };
-      //if the image is masked then create URL for both image and mask file
-      if (maskData && processableImageData) {
-        const backgroundImage = dataURLtoFile(processableImageData, 'background.png');
-        const maskImage = dataURLtoFile(maskData, 'mask.png');
-        
-        processParams.imageMask = {
-          background: backgroundImage,
-          layers: [maskImage],
-          composite: backgroundImage
-        };
-      }
-      const fileToProcess = selectedFile || (inputPreview ? dataURLtoFile(inputPreview, 'input.png') : null);
-
-      processParams.responseType = 'base64';
-      
-      const result = await processImage(fileToProcess, processParams);
+  // extract image URL
+  const extractImageUrl = (result) => {
+    if (!result || typeof result !== 'object') return null;
     
-      if (result && typeof result === 'object') {
-
-        //if no base64 data, handle the response
-        if (Array.isArray(result) && result.length >= 1) {
-          const [imageArray] = result;
-          
-          if (Array.isArray(imageArray) && imageArray.length > 0) {
-            const firstImage = imageArray[0];
-
-            if (firstImage && firstImage.image && firstImage.image.base64) {
-              const base64Data = firstImage.image.base64;
-              // Convert base64 to blob for download - fixes the error (no image data)
-              try {
-                const byteString = atob(base64Data.split(',')[1]);
-                const mimeType = base64Data.split(',')[0].split(':')[1].split(';')[0];
-                const ab = new ArrayBuffer(byteString.length);
-                const ia = new Uint8Array(ab);
-                for (let i = 0; i < byteString.length; i++) {
-                  ia[i] = byteString.charCodeAt(i);
-                }
-                const blob = new Blob([ab], { type: mimeType });
-                setOutputBlob(blob);
-                setOutputImage(base64Data);
-                setStatus("Processing complete!");
-                return;
-              } catch (e) {
-                console.error("Error processing base64:", e);
-              }
-            }
-            //if the first one dont work, that means URL is temporary - retreieve image from temporary URL
-            if (firstImage && firstImage.image && firstImage.image.url) {
-              setOutputImage(firstImage.image.url);
-              setStatus("Processing complete! (URL mode)");
-              return;
-            }
-            
-            if (firstImage && firstImage.image) {
-              console.log("Using direct image data");
-              setOutputImage(firstImage.image);
-              setStatus("Processing complete! (Direct mode)");
-              return;
-            }
-            
-            setError("Unable to extract usable image data from the API response");
-          } else {
-            setError("No image data in response");
-          }
-        } else {
-          setError("Unexpected response format from API");
-        }
-      } else {
-        setError("Invalid response from API");
+    if (Array.isArray(result) && result.length >= 1) {
+      const [imageArray] = result;
+      
+      if (Array.isArray(imageArray) && imageArray.length > 0) {
+        const firstImage = imageArray[0];
+        return firstImage?.image?.originalUrl || null;
       }
-    } catch (error) {
-      console.error("Generate error:", error);
-      setError(error.message || "Failed to process image");
-      setStatus("Processing failed");
-    } finally {
-      setIsProcessing(false);
     }
+    
+    return result?.image?.originalUrl || result?.originalUrl || null;
   };
 
   //convert data URL to File
   const dataURLtoFile = (dataURL, filename) => {    
-    if (!dataURL) {
-      console.log("No dataURL");
-      return null;
-    }
     try {
-      //seporates metadata part from encoded data in 2 parts
       const arr = dataURL.split(',');      
       if (arr.length < 2) {
         return null;
@@ -231,24 +136,62 @@ export default function Inpaint() {
         u8arr[n] = bstr.charCodeAt(n);
       }
       const file = new File([u8arr], filename, { type: mime });
-      console.log(`Created File object: size=${file.size}, type=${file.type}, name=${file.name}`);
       return file;
     } catch (error) {
-      console.error("Error in dataURLtoFile:", error);
+      setError("File URL conversion error.");
       return null;
     }
   };
 
-  //clear image from input
+  //handle generate image
+  const handleGenerate = async () => {
+
+    // Reset states
+    setIsProcessing(true);
+    setError(null);
+    setOutputImage(null);
+  
+    try {
+      const processParams = { ...params, responseType: 'base64' };
+
+      // create URL for both mask and image
+      if (maskData && processableImageData) {
+        const backgroundImage = dataURLtoFile(processableImageData, 'background.png');
+        const maskImage = dataURLtoFile(maskData, 'mask.png');
+        
+        processParams.imageMask = {
+          background: backgroundImage,
+          layers: [maskImage],
+          composite: backgroundImage
+        };
+      }
+      const fileToProcess = selectedFile || (inputPreview ? dataURLtoFile(inputPreview, 'input.png') : null);
+      
+      const result = await processImage(fileToProcess, processParams);
+    
+      const imageUrl = extractImageUrl(result);
+
+      if (imageUrl) {
+        setOutputImage(imageUrl);
+        setStatus("Image generated successfully");
+      } else {
+        setError("Could not extract image URL from response");
+      }
+    } catch (error) {
+      setError(error.message || "Failed to process image");
+      setStatus("Processing failed");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // clear image
   const clearImage = () => {
     setSelectedFile(null);
     setInputPreview(null);
     setOutputImage(null);
-    //setOutputBlob(null);
-    setPreprocessedImage(null);
     setMaskData(null);
     setProcessableImageData(null);
-    setWebpImage(null);
     setError(null);
     setStatus("");
     const fileInput = document.querySelector('input[type="file"]');
@@ -259,20 +202,41 @@ export default function Inpaint() {
   
   //handle download of generated image
   const handleDownload = () => {
-    if (outputBlob) {
-      const url = URL.createObjectURL(outputBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'generated-image.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+    if (outputImage) {
+      if (outputImage.startsWith('data:')) {
+        // It's a data URL, can download directly
+        const link = document.createElement('a');
+        link.href = outputImage;
+        link.download = `object-retouched-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        console.log('Downloaded image from data URL');
+      } else if (outputImage.startsWith('http')) {
+        // It's a remote URL, need to fetch it first
+        fetch(outputImage)
+          .then(response => response.blob())
+          .then(blob => {
+            saveAs(blob, `object-retouched-${Date.now()}.png`);
+            console.log('Downloaded image from remote URL');
+          })
+          .catch(err => {
+            console.error('Failed to download image:', err);
+            setError('Failed to download image');
+          });
+      } else {
+        console.error("Unknown image URL format:", outputImage.substring(0, 30) + "...");
+        setError("Cannot download image: unknown format");
+      }
+    } else {
+      console.error("No image available to download");
+      setError("No image available to download");
     }
   };
 
   //fullscreen when open image
   const openFullscreen = (imageUrl) => {
+    //imageURL -> data:image/webp;base64 format
     setFullscreenImage(imageUrl);
     setIsFullscreen(true);
   };
@@ -289,16 +253,12 @@ export default function Inpaint() {
         AI Object Retouch
       </h1>
 
-      {/* Sidebar */}
-      <div className="pt-4 px-4 pb-2 rounded-xl backdrop-blur-sm bg-gray-800/50 border border-gray-700"
-      ref={sidebarRef}
-      >
+      <div className="pt-4 px-4 pb-2 rounded-xl backdrop-blur-sm bg-gray-800/50 border border-gray-700">
       {/* Prompt field */}
         <PromptField
           params={params}
           handleParamChange={handleParamChange}
           generateRandomSeed={generateRandomSeed}
-          parameterDefinitions={parameterDefinitions}
           status={status}
           error={error}
         />
@@ -321,66 +281,68 @@ export default function Inpaint() {
       
 
       {/* Image Processing Area */}
-      <div className="flex-1 p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
-          {inputPreview ? (
-            <div className="relative flex-1 rounded-2xl p-1 shadow-xl hover:shadow-2xl transition-all duration-300">
-              <div className="h-full w-full rounded-xl backdrop-blur-sm">
-                <div className="absolute top-4 right-4 flex gap-2 z-10">
-                  <button
-                    onClick={() => openFullscreen(inputPreview)}
-                    className="p-2 bg-gray-900/80 hover:bg-blue-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
-                    title="View fullscreen"
-                  >
-                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={clearImage}
-                    className="p-2 bg-gray-900/80 hover:bg-red-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
-                    title="Remove image"
-                  >
-                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                
-                {/* BrushTool */}
-                <div className="w-full h-full">
-                  <BrushTool 
-                    ref={brushToolRef}
-                    inputImage={inputPreview} 
-                    onMaskCreated={handleMaskCreated}
-                    initialSize={brushSize}
-                    initialColor="#ffffff"
-                    isEraser={isEraser}
-                    maxWidth={1000}  
-                    maxHeight={700} 
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <ImageContainer
-              imageSrc={inputPreview}
-              altText="Input preview"
-              onClear={clearImage}
-              onFullscreen={() => openFullscreen(inputPreview)}
-              uploadHandler={handleImageUpload}
-              isInput={true}
-              isBrushMode={isBrushMode}
+      <div className="flex-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {inputPreview ? (
+      <div className="group relative flex-1 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
+        <div className="h-full w-full flex flex-col items-center justify-center rounded-xl backdrop-blur-sm">
+          <div className="relative w-full h-[500px] flex items-center justify-center rounded-lg overflow-hidden bg-gray-800/40 px-4 py-4">
+            {/* BrushTool */}
+            <BrushTool 
+              inputImage={inputPreview} 
+              onMaskCreated={handleMaskCreated}
+              initialSize={brushSize}
+              initialColor="#ffffff"
+              isEraser={isEraser}
+              maxWidth={800}  
+              maxHeight={500} 
+              onReady={handleUseBrushTool} 
             />
-          )}
-          <ImageContainer
-            imageSrc={outputImage}
-            altText="Generated output"
-            onDownload={handleDownload}
-            onFullscreen={() => openFullscreen(outputImage)}
-            isInput={false}
-          />
+            
+            <div className="absolute top-4 right-4 flex gap-2 z-50">
+              <button
+                onClick={() => openFullscreen(inputPreview)}
+                className="p-2 bg-gray-900/80 hover:bg-gray-700/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                title="View fullscreen"
+              >
+                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              </button>
+              <button
+                onClick={clearImage}
+                className="p-2 bg-gray-900/80 hover:bg-red-500/90 rounded-lg backdrop-blur-sm border border-gray-600/50 shadow-md transition-all hover:scale-110"
+                title="Remove image"
+              >
+                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div className="h-[72px] w-full mt-4"></div>
         </div>
+      </div>
+      ) : (
+        <ImageContainer
+          imageSrc={inputPreview}
+          altText="Input preview"
+          onClear={clearImage}
+          onFullscreen={() => openFullscreen(inputPreview)}
+          uploadHandler={handleImageUpload}
+          isInput={true}
+          isBrushMode={true}
+          maskData={maskData}
+        />
+      )}
+      <ImageContainer
+        imageSrc={outputImage}
+        altText="Generated output"
+        onDownload={handleDownload}
+        onFullscreen={() => openFullscreen(outputImage)}
+        isInput={false}
+      />
+      </div>
       </div>
       
       {/* Fullscreen Modal */}

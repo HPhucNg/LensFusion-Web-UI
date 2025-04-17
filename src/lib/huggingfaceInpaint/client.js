@@ -69,7 +69,12 @@ export async function processImage(imageFile, params = {}) {
         const dataUrl = `data:${contentType};base64,${base64Image}`;
         
         return [
-          [{ image: { url: dataUrl } }],
+          [{ 
+            image: { 
+              url: dataUrl,
+              originalUrl: dataUrl 
+            } 
+          }],
           result.data[1]
         ];
       }
