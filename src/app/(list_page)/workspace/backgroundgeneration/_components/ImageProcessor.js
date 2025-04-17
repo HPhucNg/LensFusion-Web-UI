@@ -6,6 +6,9 @@ import { defaultParams, parameterDefinitions } from '@/lib/huggingface/clientCon
 import { saveAs } from 'file-saver';
 import { templates } from '@/lib/templates';
 import { useClickAway } from 'react-use';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db, storage, auth } from '@/firebase/FirebaseConfig';
 
 import { SettingsSidebar } from './SettingsSidebar';
 import { TemplateGrid } from './TemplateGrid';
@@ -34,6 +37,8 @@ export default function ImageProcessor() {
   const [fullscreenImage, setFullscreenImage] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
+  const [currentUser, setCurrentUser] = useState(null);
+  
   //resizing state managements
   const [isResizing, setIsResizing] = useState(false);
   const [imageToResize, setImageToResize] = useState(null);
@@ -42,6 +47,15 @@ export default function ImageProcessor() {
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   //image positioning set to  original size
   const [scalePercentage, setScalePercentage] = useState(1.0); 
+
+  // Firebase auth listener
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      setCurrentUser(user);
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   //handles image positioning
   const handleScaleChange = (value) => {
@@ -288,8 +302,16 @@ export default function ImageProcessor() {
         const [imageArray, webpResult] = result;
         
         if (Array.isArray(imageArray) && imageArray.length >= 2) {
-          setOutputImage(imageArray[0]?.image?.url || null);
-          setPreprocessedImage(imageArray[1]?.image?.url || null);
+          if (imageArray[0]?.image?.url) {
+            setOutputImage(imageArray[0].image.url);
+            // Auto-save to gallery if the user is logged in
+            if (currentUser) {
+              await saveToUserGallery(imageArray[0].image.url);
+            }
+          }
+          if (imageArray[1]?.image?.url) {
+            setPreprocessedImage(imageArray[1].image.url);
+          }
         }
         
         if (webpResult?.url) {
@@ -328,7 +350,7 @@ export default function ImageProcessor() {
     setSelectedTemplateId(template.id);
   };
 
-  // Template generate handler
+  // Modified template generate handler
   const handleTemplateGenerate = (template) => {
     handleTemplateSelect(template);
     handleGenerate();
@@ -347,6 +369,74 @@ export default function ImageProcessor() {
     } catch (error) {
       console.error('Download failed:', error);
       setError('Failed to download image. Please try again.');
+    }
+  };
+
+  const saveToUserGallery = async (imageUrl) => {
+    if (!currentUser || !currentUser.uid) {
+      // Silently fail if not logged in
+      console.log("User not logged in, skipping gallery save");
+      return false;
+    }
+    
+    try {
+      const timestamp = Date.now();
+      const filename = `background-generated-${timestamp}.webp`;
+      
+      // Convert image to WebP format
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // Create a canvas to convert to WebP
+      const img = new Image();
+      const loadImagePromise = new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = URL.createObjectURL(blob);
+      });
+      
+      await loadImagePromise;
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      
+      // Convert to WebP with quality 0.8 (80%)
+      const webpBlob = await new Promise(resolve => {
+        canvas.toBlob(resolve, 'image/webp', 0.8);
+      });
+      
+      // Upload the WebP blob
+      const storageRef = ref(storage, `user_images/${currentUser.uid}/${filename}`);
+      await uploadBytes(storageRef, webpBlob);
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      // Extract prompts from current parameters
+      // If prompt is empty or just whitespace, set to null
+      const positivePrompt = params.prompt && params.prompt.trim() ? params.prompt : null;
+      
+      // For negative prompt, use the default value if user hasn't modified it
+      const defaultNegativePrompt = "watermark, text, Logo, wrong color";
+      const negativePrompt = params.negativePrompt && 
+                            params.negativePrompt !== defaultNegativePrompt ? 
+                            params.negativePrompt : defaultNegativePrompt;
+      
+      const userImageRef = collection(db, 'user_images');
+      await addDoc(userImageRef, {
+        userID: currentUser.uid,
+        img_data: downloadURL,
+        positivePrompt: positivePrompt,
+        negativePrompt: negativePrompt,
+        createdAt: serverTimestamp(),
+        type: 'background-generated'
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error saving to gallery:', error);
+      return false;
     }
   };
 
