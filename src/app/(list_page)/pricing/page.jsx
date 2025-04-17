@@ -199,7 +199,7 @@ function PricingPage() {
             {/* if the user is subscribed to one of the plans, show 'cancel subscription' */}
             {isCurrentActivePlan && (
                 <button
-                  className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors w-full text-left"
                   onClick={handleCancelSubscription}
                 >
                   Cancel Subscription
