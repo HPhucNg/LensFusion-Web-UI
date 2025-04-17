@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getSessions, deleteSession } from '@/lib/sessionManager';
+import { getSessions } from '@/lib/sessionManager';
 import { Button } from '@/components/ui/button';
 import { 
   Laptop, 
@@ -7,7 +7,6 @@ import {
   Globe, 
   X, 
   Tablet, 
-  AlertTriangle, 
   Search, 
   Clock, 
   MapPin,
@@ -19,18 +18,17 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { signOut } from 'firebase/auth';
 
 export default function ActiveSessions({ userId, onClose }) {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [sessionToTerminate, setSessionToTerminate] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('lastActive');
   const [sortOrder, setSortOrder] = useState('desc');
   const [filterBy, setFilterBy] = useState('all');
-  const { currentUser } = useAuth();
+  const { currentUser, auth } = useAuth();
 
   useEffect(() => {
     fetchSessions();
@@ -50,39 +48,12 @@ export default function ActiveSessions({ userId, onClose }) {
     }
   };
 
-  const handleTerminateSession = async (sessionId) => {
+  const handleSignOutAll = async () => {
     try {
-      console.log('Attempting to terminate session:', sessionId);
-      await deleteSession(sessionId);
+      console.log('Attempting to sign out of all devices');
       
-      // Check if this was the current session
-      const wasCurrentSession = sessions.find(s => 
-        s.id === sessionId && 
-        s.deviceInfo.userAgent === navigator.userAgent && 
-        s.deviceInfo.platform === navigator.platform
-      );
-
-      if (!wasCurrentSession) {
-        // Only update the UI if it wasn't the current session
-        setSessions(sessions.filter(session => session.id !== sessionId));
-        setShowConfirm(false);
-        setSessionToTerminate(null);
-      }
-      // If it was the current session, the deleteSession function will handle the redirect
-    } catch (error) {
-      console.error('Error terminating session:', error);
-      setError('Failed to terminate session: ' + error.message);
-      setShowConfirm(false);
-      setSessionToTerminate(null);
-    }
-  };
-
-  const handleTerminateAll = async () => {
-    try {
-      console.log('Attempting to terminate all sessions');
-      
-      // Show confirmation for terminating all sessions
-      if (window.confirm('Are you sure you want to terminate all sessions? This will log you out of all devices.')) {
+      // Show confirmation for signing out of all devices
+      if (window.confirm('Are you sure you want to sign out of all devices? This will log you out everywhere.')) {
         try {
           // List of all possible auth-related cookies
           const authCookies = [
@@ -115,16 +86,8 @@ export default function ActiveSessions({ userId, onClose }) {
           localStorage.clear();
           sessionStorage.clear();
           
-          // Terminate all sessions
-          for (const session of sessions) {
-            try {
-              console.log('Terminating session:', session.id);
-              await deleteSession(session.id);
-            } catch (error) {
-              console.error('Error terminating session:', session.id, error);
-              // Continue with other sessions even if one fails
-            }
-          }
+          // Sign out from Firebase
+          await signOut(auth);
           
           // Add a small delay to ensure cleanup is complete
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -142,14 +105,9 @@ export default function ActiveSessions({ userId, onClose }) {
         }
       }
     } catch (error) {
-      console.error('Error terminating all sessions:', error);
-      setError('Failed to terminate sessions: ' + error.message);
+      console.error('Error signing out of all devices:', error);
+      setError('Failed to sign out of all devices: ' + error.message);
     }
-  };
-
-  const confirmTermination = (session) => {
-    setSessionToTerminate(session);
-    setShowConfirm(true);
   };
 
   const getDeviceIcon = (userAgent) => {
@@ -273,10 +231,10 @@ export default function ActiveSessions({ userId, onClose }) {
             {sessions.length > 1 && (
               <Button
                 variant="destructive"
-                onClick={handleTerminateAll}
+                onClick={handleSignOutAll}
                 className="w-full bg-red-600 hover:bg-red-700 text-white"
               >
-                Terminate All Other Sessions
+                Sign Out of All Devices
               </Button>
             )}
           </div>
@@ -322,16 +280,6 @@ export default function ActiveSessions({ userId, onClose }) {
                       </p>
                     </div>
                   </div>
-                  {!isCurrentSession && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => confirmTermination(session)}
-                      className="bg-red-600 hover:bg-red-700 text-white"
-                    >
-                      Terminate
-                    </Button>
-                  )}
                 </div>
               );
             })}
@@ -341,47 +289,6 @@ export default function ActiveSessions({ userId, onClose }) {
             )}
           </div>
         </div>
-
-        {/* Confirmation Dialog */}
-        {showConfirm && sessionToTerminate && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-[#0D161F] border border-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-              <div className="flex items-center gap-3 mb-4">
-                <AlertTriangle className="h-6 w-6 text-yellow-500" />
-                <h3 className="text-lg font-semibold text-white">Confirm Termination</h3>
-              </div>
-              <p className="text-gray-400 mb-4">
-                Are you sure you want to terminate this session? This will log out the device:
-              </p>
-              <div className="bg-gray-800/50 p-3 rounded mb-4">
-                <p className="text-sm text-white">{sessionToTerminate.deviceInfo.platform}</p>
-                <p className="text-xs text-gray-400">{sessionToTerminate.deviceInfo.userAgent}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Last active: {formatDuration(sessionToTerminate.lastActive)}
-                </p>
-              </div>
-              <div className="flex justify-end gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowConfirm(false);
-                    setSessionToTerminate(null);
-                  }}
-                  className="text-gray-400 hover:text-white"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => handleTerminateSession(sessionToTerminate.id)}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Terminate Session
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
