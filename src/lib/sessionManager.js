@@ -1,4 +1,4 @@
-import { db } from '@/firebase/FirebaseConfig';
+import { db, auth } from '@/firebase/FirebaseConfig';
 import {
   collection,
   addDoc,
@@ -12,8 +12,11 @@ import {
   doc,
   writeBatch,
   Timestamp,
-  limit
+  limit,
+  getDoc
 } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { deleteCookie } from 'cookies-next';
 
 // Constants
 const SESSION_EXPIRY_DAYS = 14;
@@ -21,6 +24,14 @@ const LAST_ACTIVE_UPDATE_INTERVAL = 30 * 60 * 1000; // 30 minutes in millisecond
 const MAX_SESSIONS_PER_USER = 5;
 const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes in milliseconds
 const BATCH_SIZE = 20; // Maximum number of operations per batch
+
+// Helper function to safely get timestamp
+const getTimestampValue = (timestamp) => {
+  if (!timestamp) return null;
+  if (timestamp.toDate) return timestamp.toDate();
+  if (timestamp instanceof Date) return timestamp;
+  return new Date(timestamp);
+};
 
 // Client-side cache
 let sessionCache = {
@@ -47,6 +58,13 @@ const getExpirationTimestamp = () => {
   const expirationDate = new Date();
   expirationDate.setDate(expirationDate.getDate() + SESSION_EXPIRY_DAYS);
   return Timestamp.fromDate(expirationDate);
+};
+
+/**
+ * Get current timestamp
+ */
+const getCurrentTimestamp = () => {
+  return Timestamp.fromDate(new Date());
 };
 
 /**
@@ -91,9 +109,12 @@ const cleanupExpiredSessions = async (userId) => {
   try {
     // Check cache first
     if (isCacheValid() && sessionCache.data.userId === userId) {
-      const now = Date.now();
+      const now = getCurrentTimestamp();
       const expiredSessions = sessionCache.data.sessions.filter(
-        session => session.expiresAt.toDate().getTime() <= now
+        session => {
+          const expiresAt = getTimestampValue(session.expiresAt);
+          return expiresAt && expiresAt.getTime() <= now.toDate().getTime();
+        }
       );
       
       if (expiredSessions.length > 0) {
@@ -104,7 +125,10 @@ const cleanupExpiredSessions = async (userId) => {
         
         // Update cache
         sessionCache.data.sessions = sessionCache.data.sessions.filter(
-          session => session.expiresAt.toDate().getTime() > now
+          session => {
+            const expiresAt = getTimestampValue(session.expiresAt);
+            return expiresAt && expiresAt.getTime() > now.toDate().getTime();
+          }
         );
       }
       return;
@@ -114,8 +138,8 @@ const cleanupExpiredSessions = async (userId) => {
     const expiredQuery = query(
       sessionsRef,
       where('userId', '==', userId),
-      where('expiresAt', '<=', Timestamp.now()),
-      limit(BATCH_SIZE) // Limit the number of documents to process
+      where('expiresAt', '<=', getCurrentTimestamp()),
+      limit(BATCH_SIZE)
     );
     
     const expiredSessions = await getDocs(expiredQuery);
@@ -150,9 +174,11 @@ export const createSession = async (userId, deviceInfo) => {
       );
 
       if (existingSession) {
-        const now = Date.now();
-        if (!existingSession.lastActive || 
-            (now - existingSession.lastActive.toDate().getTime()) > LAST_ACTIVE_UPDATE_INTERVAL) {
+        const now = getCurrentTimestamp();
+        const lastActive = getTimestampValue(existingSession.lastActive);
+        
+        if (!lastActive || 
+            (now.toDate().getTime() - lastActive.getTime()) > LAST_ACTIVE_UPDATE_INTERVAL) {
           await updateDoc(doc(db, 'user_sessions', existingSession.id), {
             lastActive: serverTimestamp(),
             expiresAt: getExpirationTimestamp()
@@ -170,7 +196,7 @@ export const createSession = async (userId, deviceInfo) => {
     const activeSessionsQuery = query(
       sessionsRef,
       where('userId', '==', userId),
-      where('expiresAt', '>', Timestamp.now()),
+      where('expiresAt', '>', getCurrentTimestamp()),
       orderBy('expiresAt', 'asc'),
       limit(MAX_SESSIONS_PER_USER)
     );
@@ -224,9 +250,9 @@ export const getSessions = async (userId) => {
     if (isCacheValid() && sessionCache.data.userId === userId) {
       return sessionCache.data.sessions.map(session => ({
         ...session,
-        lastActive: session.lastActive?.toDate(),
-        createdAt: session.createdAt?.toDate(),
-        expiresAt: session.expiresAt?.toDate()
+        lastActive: getTimestampValue(session.lastActive),
+        createdAt: getTimestampValue(session.createdAt),
+        expiresAt: getTimestampValue(session.expiresAt)
       }));
     }
 
@@ -234,17 +260,17 @@ export const getSessions = async (userId) => {
     const q = query(
       sessionsRef,
       where('userId', '==', userId),
-      where('expiresAt', '>', Timestamp.now()),
-      limit(MAX_SESSIONS_PER_USER) // Limit the number of documents to fetch
+      where('expiresAt', '>', getCurrentTimestamp()),
+      limit(MAX_SESSIONS_PER_USER)
     );
     const querySnapshot = await getDocs(q);
 
     const sessions = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-      lastActive: doc.data().lastActive?.toDate(),
-      createdAt: doc.data().createdAt?.toDate(),
-      expiresAt: doc.data().expiresAt?.toDate()
+      lastActive: getTimestampValue(doc.data().lastActive),
+      createdAt: getTimestampValue(doc.data().createdAt),
+      expiresAt: getTimestampValue(doc.data().expiresAt)
     }));
 
     // Update cache
@@ -268,7 +294,88 @@ export const getSessions = async (userId) => {
  */
 export const deleteSession = async (sessionId) => {
   try {
-    await deleteDoc(doc(db, 'user_sessions', sessionId));
+    console.log('Starting session deletion for ID:', sessionId);
+    
+    // Get the session
+    const sessionRef = doc(db, 'user_sessions', sessionId);
+    const sessionDoc = await getDoc(sessionRef);
+
+    if (!sessionDoc.exists()) {
+      console.log('Session not found:', sessionId);
+      throw new Error('Session not found');
+    }
+
+    const sessionData = sessionDoc.data();
+    
+    // Check if this is the current session
+    const isCurrentSession = 
+      sessionData.deviceInfo.userAgent === navigator.userAgent && 
+      sessionData.deviceInfo.platform === navigator.platform;
+
+    // Delete the session
+    await deleteDoc(sessionRef);
+    console.log('Successfully terminated session:', sessionId);
+    
+    // If this is the current session, sign out the user and clear all data
+    if (isCurrentSession) {
+      console.log('Terminating current session, signing out user');
+      
+      try {
+        // List of all possible auth-related cookies
+        const authCookies = [
+          'auth_token',
+          'session_id',
+          'user_id',
+          'authToken',
+          'firebase:authUser',
+          'firebase:host:lensfusion-fc879.firebaseapp.com',
+          'firebase:host:lensfusion-fc879.firebaseapp.com:session',
+          'firebase:host:lensfusion-fc879.firebaseapp.com:session:last',
+          'firebase:host:lensfusion-fc879.firebaseapp.com:session:last:last',
+          'firebase:host:lensfusion-fc879.firebaseapp.com:session:last:last:last'
+        ];
+
+        // Clear all auth-related cookies
+        authCookies.forEach(cookieName => {
+          try {
+            deleteCookie(cookieName);
+            // Also try to delete with domain
+            deleteCookie(cookieName, { domain: window.location.hostname });
+            // And with path
+            deleteCookie(cookieName, { path: '/' });
+          } catch (error) {
+            console.warn(`Failed to delete cookie ${cookieName}:`, error);
+          }
+        });
+        
+        // Clear local storage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Clear the session cache
+        sessionCache = {
+          data: null,
+          timestamp: null
+        };
+        
+        // Sign out from Firebase
+        await signOut(auth);
+        
+        // Add a small delay to ensure cleanup is complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Get the base URL
+        const baseUrl = window.location.origin;
+        
+        // Force a complete page reload with cache clearing
+        window.location.replace(`${baseUrl}/login?clear=1&t=${Date.now()}`);
+      } catch (error) {
+        console.error('Error during cleanup:', error);
+        // Even if cleanup fails, still redirect to login
+        const baseUrl = window.location.origin;
+        window.location.replace(`${baseUrl}/login?clear=1&t=${Date.now()}`);
+      }
+    }
     
     // Update cache if exists
     if (isCacheValid()) {
