@@ -114,7 +114,7 @@ const cleanupExpiredSessions = async (userId) => {
     const expiredQuery = query(
       sessionsRef,
       where('userId', '==', userId),
-      where('expiresAt', '<=', serverTimestamp()),
+      where('expiresAt', '<=', Timestamp.now()),
       limit(BATCH_SIZE) // Limit the number of documents to process
     );
     
@@ -170,7 +170,7 @@ export const createSession = async (userId, deviceInfo) => {
     const activeSessionsQuery = query(
       sessionsRef,
       where('userId', '==', userId),
-      where('expiresAt', '>', serverTimestamp()),
+      where('expiresAt', '>', Timestamp.now()),
       orderBy('expiresAt', 'asc'),
       limit(MAX_SESSIONS_PER_USER)
     );
@@ -234,7 +234,7 @@ export const getSessions = async (userId) => {
     const q = query(
       sessionsRef,
       where('userId', '==', userId),
-      where('expiresAt', '>', serverTimestamp()),
+      where('expiresAt', '>', Timestamp.now()),
       limit(MAX_SESSIONS_PER_USER) // Limit the number of documents to fetch
     );
     const querySnapshot = await getDocs(q);
