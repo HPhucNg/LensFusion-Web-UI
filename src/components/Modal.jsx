@@ -16,13 +16,20 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
     const [pinDetails, setPinDetails] = useState({
         created_by: createdBy,
         title: '',
-        prompt: selectedImage?.prompt || 'No prompt available',
+        prompt: selectedImage?.positivePrompt || 'No prompt available',
+        negativePrompt: selectedImage?.negativePrompt || null,
         img_data: selectedImage?.img_data,
         category: '',  // new category field in pin details state
     });
     
     const [isEditing, setIsEditing] = useState(false); // is editing an existing post
 
+    // Function to truncate text with increased character limit
+    const truncateText = (text, maxLength = 200) => {
+        if (!text) return '';
+        return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+    };
+    
     // check if the post is being managed or new (based on communityPost flag)
     const headingText = imageStatus ? "Manage Post to Community" : "Post to Community";
 
@@ -30,26 +37,40 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
     useEffect(() => {
         const fetchCommunityPost = async () => {
             if (imageStatus) {
-                const communityPostRef = doc(db, 'community', selectedImage.communityPostId);
-                const communityPostDoc = await getDoc(communityPostRef);
-                const userId = communityPostDoc.data().userId;
-                
-                if (communityPostDoc.exists()) {
-                    const communityPostData = communityPostDoc.data();
-                    setPinDetails({
-                        created_by: createdBy,
-                        title: communityPostData.title || '',
-                        prompt: communityPostData.prompt || '',
-                        img_data: selectedImage.img_data, // keep the selected image data
-                        category: communityPostData.category || '',  // keep the category data
-                    });
-                    setIsEditing(true); // editing mode
+                try {
+                    const communityPostRef = doc(db, 'community', selectedImage.communityPostId);
+                    const communityPostDoc = await getDoc(communityPostRef);
+                    
+                    if (communityPostDoc.exists()) {
+                        const communityPostData = communityPostDoc.data();
+                        setPinDetails({
+                            created_by: createdBy,
+                            title: communityPostData.title || '',
+                            prompt: communityPostData.prompt || selectedImage.positivePrompt || 'No prompt available',
+                            negativePrompt: communityPostData.negativePrompt || selectedImage.negativePrompt || null,
+                            img_data: selectedImage.img_data, // keep the selected image data
+                            category: communityPostData.category || '',  // keep the category data
+                        });
+                        setIsEditing(true); // editing mode
+                    }
+                } catch (error) {
+                    console.error("Error fetching community post:", error);
                 }
+            } else {
+                // Initialize with values from the selected image for new posts
+                setPinDetails({
+                    created_by: createdBy,
+                    title: '',
+                    prompt: selectedImage?.positivePrompt || 'No prompt available',
+                    negativePrompt: selectedImage?.negativePrompt || null,
+                    img_data: selectedImage?.img_data,
+                    category: '',
+                });
             }
         };
 
         fetchCommunityPost();
-    }, [selectedImage, createdBy]);
+    }, [selectedImage, createdBy, imageStatus]);
 
     const save_community = async () => {
         const users_data = {
@@ -64,6 +85,7 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
                     created_by: users_data.created_by,
                     title: users_data.title || 'Untitled',
                     prompt: users_data.prompt || 'No prompt available',
+                    negativePrompt: users_data.negativePrompt,
                     img_data: users_data.img_data,
                     userImageId: selectedImage.uid,
                     createdAt: new Date(), // Timestamp
@@ -89,6 +111,8 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
                 await updateDoc(communityPostRef, {
                     title: users_data.title || 'Untitled',
                     category: users_data.category,  // update the category when editing the post
+                    prompt: users_data.prompt,
+                    negativePrompt: users_data.negativePrompt
                 });
                 console.log('Community Post updated with ID: ', selectedImage.communityPostId);
                 add_community(users_data); 
@@ -152,69 +176,95 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 text-white flex justify-center items-center">
-            <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto sm:h-[500px] p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
+            <div className="border-2 border-transparent rounded-[50px] w-full max-w-4xl h-auto min-h-[550px] max-h-[90vh] overflow-y-auto p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}>
                 <div className="flex items-center mb-4 justify-between w-full">
                     <div onClick={closeModal} className="w-4 transform hover:scale-90">
                         <img src="/back-arrow.png" alt="close icon" />
                     </div>
                     <h1 className="text-2xl font-extrabold flex-grow text-center">{headingText}</h1>
-                    {/* show the Remove from Community button only if the image is in the community */}
                     {imageStatus && (
                         <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="w-8 transform hover:scale-90">
-                            <img src="/ellipsis.png" alt="remove icon" />
-                        </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 bg-[#0D161F] border-gray-800">
-                          <DropdownMenuItem onClick={handleRemoveClick} className="text-slate-400 hover:text-white cursor-pointer">
-                            Remove from Community
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      
-                        
+                            <DropdownMenuTrigger asChild>
+                                <button className="w-8 transform hover:scale-90">
+                                    <img src="/ellipsis.png" alt="remove icon" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56 bg-[#0D161F] border-gray-800">
+                                <DropdownMenuItem onClick={handleRemoveClick} className="text-slate-400 hover:text-white cursor-pointer">
+                                    Remove from Community
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     )}
                 </div>
-                <div className='flex flex-col sm:flex-row items-center justify-evenly sm:space-x-6 p-4'> {/* Main section - left and right side */}
+                
+                <div className="flex flex-col sm:flex-row items-start gap-6 p-4 h-full">
                     {/* Left side - image */}
-                    <div className="mb-4 md:mb-0 w-full md:w-[300px] h-[300px] mt-4 overflow-hidden rounded-xl">
+                    <div className="w-full sm:w-[320px] h-[320px] flex-shrink-0 rounded-xl overflow-hidden">
                         {pinDetails.img_data && (
                             <Image 
                                 src={pinDetails.img_data}  
                                 alt="Selected"  
-                                width={300}  
-                                height={300}  
-                                className="object-contain rounded-xl w-full h-full"  
+                                width={320}  
+                                height={320}  
+                                className="object-contain w-full h-full rounded-xl"  
                             />       
                         )}
                     </div>
-                    <div className='flex flex-col space-y-4 w-full sm:w-1/2'>
+                    
+                    {/* Right side - content */}
+                    <div className="w-full sm:flex-1 space-y-4 overflow-y-auto pr-1">
+                        {/* Title input - moved to the top */}
                         <div>
+                            <label className="text-sm font-medium text-gray-400">Title:</label>
                             <input
                                 placeholder="Add your Title Here"
                                 type="text"
-                                className=" bg-transparent placeholder-gray-500 text-2xl border-b-2 border-gray-400 focus:outline-none w-full"
+                                className="bg-transparent placeholder-gray-500 text-lg border-b-2 mt-1 border-gray-400 focus:outline-none w-full"
                                 id="community_title"
                                 value={pinDetails.title}
                                 onChange={(e) => setPinDetails({ ...pinDetails, title: e.target.value })}
                             />
                         </div>
-                        <div className=' flex items-center font-bold text-md'>
-                            {userPic ? (
-                                <img src={userPic} alt="User Photo" className="w-10 h-10 rounded-full mr-2" />
-                            ) : (
-                                <div className="w-10 h-10 bg-gray-500 rounded-full mr-2"></div>
-                            )}
-                            <p>{pinDetails.created_by}</p>
-                        </div>
-                        <div className='h-auto mr-3 mb-4 border-b-2 border-gray-400'>
-                            <div className='text-gray-400 text-sm pb-2'>
-                             <p className='text-gray-500 text-base pt-2'>{pinDetails.prompt}</p>
+                        
+                        {/* Prompts section with truncation but no toggle */}
+                        {(pinDetails.prompt || pinDetails.negativePrompt) && (
+                            <div className="space-y-3">
+                                {pinDetails.prompt && (
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-400">Positive Prompt:</label>
+                                        <div className="text-white text-sm mt-1 bg-gray-800/50 p-2 rounded-md">
+                                            <p>{truncateText(pinDetails.prompt, 200)}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {pinDetails.negativePrompt && (
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-400">Negative Prompt:</label>
+                                        <div className="text-white text-sm mt-1 bg-gray-800/50 p-2 rounded-md">
+                                            <p>{truncateText(pinDetails.negativePrompt, 200)}</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+                        )}
+                        
+                        {/* User info */}
+                        <div className="flex items-center">
+                            {userPic ? (
+                                <img src={userPic} alt="User" className="w-8 h-8 rounded-full mr-2" />
+                            ) : (
+                                <div className="w-8 h-8 bg-gray-600 rounded-full mr-2"></div>
+                            )}
+                            <p className="font-medium">{pinDetails.created_by}</p>
                         </div>
-                        <div> {/* Category Dropdown */}
-                            <select className='focus:outline-none bg-transparent border-2 border-gray-500 rounded-xl w-full sm:w-1/2 mb-2 text-[14px] text-[#727682b1]'
+                        
+                        {/* Category dropdown */}
+                        <div>
+                            <label className="text-sm font-medium text-gray-400">Category:</label>
+                            <select 
+                                className="w-full mt-1 bg-gray-800/50 border border-gray-600 rounded-lg py-2 px-3 text-sm focus:outline-none"
                                 value={pinDetails.category}
                                 onChange={(e) => setPinDetails({ ...pinDetails, category: e.target.value })}
                             >
@@ -225,24 +275,21 @@ function Modal({ closeModal, add_community, selectedImage, userPic, createdBy, u
                                 <option value="jewellery">Jewellery</option>
                                 <option value="bags">Bags</option>
                                 <option value="other">Other</option>
-                            </select> 
+                            </select>
                         </div>
-                        <div>
+                        
+                        {/* Submit button */}
+                        <div className="pt-2">
                             <button
                                 onClick={save_community} 
-                                className="bg-[#8d5aed] w-full sm:w-[200px] h-[40px] rounded-[22px] hover:bg-[#b69aef] transition-colors duration-300"
+                                className="w-full py-2 rounded-full bg-[#8d5aed] hover:bg-[#b69aef] transition-colors duration-300"
                             >
-                                {imageStatus ? 'Update' : 'Publish'}
+                                {imageStatus ? 'Update Post' : 'Publish to Community'}
                             </button>
-
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
     );
 }
