@@ -132,13 +132,13 @@ export default function Home() {
 
         if (result) {
             // set both images
-            const { image1_url, image2_url } = result;
+            const { image1_base64, image2_base64 } = result;
     
-            if (image1_url) {
-                setPrevImage(image1_url);
+            if (image1_base64) {
+                setPrevImage(image1_base64);
             }
-            if (image2_url) {
-                setGeneratedImage(image2_url);
+            if (image2_base64) {
+                setGeneratedImage(image2_base64);
             }
         } else {
             console.error("No valid result received from the inference.");
@@ -201,27 +201,27 @@ export default function Home() {
                     {generatedImage ? (
                         <div className=' w-full h-auto'>
                             <div className="flex justify-end mb-2"> 
-                                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:bg-accent h-8 rounded-md px-3 text-xs text-red-500 hover:text-red-400" onClick={handleClear}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x w-4 h-4 mr-2"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>Clear</button>
+                                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:bg-accent h-8 rounded-md px-3 text-xs text-red-500 hover:text-red-400" onClick={handleClear}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" class="lucide lucide-x w-4 h-4 mr-2"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>Clear</button>
                             </div>
                             <div className="relative w-full h-auto">
                                 {prevImage && (
                                     <img
                                         src={prevImage}
                                         alt="Previous Image"
-                                        className="object-cover rounded-md w-full h-auto "
+                                        className="object-contain rounded-md w-full h-[500px] "
                                     />
                                 )}
                                 {generatedImage && (
                                     <img
                                         src={generatedImage}
                                         alt="Generated Image"
-                                        className="object-cover rounded-md w-full h-auto"
+                                        className="object-contain rounded-md w-full h-[500px]"
                                         style={generateImageStyle}
                                     />
                                 )}
                                 {generatedImage && (
                                     <div
-                                        className="w-[3px] h-full bg-pink-300 absolute top-0 left-0 z-3 cursor-ew-resize"
+                                        className="w-[10px] h-full bg-blue-200 absolute top-0 left-0 z-3 cursor-ew-resize"
                                         style={{
                                             left: `${sliderPosition}%`, // based on the state
                                             transform: 'translateX(0)', // keep slider inside container

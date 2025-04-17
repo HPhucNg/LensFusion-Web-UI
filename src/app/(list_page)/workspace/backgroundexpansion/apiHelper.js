@@ -13,6 +13,13 @@ async function getClient() {
   return {Client, handleFile};
 }
 
+// convert a blob to a base64 data URL using Node.js Buffer
+async function blobToBase64(blob) {
+    const arrayBuffer = await blob.arrayBuffer();
+    const base64String = Buffer.from(arrayBuffer).toString('base64');
+    return `data:${blob.type};base64,${base64String}`;
+  }
+
 // to generate an image
 export const generateImage = async (params) => {
     try {
@@ -87,7 +94,25 @@ export const generateImage = async (params) => {
             console.log("Generated Image 1:", image1_url);
             console.log("Generated Image 2:", image2_url);
 
-            return { image1_url, image2_url };
+            //return { image1_url, image2_url };
+
+            // fetch the file from the remote URL include authorization header
+            const response1 = await fetch(image1_url, {
+                headers: { "Authorization": `Bearer ${process.env.HUGGING_FACE_TOKEN}` }
+                });
+            const response2 = await fetch(image2_url, {
+                headers: { "Authorization": `Bearer ${process.env.HUGGING_FACE_TOKEN}` }
+                });
+
+            const blob1 = await response1.blob();
+            const blob2 = await response2.blob();
+
+            const base64Data1 = await blobToBase64(blob1);
+            const base64Data2 = await blobToBase64(blob2);
+      
+            return { image1_base64: base64Data1, image2_base64: base64Data2 };
+
+
             }     
         return null; // if result is not as expected
     } catch (error) {

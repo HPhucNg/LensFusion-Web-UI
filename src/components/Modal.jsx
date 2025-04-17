@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import '../styles/modal_styles.css';
 import {
     DropdownMenu,
     DropdownMenuContent,

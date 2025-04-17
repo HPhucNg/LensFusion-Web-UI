@@ -61,15 +61,30 @@ function Page() {
       const q = query(
         collection(db, 'community'),
         orderBy('createdAt'),
-        limit(8)
+        limit(8) // can change just set to 8 because we have small set of images 
       );
       
+      // order by likes count but because likes is a subcollection
+      // fetch post normally
+      // count the number of documents in the likes subcollection of each post
+      // sort the posts manually on the client by count before setting them to state
       const querySnapshot = await getDocs(q);
-      const postsArray = [];
-      
-      querySnapshot.forEach((doc) => {
-        postsArray.push({ id: doc.id, ...doc.data() });
-      });
+      const postsArray = await Promise.all(
+        querySnapshot.docs.map(async (docSnap) => {
+          const postData = docSnap.data();
+          const likesRef = collection(db, 'community', docSnap.id, 'likes');
+          const likesSnap = await getDocs(likesRef);
+  
+          return {
+            id: docSnap.id,
+            ...postData,
+            likeCount: likesSnap.size,
+          };
+        })
+      );
+  
+      // Sort by likeCount descending
+      const sortedPosts = postsArray.sort((a, b) => b.likeCount - a.likeCount);
   
       setPosts(postsArray);
       setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);

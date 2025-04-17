@@ -1,6 +1,5 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import '../styles/modal_styles.css';
 import Image from 'next/image';  
 import { getFirestore, collection, doc, deleteDoc, query, where, getDocs, getDoc} from 'firebase/firestore';
 import { getStorage, ref, deleteObject, getDownloadURL } from 'firebase/storage';
@@ -10,13 +9,12 @@ import { saveAs } from 'file-saver';
 
 
 function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' prop
-    /*const [showModalPin, setShowModalPin] = useState(false);*/
     const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false); // control the community modal visibility
     const [selectedFormat, setSelectedFormat] = useState('png');
     const [selectedQuality, setSelectedQuality] = useState('high');
     const [isDownloading, setIsDownloading] = useState(false);
     const [conversionProgress, setConversionProgress] = useState(0);
-    const [imageStatus, setImageStatus] = useState(image?.communityPost);
+    const [imageStatus, setImageStatus] = useState(null);
 
      useEffect(() => {
             const fetchUserImageData = async () => {
@@ -27,7 +25,9 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
     
                         if (userDoc.exists()) {
                             const userImageData = userDoc.data();
-                            setImageStatus(userImageData.communityPost)
+                            // if image has communityPost field = image can be posted to community - imageStatus gets set, else remains null
+                            if (userImageData.hasOwnProperty('communityPost')){
+                                setImageStatus(userImageData.communityPost)}
                         } else {
                             console.log("User Image not found.");
                         }
@@ -200,7 +200,8 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
     
         // check if the image has the required properties for deletion
         console.log('Image to delete:', image);
-        if (image.communityPost) {
+        // check if it has communityPost field and if so, is it true? then delete from community
+        if (image?.hasOwnProperty('communityPost') && image.communityPost === true) {
             const userConfirmed = window.confirm(
                 "This image is posted in the community. Are you sure you want to delete it?"
             );
@@ -234,6 +235,7 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
             }
         }
     };
+    
     
     const postButtonText = imageStatus ? "Manage Post to Community" : "Post to Community";
 
@@ -365,12 +367,13 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
                         {/*<button className="w-full p-3 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] w-[300px] text-white transition-all duration-100">
                             Open Workflow
                         </button>*/}
+                        {imageStatus !== null && (
                         <button
                             onClick={handleCommunityClick}
                             className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
                         >
                             {imageStatus ? "Manage Post to Community" : "Post to Community"}
-                        </button>
+                        </button> )}
                         <button
                             onClick={handleDeleteClick}
                             className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-red-500 hover:bg-red-300 text-white transition-all duration-100"
