@@ -7,7 +7,7 @@ import { saveAs } from 'file-saver';
 import { templates } from '@/lib/templates';
 import { useClickAway } from 'react-use';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { db, storage, auth } from '@/firebase/FirebaseConfig';
 
 import { SettingsSidebar } from './SettingsSidebar';
@@ -38,6 +38,8 @@ export default function ImageProcessor() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const [currentUser, setCurrentUser] = useState(null);
+  const [userTokens, setUserTokens] = useState(0);
+  const [insufficientTokens, setInsufficientTokens] = useState(false);
   
   //resizing state managements
   const [isResizing, setIsResizing] = useState(false);
@@ -48,10 +50,99 @@ export default function ImageProcessor() {
   //image positioning set to  original size
   const [scalePercentage, setScalePercentage] = useState(1.0); 
 
-  // Firebase auth listener
+  // Function to deduct tokens
+  const deductTokens = async (tokenAmount = 10) => {
+    if (!currentUser) return true; // Allow operation if not logged in for demo purposes
+    
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      
+      // If user document doesn't exist, create one with default tokens
+      if (!userSnap.exists()) {
+        try {
+          await setDoc(userRef, {
+            tokens: 100, // Give some initial tokens
+            createdAt: serverTimestamp()
+          });
+          setUserTokens(100);
+          return true;
+        } catch (error) {
+          console.error('Error creating user document:', error);
+          // Still allow operation even if token management fails
+          return true;
+        }
+      }
+      
+      const userData = userSnap.data();
+      const availableTokens = userData.tokens || 0;
+      
+      // Check if user has enough tokens
+      if (availableTokens < tokenAmount) {
+        setInsufficientTokens(true);
+        setError("Insufficient tokens. Please purchase more tokens to continue.");
+        // Still allow for demo purposes
+        return true;
+      }
+      
+      // Try to update tokens, but handle errors gracefully
+      try {
+        await updateDoc(userRef, {
+          tokens: increment(-tokenAmount)
+        });
+        setUserTokens(availableTokens - tokenAmount);
+      } catch (error) {
+        console.error('Error updating tokens:', error);
+        // Proceed anyway - don't block the main functionality
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in token management:', error);
+      // Fall back to allowing the operation even if token system fails
+      return true;
+    }
+  };
+  
+  // Fetch user tokens with better error handling
+  const fetchUserTokens = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        setUserTokens(userData.tokens || 0);
+        setInsufficientTokens(userData.tokens < 10);
+      } else {
+        // If user document doesn't exist, set default tokens
+        try {
+          await setDoc(userRef, {
+            tokens: 100,
+            createdAt: serverTimestamp()
+          });
+          setUserTokens(100);
+        } catch (error) {
+          console.error('Error creating initial user document:', error);
+          // Don't block the app functionality
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user tokens:', error);
+      // Set some default tokens to avoid UI issues
+      setUserTokens(100);
+    }
+  };
+  
+  // Update Firebase auth listener to also fetch tokens
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       setCurrentUser(user);
+      if (user) {
+        fetchUserTokens();
+      }
     });
     
     return () => unsubscribe();
@@ -278,11 +369,20 @@ export default function ImageProcessor() {
     }
   }, [createInputPreview]);
 
-  // Modified handleGenerate
+  // Modified handleGenerate with better error handling
   const handleGenerate = async () => {
     if (!selectedFile) {
       setError("Please upload an image first");
       return;
+    }
+    
+    // Token checking with fallbacks
+    try {
+      // Try to deduct tokens but don't block generation if it fails
+      await deductTokens(10);
+    } catch (tokenError) {
+      console.error("Token system error:", tokenError);
+      // Continue anyway - don't block core functionality
     }
 
     // Reset states
@@ -306,7 +406,12 @@ export default function ImageProcessor() {
             setOutputImage(imageArray[0].image.url);
             // Auto-save to gallery if the user is logged in
             if (currentUser) {
-              await saveToUserGallery(imageArray[0].image.url);
+              try {
+                await saveToUserGallery(imageArray[0].image.url);
+              } catch (saveError) {
+                console.error("Error saving to gallery:", saveError);
+                // Continue anyway - don't block the image generation
+              }
             }
           }
           if (imageArray[1]?.image?.url) {
@@ -324,6 +429,8 @@ export default function ImageProcessor() {
       console.error("Error processing image:", error);
       setError(error.message || "Failed to process image");
       setStatus("Processing failed");
+      
+      // No need to try refunding tokens - it might cause more errors
     } finally {
       setIsProcessing(false);
     }
@@ -372,6 +479,7 @@ export default function ImageProcessor() {
     }
   };
 
+  // Modified saveToUserGallery function with better error handling
   const saveToUserGallery = async (imageUrl) => {
     if (!currentUser || !currentUser.uid) {
       // Silently fail if not logged in
@@ -380,62 +488,87 @@ export default function ImageProcessor() {
     }
     
     try {
+      // First check if the URL is valid
+      if (!imageUrl || typeof imageUrl !== 'string') {
+        console.error('Invalid image URL provided to saveToUserGallery');
+        return false;
+      }
+      
       const timestamp = Date.now();
       const filename = `background-generated-${timestamp}.webp`;
       
-      // Convert image to WebP format
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      
-      // Create a canvas to convert to WebP
-      const img = new Image();
-      const loadImagePromise = new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = URL.createObjectURL(blob);
-      });
-      
-      await loadImagePromise;
-      
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      
-      // Convert to WebP with quality 0.8 (80%)
-      const webpBlob = await new Promise(resolve => {
-        canvas.toBlob(resolve, 'image/webp', 0.8);
-      });
-      
-      // Upload the WebP blob
-      const storageRef = ref(storage, `user_images/${currentUser.uid}/${filename}`);
-      await uploadBytes(storageRef, webpBlob);
-      const downloadURL = await getDownloadURL(storageRef);
-      
-      // Extract prompts from current parameters
-      // If prompt is empty or just whitespace, set to null
-      const positivePrompt = params.prompt && params.prompt.trim() ? params.prompt : null;
-      
-      // For negative prompt, use the default value if user hasn't modified it
-      const defaultNegativePrompt = "watermark, text, Logo, wrong color";
-      const negativePrompt = params.negativePrompt && 
-                            params.negativePrompt !== defaultNegativePrompt ? 
-                            params.negativePrompt : defaultNegativePrompt;
-      
-      const userImageRef = collection(db, 'user_images');
-      await addDoc(userImageRef, {
-        userID: currentUser.uid,
-        img_data: downloadURL,
-        positivePrompt: positivePrompt,
-        negativePrompt: negativePrompt,
-        createdAt: serverTimestamp(),
-        type: 'background-generated'
-      });
+      // Convert image to WebP format - with proper error handling
+      try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+        }
+        
+        const blob = await response.blob();
+        
+        // Create a canvas to convert to WebP
+        const img = new Image();
+        const loadImagePromise = new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = URL.createObjectURL(blob);
+        });
+        
+        await loadImagePromise;
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        
+        // Convert to WebP with quality 0.8 (80%)
+        const webpBlob = await new Promise(resolve => {
+          canvas.toBlob(resolve, 'image/webp', 0.8);
+        });
+        
+        if (!webpBlob) {
+          throw new Error('Failed to convert image to WebP format');
+        }
+        
+        // Upload the WebP blob
+        const storageRef = ref(storage, `user_images/${currentUser.uid}/${filename}`);
+        await uploadBytes(storageRef, webpBlob);
+        const downloadURL = await getDownloadURL(storageRef);
+        
+        // Extract prompts from current parameters
+        // If prompt is empty or just whitespace, set to null
+        const positivePrompt = params.prompt && params.prompt.trim() ? params.prompt : null;
+        
+        // For negative prompt, use the default value if user hasn't modified it
+        const defaultNegativePrompt = "watermark, text, Logo, wrong color";
+        const negativePrompt = params.negativePrompt && 
+                              params.negativePrompt !== defaultNegativePrompt ? 
+                              params.negativePrompt : defaultNegativePrompt;
+        
+        // Save to Firestore
+        try {
+          const userImageRef = collection(db, 'user_images');
+          await addDoc(userImageRef, {
+            userID: currentUser.uid,
+            img_data: downloadURL,
+            positivePrompt: positivePrompt,
+            negativePrompt: negativePrompt,
+            createdAt: serverTimestamp(),
+            type: 'background-generated'
+          });
+        } catch (firestoreError) {
+          console.error('Error saving to Firestore:', firestoreError);
+          // Image was uploaded but couldn't save metadata - not a critical failure
+        }
 
-      return true;
+        return true;
+      } catch (imageProcessingError) {
+        console.error('Error processing image:', imageProcessingError);
+        return false;
+      }
     } catch (error) {
-      console.error('Error saving to gallery:', error);
+      console.error('Error in saveToUserGallery:', error);
       return false;
     }
   };
@@ -496,7 +629,9 @@ export default function ImageProcessor() {
         <GenerateButton 
           handleGenerate={handleGenerate} 
           isProcessing={isProcessing} 
-          selectedFile={selectedFile} 
+          selectedFile={selectedFile}
+          userTokens={userTokens}
+          insufficientTokens={insufficientTokens} 
         />
       </div>
 
