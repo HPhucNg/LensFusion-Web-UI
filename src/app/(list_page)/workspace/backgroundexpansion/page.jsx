@@ -40,7 +40,7 @@ export default function Home() {
         await addDoc(userImageRef, {
           userID: userId,
           img_data: downloadURL,
-          createdAt: serverTimestamp(),
+          createdAt: new Date(),
           type: 'background-expansion'
         });
     
