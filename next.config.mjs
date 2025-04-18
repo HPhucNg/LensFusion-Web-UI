@@ -13,7 +13,7 @@ const nextConfig = {
     },
     experimental: {
       serverActions: {
-        bodySizeLimit: '4mb' // Increased from default 1mb to 4mb
+        bodySizeLimit: '10mb' // Increased from default 1mb to 10mb
       }
     }
   };

@@ -1245,7 +1245,7 @@ export default function UserProfile() {
         user={user}
       />
 
-      <Footer />
+      {/* <Footer /> */}
       {/* Gallery Modal */}
       {showModal && (
                 <GalleryModal

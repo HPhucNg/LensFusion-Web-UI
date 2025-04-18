@@ -4,6 +4,7 @@ import { collection, getDocs, query, orderBy, startAfter, limit } from 'firebase
 import { db } from '@/firebase/FirebaseConfig'; 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import ScrollToTop from '@/components/ScrollToTop';
 import ViewModal from '@/components/ViewModal';
 import Pin from '@/components/Pin'; 
 import '../style.css'; 
@@ -252,7 +253,8 @@ function Page() {
           <button onClick={() => fetchMorePosts()} className="btn__default">More Posts</button>
         )*/}
 
-        <Footer />
+        {/* <Footer /> */}
+        <ScrollToTop />
 
       {/*{selectedImage && <Pin image={selectedImage} />}*/}
 
