@@ -906,7 +906,7 @@ export default function UserProfile() {
   const [userImages, setUserImages] = useState([]); 
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [showCommunityModal, setShowCommunityModal] = useState(false);
+  //const [showCommunityModal, setShowCommunityModal] = useState(false);
   const [theme, setTheme] = useState("dark");
   const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
   const [userSettings, setUserSettings] = useState({
@@ -1074,7 +1074,7 @@ export default function UserProfile() {
     setSelectedImage(image);
     setShowModal(true);
     setImageStatus(image?.communityPost || false);  // Update the imageStatus when an image is clicked
-    console.log(image?.communityPost);
+    //console.log(image?.communityPost);
   };
 
   const closeModal = () => {
@@ -1251,10 +1251,6 @@ export default function UserProfile() {
                 <GalleryModal
                     closeModal={closeModal}
                     image={selectedImage}
-                    userPic={user.photoURL}
-                    createdBy={user?.displayName}
-                    imageStatus={imageStatus}  // Pass imageStatus as prop
-                    updateImageStatus={setImageStatus}  // Pass function to update imageStatus
                     onDelete={handleImageDelete}  // Pass the delete function
                 />
       )}
