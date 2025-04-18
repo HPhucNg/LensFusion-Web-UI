@@ -18,7 +18,11 @@ export default function ResultViewer({
   };
 
   return (
-    <div className="w-full h-[450px] flex items-center justify-center relative border-2 border-dashed border-gray-600 hover:border-purple-500 transition-all duration-300 rounded-xl bg-gray-800/30">
+    <div className={`w-full h-[450px] flex items-center justify-center relative border-2 ${
+      resultImage 
+        ? 'border-gray-800/30' 
+        : 'border-dashed border-gray-600'
+    } hover:border-purple-500 transition-all duration-300 rounded-xl bg-gray-800/30`}>
       {/* Action buttons */}
       {resultImage && (
         <div className="absolute top-2 right-2 flex gap-2 z-40">
