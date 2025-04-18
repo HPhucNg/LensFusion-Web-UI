@@ -14,7 +14,7 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
     const [pinDetails, setPinDetails] = useState({
         created_by: '',
         title: '',
-        prompt: selectedImage?.prompt || 'No prompt available',
+        prompt: selectedImage?.positivePrompt || 'No prompt available',
         negativePrompt: selectedImage?.negativePrompt || null,
         img_data: selectedImage?.img_data,
         category: '',  // new category field in pin details state
@@ -23,16 +23,17 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
     const [userData, setUserData] = useState({ created_by: '', userPic: '' });
 
     const [isEditing, setIsEditing] = useState(false); // is editing an existing post
-    // check if the post is being managed or new (based on communityPost flag)
-    const headingText = initialStatus ? "Manage Post to Community" : "Post to Community";
-    const [isLoading, setIsLoading] = useState(false);
-    const [communityPostId, setCommunityPostId] = useState(selectedImage?.communityPostId);
 
     // Function to truncate text with increased character limit
     const truncateText = (text, maxLength = 200) => {
         if (!text) return '';
         return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
     };
+    
+    // check if the post is being managed or new (based on communityPost flag)
+    const headingText = initialStatus ? "Manage Post to Community" : "Post to Community";
+    const [isLoading, setIsLoading] = useState(false);
+    const [communityPostId, setCommunityPostId] = useState(selectedImage?.communityPostId);
 
     // first fetch user data from 'users' collection using selectedImage.userID (userId)
     useEffect(() => {
@@ -302,24 +303,19 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
                                 <option value="jewellery">Jewellery</option>
                                 <option value="bags">Bags</option>
                                 <option value="other">Other</option>
-                            </select> 
+                            </select>
                         </div>
                         <div className='pt-2'>
                             <button
                                 onClick={save_community} 
                                 className="w-full py-2 rounded-full bg-[#8d5aed] hover:bg-[#b69aef] transition-colors duration-300"
                             >
-                                {initialStatus ? 'Update' : 'Publish'}
+                                {imageStatus ? 'Update Post' : 'Publish to Community'}
                             </button>
-
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
     );
 }
