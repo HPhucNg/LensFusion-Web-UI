@@ -1,4 +1,3 @@
-'use client';
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -15,7 +14,7 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
     const [pinDetails, setPinDetails] = useState({
         created_by: '',
         title: '',
-        prompt: selectedImage?.positivePrompt || 'No prompt available',
+        prompt: selectedImage?.prompt || 'No prompt available',
         negativePrompt: selectedImage?.negativePrompt || null,
         img_data: selectedImage?.img_data,
         category: '',  // new category field in pin details state
@@ -24,22 +23,50 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
     const [userData, setUserData] = useState({ created_by: '', userPic: '' });
 
     const [isEditing, setIsEditing] = useState(false); // is editing an existing post
+    // check if the post is being managed or new (based on communityPost flag)
+    const headingText = initialStatus ? "Manage Post to Community" : "Post to Community";
+    const [isLoading, setIsLoading] = useState(false);
+    const [communityPostId, setCommunityPostId] = useState(selectedImage?.communityPostId);
 
     // Function to truncate text with increased character limit
     const truncateText = (text, maxLength = 200) => {
         if (!text) return '';
         return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
     };
-    
-    // check if the post is being managed or new (based on communityPost flag)
-    const headingText = initialStatus ? "Manage Post to Community" : "Post to Community";
-    const [isLoading, setIsLoading] = useState(false);
-    const [communityPostId, setCommunityPostId] = useState(selectedImage?.communityPostId);
 
     // first fetch user data from 'users' collection using selectedImage.userID (userId)
     useEffect(() => {
+        const fetchUserData = async () => {
+            if (selectedImage?.userID) {
+                setIsLoading(true);
+                try {
+                    const userRef = doc(db, 'users', selectedImage.userID);  // fetch by ID from 'users' collection
+                    const userDoc = await getDoc(userRef);
+
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        setUserData({
+                            created_by: userData.name || 'Unknown',  // set the user's name
+                            userPic: userData.photoURL || '',  // set the user's photoURL
+                        });
+                    } else {
+                        console.log("User not found.");
+                    }
+                } catch (error) {
+                    console.error("Error fetching user data: ", error);
+                }
+                setIsLoading(false);
+            }
+        };
+
+        fetchUserData();
+    }, [selectedImage]);
+
+    // then fetch community post data after user data is fetched // fetch post data if communityPost is true
+    useEffect(() => {
         const fetchCommunityPost = async () => {
-            if (imageStatus) {
+            if (initialStatus) {
+                setIsLoading(true);
                 try {
                     const communityPostRef = doc(db, 'community', selectedImage.communityPostId);
                     const communityPostDoc = await getDoc(communityPostRef);
@@ -47,33 +74,27 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
                     if (communityPostDoc.exists()) {
                         const communityPostData = communityPostDoc.data();
                         setPinDetails({
-                            created_by: createdBy,
+                            created_by: userData.created_by,
                             title: communityPostData.title || '',
                             prompt: communityPostData.prompt || selectedImage.positivePrompt || 'No prompt available',
                             negativePrompt: communityPostData.negativePrompt || selectedImage.negativePrompt || null,
                             img_data: selectedImage.img_data, // keep the selected image data
                             category: communityPostData.category || '',  // keep the category data
                         });
-                        setIsEditing(true); // editing mode
+                            setIsEditing(true);
+
                     }
                 } catch (error) {
-                    console.error("Error fetching community post:", error);
+                    console.error("Error fetching community post data: ", error);
                 }
-            } else {
-                // Initialize with values from the selected image for new posts
-                setPinDetails({
-                    created_by: createdBy,
-                    title: '',
-                    prompt: selectedImage?.positivePrompt || 'No prompt available',
-                    negativePrompt: selectedImage?.negativePrompt || null,
-                    img_data: selectedImage?.img_data,
-                    category: '',
-                });
+                setIsLoading(false);
             }
         };
 
-        fetchCommunityPost();
-    }, [selectedImage, createdBy, imageStatus]);
+        if (userData.created_by) {  // only fetch community post once user data is set
+            fetchCommunityPost();
+        }
+    }, [userData, selectedImage]);
 
     const save_community = async () => {
         const users_data = {
@@ -192,26 +213,26 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
                     </div>
                     <h1 className="text-2xl font-extrabold flex-grow text-center">{headingText}</h1>
                     {/* show the Remove from Community button only if the image is in the community */}
-                        
-                    {imageStatus && (
+                    {initialStatus && (
                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button className="w-8 transform hover:scale-90">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-white">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 12h12M6 6h12m-6 12h6"></path>
-                                    </svg>
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 bg-[#0D161F] border-gray-800">
-                                <DropdownMenuItem onClick={handleRemoveClick} className="text-slate-400 hover:text-white cursor-pointer">
-                                    Remove from Community
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="w-8 transform hover:scale-90">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-white">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 12h12M6 6h12m-6 12h6"></path>
+                            </svg>
+                        </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56 bg-[#0D161F] border-gray-800">
+                          <DropdownMenuItem onClick={handleRemoveClick} className="text-slate-400 hover:text-white cursor-pointer">
+                            Remove from Community
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      
+                        
                     )}
                 </div>
-                
-                <div className="flex flex-col sm:flex-row items-start gap-6 p-4 h-full">
+                <div className="flex flex-col sm:flex-row items-start gap-6 p-4 h-full"> {/* Main section - left and right side */}
                     {/* Left side - image */}
                     <div className="w-full sm:w-[320px] h-[320px] flex-shrink-0 rounded-xl overflow-hidden">
                         {pinDetails.img_data && (
@@ -220,14 +241,11 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
                                 alt="Selected"  
                                 width={320}  
                                 height={320}  
-                                className="object-contain w-full h-full rounded-xl"  
+                                className="object-contain w-full h-full rounded-xl" 
                             />       
                         )}
                     </div>
-                    
-                    {/* Right side - content */}
                     <div className="w-full sm:flex-1 space-y-4 overflow-y-auto pr-1">
-                        {/* Title input - moved to the top */}
                         <div>
                             <label className="text-sm font-medium text-gray-400">Title:</label>
                             <input
@@ -239,7 +257,6 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
                                 onChange={(e) => setPinDetails({ ...pinDetails, title: e.target.value })}
                             />
                         </div>
-                        
                         {/* Prompts section with truncation but no toggle */}
                         {(pinDetails.prompt || pinDetails.negativePrompt) && (
                             <div className="space-y-3">
@@ -265,17 +282,14 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
                         
                         {/* User info */}
                         <div className="flex items-center">
-                            {userPic ? (
-                                <img src={userPic} alt="User" className="w-8 h-8 rounded-full mr-2" />
-                            ) : (
-                                <div className="w-8 h-8 bg-gray-600 rounded-full mr-2"></div>
+                            {userData.userPic ? (
+                                <img src={userData.userPic} alt="User" className="w-8 h-8 rounded-full mr-2" />
+                            ) : ( <div className="w-8 h-8 bg-gray-600 rounded-full mr-2"></div>
                             )}
-                            <p className="font-medium">{pinDetails.created_by}</p>
+                            <p className="font-medium">{userData.created_by}</p>
                         </div>
-                        
-                        {/* Category dropdown */}
-                        <div>
-                            <label className="text-sm font-medium text-gray-400">Category:</label>
+                        <div> {/* Category Dropdown */}
+                        <label className="text-sm font-medium text-gray-400">Category:</label>
                             <select 
                                 className="w-full mt-1 bg-gray-800/50 border border-gray-600 rounded-lg py-2 px-3 text-sm focus:outline-none"
                                 value={pinDetails.category}
@@ -288,23 +302,27 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
                                 <option value="jewellery">Jewellery</option>
                                 <option value="bags">Bags</option>
                                 <option value="other">Other</option>
-                            </select>
+                            </select> 
                         </div>
-                        
-                        {/* Submit button */}
-                        <div className="pt-2">
+                        <div className='pt-2'>
                             <button
                                 onClick={save_community} 
                                 className="w-full py-2 rounded-full bg-[#8d5aed] hover:bg-[#b69aef] transition-colors duration-300"
                             >
-                                {imageStatus ? 'Update Post' : 'Publish to Community'}
+                                {initialStatus ? 'Update' : 'Publish'}
                             </button>
+
                         </div>
+
                     </div>
+
                 </div>
+
             </div>
+
         </div>
     );
 }
 
 export default Modal;
+

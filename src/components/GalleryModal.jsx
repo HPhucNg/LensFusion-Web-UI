@@ -237,12 +237,10 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
     };
     
     
-    const postButtonText = imageStatus ? "Manage Post to Community" : "Post to Community";
-
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 text-white flex justify-center items-center">
-            <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto sm:h-[500px] p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
+            <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto min-h-[550px] max-h-[90vh] overflow-y-auto p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}>
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-extrabold">Manage Image</h1>
                     <button onClick={closeModal} className="w-6 h-7 transform hover:scale-90 cursor-pointer bg-[var(--border-gray)] rounded-lg backdrop-blur-sm border">
@@ -259,9 +257,9 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
                             <Image 
                                 src={image.img_data} 
                                 alt="Selected" 
-                                width={300} 
-                                height={300} 
-                                className="object-contain w-full h-full" // image fills the container
+                                width={320}  
+                                height={320}  
+                                className="object-contain w-full h-full rounded-xl"  // image fills the container
                             />
                         ) : (
                             <p>No image selected</p>
