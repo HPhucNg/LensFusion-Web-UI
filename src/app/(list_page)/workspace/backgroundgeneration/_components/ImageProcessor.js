@@ -9,6 +9,7 @@ import { useClickAway } from 'react-use';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { db, storage, auth } from '@/firebase/FirebaseConfig';
+import { saveToGallery } from '@/lib/saveToGallery';
 
 import { SettingsSidebar } from './SettingsSidebar';
 import { TemplateGrid } from './TemplateGrid';
@@ -407,7 +408,18 @@ export default function ImageProcessor() {
             // Auto-save to gallery if the user is logged in
             if (currentUser) {
               try {
-                await saveToUserGallery(imageArray[0].image.url);
+                // Extract prompts from current parameters for metadata
+                const additionalData = {
+                  positivePrompt: params.prompt && params.prompt.trim() ? params.prompt : null,
+                  negativePrompt: params.negativePrompt || "watermark, text, Logo, wrong color"
+                };
+                
+                await saveToGallery(
+                  imageArray[0].image.url, 
+                  currentUser.uid, 
+                  'background-generated', 
+                  additionalData
+                );
               } catch (saveError) {
                 console.error("Error saving to gallery:", saveError);
                 // Continue anyway - don't block the image generation
@@ -476,100 +488,6 @@ export default function ImageProcessor() {
     } catch (error) {
       console.error('Download failed:', error);
       setError('Failed to download image. Please try again.');
-    }
-  };
-
-  // Modified saveToUserGallery function with better error handling
-  const saveToUserGallery = async (imageUrl) => {
-    if (!currentUser || !currentUser.uid) {
-      // Silently fail if not logged in
-      console.log("User not logged in, skipping gallery save");
-      return false;
-    }
-    
-    try {
-      // First check if the URL is valid
-      if (!imageUrl || typeof imageUrl !== 'string') {
-        console.error('Invalid image URL provided to saveToUserGallery');
-        return false;
-      }
-      
-      const timestamp = Date.now();
-      const filename = `background-generated-${timestamp}.webp`;
-      
-      // Convert image to WebP format - with proper error handling
-      try {
-        const response = await fetch(imageUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-        }
-        
-        const blob = await response.blob();
-        
-        // Create a canvas to convert to WebP
-        const img = new Image();
-        const loadImagePromise = new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = URL.createObjectURL(blob);
-        });
-        
-        await loadImagePromise;
-        
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        
-        // Convert to WebP with quality 0.8 (80%)
-        const webpBlob = await new Promise(resolve => {
-          canvas.toBlob(resolve, 'image/webp', 0.8);
-        });
-        
-        if (!webpBlob) {
-          throw new Error('Failed to convert image to WebP format');
-        }
-        
-        // Upload the WebP blob
-        const storageRef = ref(storage, `user_images/${currentUser.uid}/${filename}`);
-        await uploadBytes(storageRef, webpBlob);
-        const downloadURL = await getDownloadURL(storageRef);
-        
-        // Extract prompts from current parameters
-        // If prompt is empty or just whitespace, set to null
-        const positivePrompt = params.prompt && params.prompt.trim() ? params.prompt : null;
-        
-        // For negative prompt, use the default value if user hasn't modified it
-        const defaultNegativePrompt = "watermark, text, Logo, wrong color";
-        const negativePrompt = params.negativePrompt && 
-                              params.negativePrompt !== defaultNegativePrompt ? 
-                              params.negativePrompt : defaultNegativePrompt;
-        
-        // Save to Firestore
-        try {
-          const userImageRef = collection(db, 'user_images');
-          await addDoc(userImageRef, {
-            userID: currentUser.uid,
-            img_data: downloadURL,
-            positivePrompt: positivePrompt,
-            negativePrompt: negativePrompt,
-            createdAt: serverTimestamp(),
-            type: 'background-generated'
-          });
-        } catch (firestoreError) {
-          console.error('Error saving to Firestore:', firestoreError);
-          // Image was uploaded but couldn't save metadata - not a critical failure
-        }
-
-        return true;
-      } catch (imageProcessingError) {
-        console.error('Error processing image:', imageProcessingError);
-        return false;
-      }
-    } catch (error) {
-      console.error('Error in saveToUserGallery:', error);
-      return false;
     }
   };
 
