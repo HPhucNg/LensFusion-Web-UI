@@ -66,24 +66,34 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
     // then fetch community post data after user data is fetched // fetch post data if communityPost is true
     useEffect(() => {
         const fetchCommunityPost = async () => {
-            if (initialStatus) {
+            if (selectedImage?.uid) {
                 setIsLoading(true);
                 try {
-                    const communityPostRef = doc(db, 'community', selectedImage.communityPostId);
-                    const communityPostDoc = await getDoc(communityPostRef);
-                    
-                    if (communityPostDoc.exists()) {
-                        const communityPostData = communityPostDoc.data();
-                        setPinDetails({
-                            created_by: userData.created_by,
-                            title: communityPostData.title || '',
-                            prompt: communityPostData.prompt || selectedImage.positivePrompt || 'No prompt available',
-                            negativePrompt: communityPostData.negativePrompt || selectedImage.negativePrompt || null,
-                            img_data: selectedImage.img_data, // keep the selected image data
-                            category: communityPostData.category || '',  // keep the category data
-                        });
-                            setIsEditing(true);
+                    const userImageRef = doc(db, 'user_images', selectedImage.uid);
+                    const userImageDoc = await getDoc(userImageRef);
 
+                    if (userImageDoc.exists()) {
+                        const userImageData = userImageDoc.data();
+                        setCommunityPostId(userImageData.communityPostId);
+
+                        if (userImageData.communityPostId) {
+                            //console.log("heree", userImageData.communityPostId)
+                            //console.log("post", communityPostId)
+                            const communityPostRef = doc(db, 'community', userImageData.communityPostId);
+                            const communityPostDoc = await getDoc(communityPostRef);
+                            if (communityPostDoc.exists()) {
+                                const communityPostData = communityPostDoc.data();
+                                setPinDetails({
+                                    created_by: communityPostData.created_by || '',
+                                    title: communityPostData.title || '',
+                                    prompt: communityPostData.prompt || selectedImage.positivePrompt || 'No prompt available.',
+                                    negativePrompt: communityPostData.negativePrompt || selectedImage.negativePrompt || null,
+                                    img_data: communityPostData.img_data || selectedImage?.img_data,
+                                    category: communityPostData.category || '',
+                                });
+                                setIsEditing(true);
+                            }
+                        }
                     }
                 } catch (error) {
                     console.error("Error fetching community post data: ", error);
@@ -96,6 +106,7 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
             fetchCommunityPost();
         }
     }, [userData, selectedImage]);
+
 
     const save_community = async () => {
         const users_data = {
@@ -154,7 +165,7 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
     const removeFromCommunity = async () => {
         try {
             // reference to the community post in the 'community' collection
-            const communityPostRef = doc(db, 'community', selectedImage.communityPostId);
+            const communityPostRef = doc(db, 'community', communityPostId);
     
             // remove likes subcollection (if it exists)
             const likesRef = collection(communityPostRef, 'likes');
@@ -310,7 +321,7 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
                                 onClick={save_community} 
                                 className="w-full py-2 rounded-full bg-[#8d5aed] hover:bg-[#b69aef] transition-colors duration-300"
                             >
-                                {imageStatus ? 'Update Post' : 'Publish to Community'}
+                                {initialStatus ? 'Update Post' : 'Publish to Community'}
                             </button>
                         </div>
                     </div>
