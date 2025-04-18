@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { processImage } from '@/lib/huggingfaceInpaint/client';
 import { defaultParams } from '@/lib/huggingfaceInpaint/clientConfig';
 import { saveAs } from 'file-saver';
@@ -11,7 +11,44 @@ import { FullscreenModal } from './FullscreenModal'
 import BrushTool from './BrushTool';
 import DrawingTools from './DrawingTools';
 
+import { auth, db, storage } from '@/firebase/FirebaseConfig';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+
+const saveToUserGallery = async (imageUrl, userId) => {
+  try {
+    const timestamp = Date.now();
+    const filename = `object-retouched-${timestamp}.png`;
+    
+    const storageRef = ref(storage, `user_images/${userId}/${filename}`);
+    
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    
+    await uploadBytes(storageRef, blob);
+    const downloadURL = await getDownloadURL(storageRef);
+    
+    const userImageRef = collection(db, 'user_images');
+    await addDoc(userImageRef, {
+      userID: userId,
+      img_data: downloadURL,
+      createdAt: serverTimestamp(),
+      type: 'object-retouched'
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error saving to gallery:', error);
+    return false;
+  }
+};
+
 export default function Inpaint() {
+  const [user, setUser] = useState(null);
+  const [tokens, setTokens] = useState(0);
+  const [success, setSuccess] = useState(null);
+
   //inpainting states
   const [params, setParams] = useState(defaultParams);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -33,6 +70,20 @@ export default function Inpaint() {
 
   const useBrushTool = useRef(null);
 
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        const userRef = doc(db, "users", currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          setTokens(userDoc.data().tokens || 0);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Canvas Drawing functionality
   const handleUseBrushTool = useCallback((methods) => {
@@ -176,6 +227,16 @@ export default function Inpaint() {
         setStatus("Image generated successfully");
       } else {
         setError("Could not extract image URL from response");
+      }
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        tokens: tokens - 15
+      });
+      setTokens(prev => prev - 15);
+      
+      const saved = await saveToUserGallery(imageUrl, user.uid);
+      if (saved) {
+        setSuccess('Image processed and saved to your gallery successfully!');
       }
     } catch (error) {
       setError(error.message || "Failed to process image");
