@@ -129,7 +129,8 @@ export default function Page() {
                     { src: "https://i.pinimg.com/736x/e1/30/18/e1301863d4a6c3ca747db7ed9ce3beb4.jpg", title: "Background Removal", link: "/dashboard/tools/background-remover" },
                     { src: "https://i.pinimg.com/236x/45/13/a8/4513a815c4134c94384ca72e13e98e12.jpg", title: "Object Swap" },
                     { src: "https://i.pinimg.com/236x/34/51/ba/3451ba07e3c79263075365a92a41ee17.jpg", title: "Image Upscale", link: "/dashboard/tools/image-upscaler" },
-                    { src: "https://i.pinimg.com/236x/f2/b2/50/f2b2505f4dfe13e74d6d445a093a1025.jpg", title: "Object Retouch", link: "/workspace/objectRetouch"}
+                    { src: "https://i.pinimg.com/236x/f2/b2/50/f2b2505f4dfe13e74d6d445a093a1025.jpg", title: "Object Retouch", link: "/workspace/objectRetouch"},
+                    { src: "https://i.pinimg.com/564x/76/fc/96/76fc9644727e2cc03f306e886564dfc7.jpg", title: "Background Expansion", link: "/workspace/backgroundexpansion"}
                   ]},
                   { title: "Template", items: [
                     { src: "https://i.pinimg.com/236x/4e/53/89/4e538924ee22c5077ed18724dc71da95.jpg", title: "Template 1" },

@@ -141,47 +141,73 @@ export const createSession = async (userId, deviceInfo) => {
     // Clean up expired sessions first
     await cleanupExpiredSessions(userId);
 
-    // Check cache for existing session
-    if (isCacheValid() && sessionCache.data.userId === userId) {
-      const existingSession = sessionCache.data.sessions.find(
-        session => 
-          session.deviceInfo.userAgent === deviceInfo.userAgent &&
-          session.deviceInfo.platform === deviceInfo.platform
-      );
-
-      if (existingSession) {
-        const now = Date.now();
-        if (!existingSession.lastActive || 
-            (now - existingSession.lastActive.toDate().getTime()) > LAST_ACTIVE_UPDATE_INTERVAL) {
-          await updateDoc(doc(db, 'user_sessions', existingSession.id), {
-            lastActive: serverTimestamp(),
-            expiresAt: getExpirationTimestamp()
-          });
-          
-          // Update cache
-          existingSession.lastActive = serverTimestamp();
-          existingSession.expiresAt = getExpirationTimestamp();
-        }
-        return existingSession.id;
-      }
-    }
-
-    // Get all active sessions for user with limit
-    const activeSessionsQuery = query(
+    // Check for existing session first, regardless of cache
+    const existingSessionsQuery = query(
       sessionsRef,
       where('userId', '==', userId),
-      where('expiresAt', '>', Timestamp.now()),
-      orderBy('expiresAt', 'asc'),
-      limit(MAX_SESSIONS_PER_USER)
+      where('expiresAt', '>', Timestamp.now())
     );
-    const activeSessions = await getDocs(activeSessionsQuery);
+    
+    const existingSessionsSnapshot = await getDocs(existingSessionsQuery);
+    
+    // Check if any existing session matches this device
+    let existingSession = null;
+    existingSessionsSnapshot.forEach(doc => {
+      const session = { id: doc.id, ...doc.data() };
+      
+      // Compare more device properties for better matching
+      if (session.deviceInfo && 
+          session.deviceInfo.userAgent === deviceInfo.userAgent &&
+          session.deviceInfo.platform === deviceInfo.platform &&
+          session.deviceInfo.language === deviceInfo.language) {
+        existingSession = session;
+      }
+    });
 
-    // If max sessions reached, delete oldest
-    if (activeSessions.size >= MAX_SESSIONS_PER_USER) {
-      const oldestSession = activeSessions.docs[0];
+    // If we found a matching session, update it
+    if (existingSession) {
+      const now = Date.now();
+      const lastActiveTime = existingSession.lastActive?.toDate().getTime() || 0;
+      
+      if ((now - lastActiveTime) > LAST_ACTIVE_UPDATE_INTERVAL) {
+        await updateDoc(doc(db, 'user_sessions', existingSession.id), {
+          lastActive: serverTimestamp(),
+          expiresAt: getExpirationTimestamp()
+        });
+        
+        // Update cache if it exists
+        if (isCacheValid() && sessionCache.data.userId === userId) {
+          const sessionIndex = sessionCache.data.sessions.findIndex(s => s.id === existingSession.id);
+          if (sessionIndex !== -1) {
+            // Store actual Timestamp objects in cache, not serverTimestamp sentinel values
+            sessionCache.data.sessions[sessionIndex].lastActive = Timestamp.now();
+            sessionCache.data.sessions[sessionIndex].expiresAt = getExpirationTimestamp();
+          }
+        }
+      }
+      
+      return existingSession.id;
+    }
+
+    // If no existing session for this device, check if we've reached the limit
+    if (existingSessionsSnapshot.size >= MAX_SESSIONS_PER_USER) {
+      // Sort sessions by lastActive date to find the oldest one
+      const sessions = existingSessionsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      sessions.sort((a, b) => {
+        const aTime = a.lastActive?.toDate().getTime() || a.createdAt?.toDate().getTime() || 0;
+        const bTime = b.lastActive?.toDate().getTime() || b.createdAt?.toDate().getTime() || 0;
+        return aTime - bTime;
+      });
+      
+      // Delete the oldest session
+      const oldestSession = sessions[0];
       await deleteDoc(doc(db, 'user_sessions', oldestSession.id));
       
-      // Update cache if exists
+      // Update cache if it exists
       if (isCacheValid() && sessionCache.data.userId === userId) {
         sessionCache.data.sessions = sessionCache.data.sessions.filter(
           session => session.id !== oldestSession.id
@@ -200,12 +226,31 @@ export const createSession = async (userId, deviceInfo) => {
 
     const docRef = await addDoc(sessionsRef, sessionData);
     
+    // Update cache with actual Timestamp objects
+    const cacheSessionData = {
+      ...sessionData,
+      lastActive: Timestamp.now(),
+      createdAt: Timestamp.now()
+    };
+    
     // Update cache
     if (isCacheValid() && sessionCache.data.userId === userId) {
       sessionCache.data.sessions.push({
         id: docRef.id,
-        ...sessionData
+        ...cacheSessionData
       });
+    } else {
+      // Initialize cache
+      sessionCache = {
+        data: {
+          userId,
+          sessions: [{
+            id: docRef.id,
+            ...cacheSessionData
+          }]
+        },
+        timestamp: Date.now()
+      };
     }
 
     return docRef.id;
@@ -224,9 +269,15 @@ export const getSessions = async (userId) => {
     if (isCacheValid() && sessionCache.data.userId === userId) {
       return sessionCache.data.sessions.map(session => ({
         ...session,
-        lastActive: session.lastActive?.toDate(),
-        createdAt: session.createdAt?.toDate(),
-        expiresAt: session.expiresAt?.toDate()
+        lastActive: session.lastActive && typeof session.lastActive.toDate === 'function' 
+          ? session.lastActive.toDate() 
+          : session.lastActive,
+        createdAt: session.createdAt && typeof session.createdAt.toDate === 'function' 
+          ? session.createdAt.toDate() 
+          : session.createdAt,
+        expiresAt: session.expiresAt && typeof session.expiresAt.toDate === 'function' 
+          ? session.expiresAt.toDate() 
+          : session.expiresAt
       }));
     }
 
