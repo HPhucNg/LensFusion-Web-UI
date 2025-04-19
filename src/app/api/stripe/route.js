@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 
 //handle STRIPE checkout session creation ( used metadata to get the userId )
 
-const stripe = new Stripe(process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const getDomain = () => {
   return process.env.NEXT_PUBLIC_DOMAIN || 'http://localhost:3000'; //test

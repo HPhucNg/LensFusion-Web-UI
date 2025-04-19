@@ -19,6 +19,9 @@ import Modal from '@/components/Modal';
 import ActiveSessions from '@/components/ActiveSessions';
 import { useSubscription } from '@/context/subscriptionContext';
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
+import DoughnutChart from './DoughnutChart';
+import { Category, categoriesData } from './Category'
+
 import { 
   doc, 
   setDoc, 
@@ -909,11 +912,20 @@ export default function UserProfile() {
   //const [showCommunityModal, setShowCommunityModal] = useState(false);
   const [theme, setTheme] = useState("dark");
   const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
+  const [hoveredCategoryIndex, setHoveredCategoryIndex] = useState(null);
   const [userSettings, setUserSettings] = useState({
     interfaceSettings: {
       gridViewType: 'compact',
     }
   });
+ 
+  //const [categories, setCategories] = useState (null)
+  const [activeCategory, setActiveCategory] = useState(-1);
+  const [categoryData, setCategoryData] = useState(categoriesData);
+
+  const updateCategoryData = (data) => {
+    setCategoryData(data);
+  };
 
   const imagesPerPage = 8;
   const totalPages = Math.ceil(userImages.length / imagesPerPage);
@@ -1107,7 +1119,7 @@ export default function UserProfile() {
   return (
     <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
       <Navbar /> 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-1">
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Left Column - Profile */}
           <div className="flex-shrink-0 w-full lg:w-1/4">
@@ -1158,17 +1170,34 @@ export default function UserProfile() {
 
           {/* Right Column - Content */}
           <div className="flex-grow">
-            <div className="mb-8">
-              {/* Milestone Tracker */}
+            <div className="mb-4">
+              {/* Image generation Tracker */}
               <Card className="bg-[var(--card-background)] border-[var(--border-gray)]">
                 <CardHeader>
-                  <h3 className="text-2xl font-bold">Milestone tracker</h3>
+                  <div className="flex flex-col lg:flex-row items-center justify-center gap-6">
+                    
+                    <div className="flex-shrink-0 w-full lg:w-auto lg:max-w-[250px] space-y-4">
+                      <DoughnutChart 
+                        hoveredCategoryIndex={hoveredCategoryIndex}
+                        activeCategory={activeCategory}
+                        categories={categoryData} 
+                      />
+                    </div>
+                    <div className="w-full">
+                      <div className="max-w-[1100px] space-y-6">
+                        <Category 
+                          hoveredIndex={hoveredCategoryIndex}
+                          setHoveredIndex={setHoveredCategoryIndex}
+                          activeCategory={activeCategory}
+                          setActiveCategory={setActiveCategory}
+                          theme={theme}
+                          onCategoriesUpdate={updateCategoryData}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <Progress value={35} className="h-3 rounded-lg" />
-                  <p className="mt-2 text-gray-400">35% Complete</p>
-                </CardContent>
-              </Card>
+            </Card>
             </div>
 
             {/* Gallery Section */}
