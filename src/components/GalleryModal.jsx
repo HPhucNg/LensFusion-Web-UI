@@ -1,21 +1,44 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import '../styles/modal_styles.css';
-import Image from 'next/image';  // Import Image component from next/image
-import { getFirestore, collection, doc, deleteDoc, query, where, getDocs} from 'firebase/firestore';
+import Image from 'next/image';  
+import { getFirestore, collection, doc, deleteDoc, query, where, getDocs, getDoc} from 'firebase/firestore';
 import { getStorage, ref, deleteObject, getDownloadURL } from 'firebase/storage';
 import Modal from '@/components/Modal';
 import { db, storage } from '@/firebase/FirebaseConfig';
 import { saveAs } from 'file-saver';
 
 
-function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, updateImageStatus, onDelete}) {  // Accept the 'image' prop
-    /*const [showModalPin, setShowModalPin] = useState(false);*/
-    const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false); // State to control the community modal visibility
+function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' prop
+    const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false); // control the community modal visibility
     const [selectedFormat, setSelectedFormat] = useState('png');
     const [selectedQuality, setSelectedQuality] = useState('high');
     const [isDownloading, setIsDownloading] = useState(false);
     const [conversionProgress, setConversionProgress] = useState(0);
+    const [imageStatus, setImageStatus] = useState(null);
+
+     useEffect(() => {
+            const fetchUserImageData = async () => {
+                if (image) {
+                    try {
+                        const userImageRef = doc(db, 'user_images', image.uid);  // fetch user by ID from 'users' collection
+                        const userDoc = await getDoc(userImageRef);
+    
+                        if (userDoc.exists()) {
+                            const userImageData = userDoc.data();
+                            // if image has communityPost field = image can be posted to community - imageStatus gets set, else remains null
+                            if (userImageData.hasOwnProperty('communityPost')){
+                                setImageStatus(userImageData.communityPost)}
+                        } else {
+                            console.log("User Image not found.");
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user data: ", error);
+                    }
+                }
+            };
+    
+            fetchUserImageData();
+        }, [image]);
 
     // Handle download with format and quality
     const handleDownload = async () => {
@@ -82,6 +105,7 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
 
     const closeCommunityModal = () => {
         setIsCommunityModalOpen(false); 
+        
         //updateImageStatus(true); // Ensure the status is updated to reflect the community post
     };
 
@@ -176,7 +200,8 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
     
         // check if the image has the required properties for deletion
         console.log('Image to delete:', image);
-        if (image.communityPost) {
+        // check if it has communityPost field and if so, is it true? then delete from community
+        if (image?.hasOwnProperty('communityPost') && image.communityPost === true) {
             const userConfirmed = window.confirm(
                 "This image is posted in the community. Are you sure you want to delete it?"
             );
@@ -211,16 +236,17 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
         }
     };
     
-    const postButtonText = imageStatus ? "Manage Post to Community" : "Post to Community";
-
+    
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 text-white flex justify-center items-center">
-            <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto sm:h-[500px] p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}> {/* Card */}
+            <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto min-h-[550px] max-h-[90vh] overflow-y-auto p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}>
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-extrabold">Manage Image</h1>
-                    <button onClick={closeModal} className="w-8 h-8 transform hover:scale-90">
-                        <img src="/Vector.png" alt="close icon" />
+                    <button onClick={closeModal} className="w-6 h-7 transform hover:scale-90 cursor-pointer bg-[var(--border-gray)] rounded-lg backdrop-blur-sm border">
+                        <svg className="w-6 h-6 " viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
 
@@ -231,9 +257,9 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
                             <Image 
                                 src={image.img_data} 
                                 alt="Selected" 
-                                width={300} 
-                                height={300} 
-                                className="object-contain w-full h-full" // image fills the container
+                                width={320}  
+                                height={320}  
+                                className="object-contain w-full h-full rounded-xl"  // image fills the container
                             />
                         ) : (
                             <p>No image selected</p>
@@ -241,19 +267,19 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
                     </div>
 
                     {/* Right side - menu */}
-                    <div className="flex flex-col gap-4">
+                {!isCommunityModalOpen && ( <>   <div className="flex flex-col gap-4">
                         <div>
                                                     {/* Download options */}
                         <div className="w-full mb-4 space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Format</label>
+                                <label className="text-sm">Format</label>
                                 <div className="flex gap-2">
                                     <button 
                                         onClick={() => setSelectedFormat('jpg')}
                                         className={`px-3 py-1 rounded-lg ${
                                             selectedFormat === 'jpg' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-gray-800 text-gray-400'
+                                                : 'bg-[var(--border-gray)] text-gray-400'
                                         }`}
                                     >
                                         JPG
@@ -263,7 +289,7 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
                                         className={`px-3 py-1 rounded-lg ${
                                             selectedFormat === 'png' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-gray-800 text-gray-400'
+                                                : 'bg-[var(--border-gray)] text-gray-400'
                                         }`}
                                     >
                                         PNG
@@ -273,7 +299,7 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
                                         className={`px-3 py-1 rounded-lg ${
                                             selectedFormat === 'webp' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-gray-800 text-gray-400'
+                                                : 'bg-[var(--border-gray)] text-gray-400'
                                         }`}
                                     >
                                         WebP
@@ -282,14 +308,14 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Quality</label>
+                                <label className="text-sm">Quality</label>
                                 <div className="flex gap-2">
                                     <button 
                                         onClick={() => setSelectedQuality('low')}
                                         className={`px-3 py-1 rounded-lg ${
                                             selectedQuality === 'low' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-gray-800 text-gray-400'
+                                                : 'bg-[var(--border-gray)] text-gray-400'
                                         }`}
                                     >
                                         Low
@@ -299,7 +325,7 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
                                         className={`px-3 py-1 rounded-lg ${
                                             selectedQuality === 'medium' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-gray-800 text-gray-400'
+                                                : 'bg-[var(--border-gray)] text-gray-400'
                                         }`}
                                     >
                                         Medium
@@ -309,7 +335,7 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
                                         className={`px-3 py-1 rounded-lg ${
                                             selectedQuality === 'high' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-gray-800 text-gray-400'
+                                                : 'bg-[var(--border-gray)] text-gray-400'
                                         }`}
                                     >
                                         High
@@ -339,30 +365,30 @@ function GalleryModal({ closeModal, image, createdBy, userPic, imageStatus, upda
                         {/*<button className="w-full p-3 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] w-[300px] text-white transition-all duration-100">
                             Open Workflow
                         </button>*/}
+                        {imageStatus !== null && (
                         <button
                             onClick={handleCommunityClick}
                             className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
                         >
                             {imageStatus ? "Manage Post to Community" : "Post to Community"}
-                        </button>
+                        </button> )}
                         <button
                             onClick={handleDeleteClick}
-                            className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-[hsl(261,80%,64%)] hover:bg-[hsl(260,72.6%,77.1%)] text-white transition-all duration-100"
+                            className="w-[240px] h-[40px] mb-4 rounded-[22px] bg-red-500 hover:bg-red-300 text-white transition-all duration-100"
                         >
                             Delete
                         </button>
                     </div>
+                    </>)}
                 </div>
             </div>
             {isCommunityModalOpen && (
             <Modal 
                 closeModal={closeCommunityModal} 
                 add_community={() => {}}
-                selectedImage={image} 
-                userPic={userPic}
-                createdBy={createdBy}
-                imageStatus={imageStatus}
-                updateImageStatus={updateImageStatus} 
+                selectedImage={image}
+                initialStatus={imageStatus} 
+                setImageStatus={setImageStatus}
             />)}
         </div>
     );
