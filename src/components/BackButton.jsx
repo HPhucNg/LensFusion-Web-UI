@@ -7,7 +7,7 @@ export default function BackButton() {
 
   return (
     <button
-      onClick={() => router.back()}
+      onClick={() => router.push('/dashboard')}
       className="group flex items-center mb-6 px-4 py-2 rounded-md bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
     >
       <svg
