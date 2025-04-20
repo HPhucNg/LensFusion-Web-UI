@@ -8,7 +8,7 @@ export async function upscaleImageServer(imageFile) {
     const response = await fetch('https://app.imggen.ai/v1/upscale-image', {
       method: 'POST',
       headers: {
-        'X-IMGGEN-KEY': process.env.NEXT_PUBLIC_IMGGEN_API_KEY,
+        'X-IMGGEN-KEY': process.env.IMGGEN_API_KEY,
       },
       body: formData
     });
