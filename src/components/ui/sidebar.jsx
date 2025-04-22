@@ -189,7 +189,7 @@ const Sidebar = React.forwardRef((
       <div
         data-sidebar="sidebar"
         className={cn(
-          "flex h-full w-full flex-col bg-sidebar shadow-md transition-all duration-300 dark:bg-gray-900 overflow-y-auto",
+          "flex h-full w-full flex-col bg-sidebar shadow-md transition-all duration-300 dark:bg-gray-900 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]",
           variant === "floating" && "rounded-lg border border-sidebar-border",
           variant === "inset" && "",
           className
@@ -281,7 +281,7 @@ const SidebarInset = React.forwardRef(({ className, ...props }, ref) => {
         marginLeft: isMobile ? '0' : (isCollapsed ? 'var(--sidebar-width-icon, 3.5rem)' : 'var(--sidebar-width, 18rem)')
       }}
       className={cn(
-        "min-h-screen transform-gpu transition-all duration-200 ease-out",
+        "min-h-screen transform-gpu transition-all duration-200 ease-out overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]",
         className
       )}
       {...props} />)
@@ -344,7 +344,7 @@ const SidebarContent = React.forwardRef(({ className, ...props }, ref) => {
       ref={ref}
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto",
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]",
         state === "collapsed" && "overflow-hidden",
         className
       )}
