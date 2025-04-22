@@ -8,6 +8,7 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import ScrollToTop from "@/components/ScrollToTop";
 import Image from "next/image";
@@ -15,6 +16,20 @@ import { auth, db } from "@/firebase/FirebaseConfig";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
+
+// Create a MobileTrigger component to handle conditional rendering
+function MobileTrigger() {
+  const { openMobile } = useSidebar();
+  
+  // Only show trigger when sidebar is closed on mobile
+  if (openMobile) return null;
+  
+  return (
+    <div className="fixed top-4 left-4 z-[100] md:hidden">
+      <SidebarTrigger className="bg-gray-700/70 hover:bg-gray-700 text-white rounded-md shadow-md backdrop-blur-sm" />
+    </div>
+  );
+}
 
 export default function Page() {
   const [user, setUser] = useState(null);
@@ -64,18 +79,19 @@ export default function Page() {
     <div className="relative">
       <SidebarProvider defaultOpen={true}>
         <AppSidebar user={user} />
+        
+        {/* Mobile-only sidebar trigger that hides when sidebar is open */}
+        <MobileTrigger />
+        
         <SidebarInset className="overflow-y-auto">
           <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white min-h-screen pb-16 md:pb-0">
-            {/* Header with fixed position */}
-            <header className="flex h-16 shrink-0 items-center justify-between px-4 fixed top-0 z-50 ml-0 md:ml-[var(--sidebar-width)] w-full md:w-[calc(100%-var(--sidebar-width))] transform-gpu transition-all duration-200 ease-out">
-              <div className="flex items-center">
-                <SidebarTrigger className="relative" />
-              </div>
+            {/* Header with fixed position - no trigger needed */}
+            {/* <header className="flex h-16 shrink-0 items-center justify-end px-4 fixed top-0 z-[100] ml-0 md:ml-[var(--sidebar-width)] w-full md:w-[calc(100%-var(--sidebar-width))] transform-gpu transition-all duration-200 ease-out bg-gradient-to-r from-gray-900/95 via-gray-800/95 to-black/95 backdrop-blur-sm">
               <div className="flex items-center gap-4">
-                  {/* Removed tokens display as it's now in the sidebar */}
+                
               </div>
             </header>
-            
+             */}
             {/* Add padding to account for fixed header */}
             <div className="pt-16">
               <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">

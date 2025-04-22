@@ -132,7 +132,7 @@ export function NavUser({
       <SidebarMenuItem className="mt-2">
         <SidebarMenuButton 
           className={`${isCollapsed ? "justify-center" : "justify-start"} 
-            ${isDarkMode ? "bg-gray-800/50 hover:bg-gray-700/50" : "bg-gray-200 hover:bg-gray-300"} 
+            ${isDarkMode ? "hover:bg-gray-700/50" : "hover:bg-gray-200"} 
             transition-all rounded-md py-2.5 px-3`}
           onClick={() => router.push('/pricing')}
           tooltip={isCollapsed ? "Tokens" : undefined}

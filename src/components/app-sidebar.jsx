@@ -22,7 +22,10 @@ import {
   Clock,
   ChevronRight,
   Brush,
-  Stars
+  Stars,
+  PanelLeftClose,
+  PanelLeft,
+  MoreHorizontal
 } from "lucide-react"
 import { useTheme } from '@/hooks/useTheme'
 import { collection, query, where, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore'
@@ -40,11 +43,25 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
+  SidebarInput,
+  SidebarInset,
   SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
 
@@ -133,7 +150,7 @@ export function AppSidebar({
   ...props
 }) {
   const { theme } = useTheme();
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [recentGenerations, setRecentGenerations] = useState([]);
   const [totalGenerations, setTotalGenerations] = useState(0);
@@ -306,18 +323,23 @@ export function AppSidebar({
                         <Link 
                           href="/dashboard/profile" 
                           className={cn(
-                            "flex items-center gap-3 text-sidebar-muted hover:text-sidebar-foreground font-medium bg-gray-800/20 dark:bg-gray-800/30 rounded-md mt-2",
+                            "flex items-center gap-3 text-sidebar-muted hover:text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-800/30 font-medium rounded-md mt-2",
                             isCollapsed 
                               ? "justify-center p-2" 
                               : "justify-between p-3"
                           )}
                         >
                           {isCollapsed ? (
-                            <span className="sr-only">View all images</span>
+                            <>
+                              <span className="sr-only">View all images</span>
+                              <MoreHorizontal className="h-5 w-5" />
+                            </>
                           ) : (
-                            <span className="text-sm">View all {totalGenerations} images</span>
+                            <>
+                              <span className="text-sm">View all {totalGenerations} images</span>
+                              <ChevronRight className="h-4 w-4" />
+                            </>
                           )}
-                          <ChevronRight className={cn("h-4 w-4", isCollapsed && "mx-auto")} />
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -342,6 +364,31 @@ export function AppSidebar({
           </SidebarGroup>
           
           <NavSecondary items={data.navSecondary} className="mt-auto" />
+          
+          {/* Collapsible Sidebar Button - Simplified */}
+          <SidebarGroup className="mt-2 mb-4">
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className={cn(
+                    "flex items-center border-t border-gray-200 dark:border-gray-700/30 hover:bg-gray-100 dark:hover:bg-gray-800/30 transition-colors rounded-none",
+                    isCollapsed ? "justify-center py-3" : "justify-start py-3 px-2"
+                  )}
+                  onClick={() => toggleSidebar()}
+                  tooltip={isCollapsed ? "Expand sidebar" : undefined}
+                >
+                  {isCollapsed ? (
+                    <PanelLeft className="h-5 w-5 text-gray-500" />
+                  ) : (
+                    <>
+                      <PanelLeftClose className="h-5 w-5 text-gray-500" />
+                      <span className="ml-2 text-sm text-gray-500">Collapse</span>
+                    </>
+                  )}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
         </SidebarContent>
       </Sidebar>
 
