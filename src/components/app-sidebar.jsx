@@ -91,7 +91,7 @@ const data = {
     },
     {
       name: "Object Removal",
-      url: "/dashboard/tools/object-removal",
+      url: "/workspace/objectremoval",
       icon: Eraser,
     },
     {
