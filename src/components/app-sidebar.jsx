@@ -20,7 +20,9 @@ import {
   ZoomIn,
   History,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Brush,
+  Stars
 } from "lucide-react"
 import { useTheme } from '@/hooks/useTheme'
 import { collection, query, where, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore'
@@ -68,12 +70,12 @@ const data = {
     {
       name: "Object Retouch",
       url: "/workspace/objectRetouch",
-      icon: Eraser,
+      icon: Brush,
     },
     {
       name: "Object Removal",
       url: "/dashboard/tools/object-removal",
-      icon: Trash2,
+      icon: Eraser,
     },
     {
       name: "Background Expansion",
@@ -88,7 +90,7 @@ const data = {
     {
       name: "Image UpScale",
       url: "/dashboard/tools/image-upscaler",
-      icon: ZoomIn,
+      icon: Stars,
     },
   ]
 }
@@ -213,8 +215,9 @@ export function AppSidebar({
     name: user?.displayName || "User",
     email: user?.email || "user@example.com",
     avatar: user?.photoURL || "",
-    subscriptionStatus: user?.subscriptionStatus || "inactive"
-  }), [user?.displayName, user?.email, user?.photoURL, user?.subscriptionStatus]);
+    subscriptionStatus: user?.subscriptionStatus || "inactive",
+    tokens: user?.tokens || 0
+  }), [user?.displayName, user?.email, user?.photoURL, user?.subscriptionStatus, user?.tokens]);
 
   return (
     <>
@@ -231,9 +234,9 @@ export function AppSidebar({
           
           {/* Recent Generations Section */}
           <SidebarGroup>
-            <SidebarGroupLabel className="text-[color:hsl(var(--sidebar-foreground))] font-semibold flex items-center justify-between text-base">
+            <SidebarGroupLabel className="text-[color:hsl(var(--sidebar-foreground))]">
               <div className="flex items-center gap-2">
-                <History className="h-5 w-5" />
+                <History className="h-4 w-4" />
                 <span>Recent Generations</span>
               </div>
             </SidebarGroupLabel>
@@ -242,7 +245,10 @@ export function AppSidebar({
                 // Show loading skeletons
                 Array(3).fill(0).map((_, index) => (
                   <SidebarMenuItem key={`skeleton-${index}`}>
-                    <div className="flex items-center gap-3 p-3">
+                    <div className={cn(
+                      "flex items-center gap-3 p-3",
+                      isCollapsed && "justify-center"
+                    )}>
                       <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 animate-pulse rounded-md"></div>
                       {!isCollapsed && (
                         <>
@@ -260,7 +266,10 @@ export function AppSidebar({
                     <SidebarMenuItem key={gen.uid} className="mb-2">
                       <div className="px-2">
                         <div 
-                          className="flex items-center gap-3 text-sidebar-muted hover:text-sidebar-foreground font-medium cursor-pointer"
+                          className={cn(
+                            "flex items-center gap-3 text-sidebar-muted hover:text-sidebar-foreground font-medium cursor-pointer",
+                            isCollapsed && "justify-center"
+                          )}
                           onClick={(e) => handleImageClick(e, gen)}
                         >
                           <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-300 flex-shrink-0 border border-gray-400 dark:border-gray-700">

@@ -29,7 +29,7 @@ export function NavProjects({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Projects</SidebarGroupLabel>
+      <SidebarGroupLabel>AI Tools</SidebarGroupLabel>
       <SidebarMenu>
         {projects.map((project) => (
           <SidebarMenuItem key={project.name}>

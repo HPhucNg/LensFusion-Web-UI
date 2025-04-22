@@ -72,18 +72,7 @@ export default function Page() {
                 <SidebarTrigger className="relative" />
               </div>
               <div className="flex items-center gap-4">
-                  {loading ? (
-                    <span className="text-lg font-medium">...Loading...</span>
-                  ) : !user ? (
-                    <span className="text-lg font-medium">Please log in to view your tokens.</span>
-                  ) : (
-                    <span
-                    className="text-center py-1 border-2 border-white bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-10 whitespace-nowrap overflow-hidden cursor-pointer"
-                      onClick={() => handleTokens('/payment')}
-                    >
-                      Tokens: {tokens}
-                    </span>
-                  )}
+                  {/* Removed tokens display as it's now in the sidebar */}
               </div>
             </header>
           

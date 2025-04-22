@@ -8,7 +8,8 @@ import {
   LogOut,
   Sparkles,
   Sun,
-  Moon
+  Moon,
+  Gem
 } from "lucide-react"
 import { useRouter } from 'next/navigation'
 import { signOut } from 'firebase/auth'
@@ -43,6 +44,7 @@ export function NavUser({
   const isCollapsed = state === "collapsed";
   const router = useRouter()
   const { theme, toggleTheme } = useTheme()
+  const isDarkMode = theme === 'dark';
 
   const handleLogout = async () => {
     try {
@@ -124,6 +126,24 @@ export function NavUser({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </SidebarMenuItem>
+      
+      {/* Token display - WorkspaceNavbar style */}
+      <SidebarMenuItem className="mt-2">
+        <SidebarMenuButton 
+          className={`${isCollapsed ? "justify-center" : "justify-start"} 
+            ${isDarkMode ? "bg-gray-800/50 hover:bg-gray-700/50" : "bg-gray-200 hover:bg-gray-300"} 
+            transition-all rounded-md py-2.5 px-3`}
+          onClick={() => router.push('/pricing')}
+          tooltip={isCollapsed ? "Tokens" : undefined}
+        >
+          <Gem className="h-5 w-5 text-purple-400" />
+          {!isCollapsed && (
+            <>
+              <span className="ml-2 font-medium text-base">Tokens: {user.tokens || 0}</span>
+            </>
+          )}
+        </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
   );
