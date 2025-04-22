@@ -180,8 +180,8 @@ export function AppSidebar({
           return dateB - dateA;
         });
         
-        // Take only the first 7 items
-        setRecentGenerations(images.slice(0, 7));
+        // Take only the first 4 items instead of 7
+        setRecentGenerations(images.slice(0, 4));
       } catch (error) {
         console.error("Error fetching user images:", error);
       } finally {
@@ -229,7 +229,7 @@ export function AppSidebar({
         <SidebarFooter className="bg-[var(--sidebar-background)] dark:bg-gray-900 bg-gray-50">
           <NavUser user={userData} />
         </SidebarFooter>
-        <SidebarContent className="bg-[var(--sidebar-background)] overflow-y-auto dark:bg-gray-900 bg-gray-50">
+        <SidebarContent className="bg-[var(--sidebar-background)] overflow-y-auto dark:bg-gray-900 bg-gray-50 scrollbar">
           <NavProjects projects={data.projects} />
           
           {/* Recent Generations Section */}
@@ -242,7 +242,7 @@ export function AppSidebar({
             </SidebarGroupLabel>
             <SidebarMenu>
               {isLoading ? (
-                // Show loading skeletons
+                // Show loading skeletons for 3 items
                 Array(3).fill(0).map((_, index) => (
                   <SidebarMenuItem key={`skeleton-${index}`}>
                     <div className={cn(
@@ -300,7 +300,7 @@ export function AppSidebar({
                   ))}
                   
                   {/* More link to profile */}
-                  {totalGenerations > 7 && (
+                  {totalGenerations > 4 && (
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild tooltip="View all generations">
                         <Link 
@@ -326,8 +326,15 @@ export function AppSidebar({
               ) : (
                 // No generations found
                 <SidebarMenuItem>
-                  <div className="px-2 py-1 text-xs text-sidebar-muted-foreground">
-                    No recent generations
+                  <div className={cn(
+                    "p-2 flex items-center justify-center",
+                    isCollapsed ? "h-10" : "px-2 py-1"
+                  )}>
+                    {isCollapsed ? (
+                      <ImageIcon className="w-5 h-5 text-sidebar-muted-foreground opacity-70" />
+                    ) : (
+                      <span className="text-xs text-sidebar-muted-foreground">No recent generations</span>
+                    )}
                   </div>
                 </SidebarMenuItem>
               )}

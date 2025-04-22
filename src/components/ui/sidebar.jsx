@@ -281,7 +281,7 @@ const SidebarInset = React.forwardRef(({ className, ...props }, ref) => {
         marginLeft: isMobile ? '0' : (isCollapsed ? 'var(--sidebar-width-icon, 3.5rem)' : 'var(--sidebar-width, 18rem)')
       }}
       className={cn(
-        "min-h-screen transition-all duration-300",
+        "min-h-screen transform-gpu transition-all duration-200 ease-out",
         className
       )}
       {...props} />)
