@@ -20,6 +20,8 @@ import { ImageContainer } from './ImageContainer';
 import { FullscreenModal } from './FullscreenModal';
 import ResizePreview from "./ResizePreview";
 
+import { useSearchParams } from 'next/navigation'; // to pull id from URL
+
 export default function ImageProcessor() {
   // State management for the component
   const [isProcessing, setIsProcessing] = useState(false);
@@ -287,6 +289,9 @@ export default function ImageProcessor() {
     console.log("Loaded templates:", templates);
   }, []);
 
+
+
+
   // Creates a preview of the uploaded image
   const createInputPreview = useCallback((file) => {
     const reader = new FileReader();
@@ -309,6 +314,36 @@ export default function ImageProcessor() {
       [id]: value
     }));
   };
+
+  // for presetting prompts 
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    const fetchPrompt = async () => {
+      const id = searchParams.get('id');
+      if (!id) return;
+
+      try {
+        const communityRef = doc(db, 'community', id);
+        const communityDoc = await getDoc(communityRef);
+
+        if (communityDoc.exists()) {
+          const communityData = communityDoc.data();
+          const newPrompt = communityData.prompt || '';
+          const newNegative = communityData.negativePrompt || '';
+
+          handleParamChange('prompt', newPrompt);
+          handleParamChange('n_prompt', newNegative);
+        } else {
+          console.log("Prompts not found.");
+        }
+      } catch (error) {
+        console.error("Error fetching user data: ", error);
+      }
+    };
+
+    fetchPrompt();
+  }, [searchParams, handleParamChange]);
 
   // Main function to process the image with current parameters
   const processImageWithParams = async (file) => {

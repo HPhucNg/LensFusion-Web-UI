@@ -4,6 +4,8 @@ import Image from 'next/image';
 import useCommentsAndLikes from '@/hooks/useCommentsAndLikes';
 import { FullscreenModal } from '../app/(list_page)/workspace/backgroundgeneration/_components/FullscreenModal';
 
+import { useRouter } from 'next/navigation'; // to redirect for "make same" function
+
 function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) {
     const selectedPost = posts[currentIndex];
     const { 
@@ -87,15 +89,17 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
         setVisibleComments((prev) => prev + 3); // load 3 more comments each time
     };
 
+    const router = useRouter();
+    const handleMakeSame = () => { {/* reroute to tool and preset settings */}
+      const query = new URLSearchParams({
+        id: selectedPost.id,
+      }).toString();
+    
+      router.push(`/workspace/backgroundgeneration?${query}`);
+    }; 
 
-    //const handleMakeSame = () => {
-      // reroute to tool
-      // and preset settings 
-        // const prompt = selectedImage.prompt
-        // const size = selectedImage.size
-        // const quality = selectedImage.quality
-      // just ask user for image  
-    //};
+    console.log(selectedPost.id);
+
 
     return (
         <div className='md:w-[80%] md:flex-row flex flex-col font-sans relative rounded-xl shadow-md overflow-hidden' style={{ background: 'var(--modal-background)' }}>
@@ -135,7 +139,7 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
             </div>
 
             <div className='flex flex-1'> {/* right */}
-                <div className='flex flex-col items-start p-4'>
+                <div className='flex flex-col items-start p-4 w-full'>
 
                     <div className='flex p-2 items-center font-bold'>
                         {userProfileImage ? (
@@ -154,17 +158,16 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
                         <p>{formattedDate}</p>
                     </div>
 
-                    <div className='rounded-md bg-[var(--card-background)] mt-2 p-2'>
+                    <div className='rounded-md bg-[var(--card-background)] w-full mt-2 p-2'>
                         <p className='text-xs pb-2 text-gray-400'>Picture Description words</p>
                         <p className='text-sm'>{selectedPost.prompt}</p>
                         <div className='text-xs text-gray-400 border-t mt-2 pt-2'>
-                            <p className='flex justify-between pb-2'>Image size <span>size x size</span></p> {/* {selectedPost.size} */}
-                            <p className='flex justify-between pb-2'>Quality Step <span>quality</span></p> {/* {selectedPost.quality} */}
+                            <p className='flex justify-between pb-2'>Model <span>Background Generation</span></p> 
                         </div>
                     </div>
                     
                     <div className='flex justify-between w-full mt-auto pt-4 pb-4'>
-                        <button className='px-3 py-1 border rounded-md text-sm bg-[var(--border-gray)] cursor-pointer transition-transform duration-200 ease-in-out hover:scale-110'>Make Same</button> {/*onClick={handleMakeSame}*/}
+                        <button className='px-3 py-1 border rounded-md text-sm bg-[var(--border-gray)] cursor-pointer transition-transform duration-200 ease-in-out hover:scale-110' onClick={handleMakeSame}>Make Same</button> {/*onClick={handleMakeSame}*/}
                         <div className='flex'>
                             <div className="ml-2 flex items-center space-x-1">
                                 <button 
