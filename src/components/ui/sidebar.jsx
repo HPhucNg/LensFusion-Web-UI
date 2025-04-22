@@ -271,14 +271,14 @@ const SidebarRail = React.forwardRef(({ className, ...props }, ref) => {
 SidebarRail.displayName = "SidebarRail"
 
 const SidebarInset = React.forwardRef(({ className, ...props }, ref) => {
-  const { state } = useSidebar()
+  const { state, isMobile } = useSidebar()
   const isCollapsed = state === "collapsed"
   
   return (
     (<main
       ref={ref}
       style={{
-        marginLeft: isCollapsed ? 'var(--sidebar-width-icon, 3.5rem)' : 'var(--sidebar-width, 18rem)'
+        marginLeft: isMobile ? '0' : (isCollapsed ? 'var(--sidebar-width-icon, 3.5rem)' : 'var(--sidebar-width, 18rem)')
       }}
       className={cn(
         "min-h-screen transition-all duration-300",

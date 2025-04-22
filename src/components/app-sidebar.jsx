@@ -28,6 +28,7 @@ import { db, auth } from '@/firebase/FirebaseConfig'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import GalleryModal from '@/components/GalleryModal'
+import { cn } from '@/lib/utils'
 
 import { NavProjects } from "@/components/nav-projects"
 import { NavSecondary } from "@/components/nav-secondary"
@@ -230,9 +231,9 @@ export function AppSidebar({
           
           {/* Recent Generations Section */}
           <SidebarGroup>
-            <SidebarGroupLabel className="text-[color:hsl(var(--sidebar-foreground))] font-semibold flex items-center justify-between">
+            <SidebarGroupLabel className="text-[color:hsl(var(--sidebar-foreground))] font-semibold flex items-center justify-between text-base">
               <div className="flex items-center gap-2">
-                <History className="h-4 w-4" />
+                <History className="h-5 w-5" />
                 <span>Recent Generations</span>
               </div>
             </SidebarGroupLabel>
@@ -241,12 +242,12 @@ export function AppSidebar({
                 // Show loading skeletons
                 Array(3).fill(0).map((_, index) => (
                   <SidebarMenuItem key={`skeleton-${index}`}>
-                    <div className="flex items-center gap-3 p-2">
-                      <div className="w-8 h-8 bg-gray-300 dark:bg-gray-700 animate-pulse rounded-md"></div>
+                    <div className="flex items-center gap-3 p-3">
+                      <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 animate-pulse rounded-md"></div>
                       {!isCollapsed && (
                         <>
-                          <div className="flex-1 h-4 bg-gray-300 dark:bg-gray-700 animate-pulse rounded"></div>
-                          <div className="w-12 h-3 bg-gray-300 dark:bg-gray-700 animate-pulse rounded"></div>
+                          <div className="flex-1 h-5 bg-gray-300 dark:bg-gray-700 animate-pulse rounded"></div>
+                          <div className="w-12 h-4 bg-gray-300 dark:bg-gray-700 animate-pulse rounded"></div>
                         </>
                       )}
                     </div>
@@ -256,13 +257,13 @@ export function AppSidebar({
                 // Show actual generations
                 <>
                   {recentGenerations.map((gen) => (
-                    <SidebarMenuItem key={gen.uid}>
+                    <SidebarMenuItem key={gen.uid} className="mb-2">
                       <div className="px-2">
                         <div 
                           className="flex items-center gap-3 text-sidebar-muted hover:text-sidebar-foreground font-medium cursor-pointer"
                           onClick={(e) => handleImageClick(e, gen)}
                         >
-                          <div className="w-8 h-8 rounded-md overflow-hidden bg-gray-300 flex-shrink-0 border border-gray-400 dark:border-gray-700">
+                          <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-300 flex-shrink-0 border border-gray-400 dark:border-gray-700">
                             {gen.img_data ? (
                               <img 
                                 src={gen.img_data} 
@@ -273,14 +274,14 @@ export function AppSidebar({
                                 }}
                               />
                             ) : (
-                              <ImageIcon className="w-8 h-8 text-gray-500" />
+                              <ImageIcon className="w-10 h-10 text-gray-500" />
                             )}
                           </div>
                           {!isCollapsed && (
                             <>
                               <div className="flex flex-col flex-1 min-w-0">
-                                <span className="truncate max-w-[60px] text-xs font-medium">{gen.type}</span>
-                                <span className="text-[10px] text-sidebar-muted-foreground">{gen.timestamp}</span>
+                                <span className="truncate max-w-[80px] text-sm font-medium">{gen.type}</span>
+                                <span className="text-xs text-sidebar-muted-foreground">{gen.timestamp}</span>
                               </div>
                             </>
                           )}
@@ -293,9 +294,21 @@ export function AppSidebar({
                   {totalGenerations > 7 && (
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild tooltip="View all generations">
-                        <Link href="/dashboard/profile" className="flex items-center justify-between gap-3 text-sidebar-muted hover:text-sidebar-foreground font-medium p-2 bg-gray-800/20 dark:bg-gray-800/30 rounded-md mt-1">
-                          <span className="text-xs">View all {totalGenerations} images</span>
-                          {!isCollapsed && <ChevronRight className="h-4 w-4" />}
+                        <Link 
+                          href="/dashboard/profile" 
+                          className={cn(
+                            "flex items-center gap-3 text-sidebar-muted hover:text-sidebar-foreground font-medium bg-gray-800/20 dark:bg-gray-800/30 rounded-md mt-2",
+                            isCollapsed 
+                              ? "justify-center p-2" 
+                              : "justify-between p-3"
+                          )}
+                        >
+                          {isCollapsed ? (
+                            <span className="sr-only">View all images</span>
+                          ) : (
+                            <span className="text-sm">View all {totalGenerations} images</span>
+                          )}
+                          <ChevronRight className={cn("h-4 w-4", isCollapsed && "mx-auto")} />
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

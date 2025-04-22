@@ -15,7 +15,6 @@ import { auth, db } from "@/firebase/FirebaseConfig";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
-import { MobileNav } from "@/components/mobile-nav";
 
 export default function Page() {
   const [user, setUser] = useState(null);
@@ -198,7 +197,6 @@ export default function Page() {
           </div>
         </SidebarInset>
       </SidebarProvider>
-      <MobileNav user={user} />
       <ScrollToTop/>
     </div>
   );
