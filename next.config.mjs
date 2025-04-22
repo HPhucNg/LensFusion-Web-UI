@@ -6,7 +6,7 @@ const nextConfig = {
       remotePatterns: [
         {
           protocol: 'https',
-          hostname: 'lllyasviel-iclight-v2.hf.space',
+          hostname: 'lllyasviel-iclight-v2-vary.hf.space', // 'lllyasviel-iclight-v2.hf.space' back up space 
         },
         {
           protocol: 'https',

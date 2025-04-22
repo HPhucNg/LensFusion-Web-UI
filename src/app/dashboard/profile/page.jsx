@@ -21,6 +21,7 @@ import { useSubscription } from '@/context/subscriptionContext';
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import DoughnutChart from './DoughnutChart';
 import { Category, categoriesData } from './Category'
+import { useTheme } from '@/hooks/useTheme';
 
 import { 
   doc, 
@@ -910,7 +911,10 @@ export default function UserProfile() {
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   //const [showCommunityModal, setShowCommunityModal] = useState(false);
-  const [theme, setTheme] = useState("dark");
+  
+  // Use the theme hook instead of inline theme logic
+  const { theme, toggleTheme } = useTheme();
+  
   const [isManageAccountOpen, setIsManageAccountOpen] = useState(false);
   const [hoveredCategoryIndex, setHoveredCategoryIndex] = useState(null);
   const [userSettings, setUserSettings] = useState({
@@ -948,13 +952,6 @@ export default function UserProfile() {
   const { tokens, loading: subscriptionLoading } = useSubscription();
 
   // 3. All useEffect hooks
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
-
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);
@@ -1008,27 +1005,6 @@ export default function UserProfile() {
       setIsLoadingImages(false);
     }
   };
-
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    document.documentElement.classList.remove("dark", "light");
-    document.documentElement.classList.add(newTheme);
-  };
-
-  useEffect(() => {
-    // Check for saved theme
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
-
   
   // Fetch user images when user changes
   useEffect(() => {

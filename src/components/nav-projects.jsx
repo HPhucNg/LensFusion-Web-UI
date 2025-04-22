@@ -1,6 +1,8 @@
 "use client"
 
+import Link from "next/link"
 import { Folder, MoreHorizontal, Share, Trash2 } from "lucide-react";
+import { useTheme } from '@/hooks/useTheme';
 
 import {
   DropdownMenu,
@@ -13,7 +15,6 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
@@ -22,55 +23,25 @@ import {
 export function NavProjects({
   projects
 }) {
-  const { isMobile } = useSidebar()
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+  const { theme } = useTheme();
 
   return (
-    (<SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel className="text-white">Projects</SidebarGroupLabel>
+    <SidebarGroup>
+      <SidebarGroupLabel>AI Tools</SidebarGroupLabel>
       <SidebarMenu>
-        {projects.map((item) => (
-          <SidebarMenuItem key={item.name}>
-            <SidebarMenuButton asChild>
-              <a href={item.url}>
-                <item.icon />
-                <span>{item.name}</span>
-              </a>
+        {projects.map((project) => (
+          <SidebarMenuItem key={project.name}>
+            <SidebarMenuButton asChild tooltip={project.name}>
+              <Link href={project.url} className="group/nav-link">
+                <project.icon className="text-sidebar-muted-foreground group-hover/nav-link:text-sidebar-foreground" />
+                {!isCollapsed && <span>{project.name}</span>}
+              </Link>
             </SidebarMenuButton>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuAction showOnHover>
-                  <MoreHorizontal />
-                  <span className="sr-only">More</span>
-                </SidebarMenuAction>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-48"
-                side={isMobile ? "bottom" : "right"}
-                align={isMobile ? "end" : "start"}>
-                <DropdownMenuItem>
-                  <Folder className="text-muted-foreground" />
-                  <span>View Project</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Share className="text-muted-foreground" />
-                  <span>Share Project</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Trash2 className="text-muted-foreground" />
-                  <span>Delete Project</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </SidebarMenuItem>
         ))}
-        <SidebarMenuItem>
-          <SidebarMenuButton>
-            <MoreHorizontal />
-            <span>More</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
       </SidebarMenu>
-    </SidebarGroup>)
+    </SidebarGroup>
   );
 }

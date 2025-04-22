@@ -7,7 +7,7 @@ export async function removeBackgroundServer(imageFile) {
   const response = await fetch('https://api.remove.bg/v1.0/removebg', {
     method: 'POST',
     headers: {
-      'X-Api-Key': process.env.NEXT_PUBLIC_REMOVE_BG_API_KEY,
+      'X-Api-Key': process.env.REMOVE_BG_API_KEY,
     },
     body: apiFormData,
   });

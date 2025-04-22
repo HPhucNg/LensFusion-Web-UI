@@ -3,17 +3,24 @@ import * as React from "react"
 const MOBILE_BREAKPOINT = 768
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState(undefined)
+  const [isMobile, setIsMobile] = React.useState(false)
+  const [isClient, setIsClient] = React.useState(false)
 
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    const onChange = () => {
+    setIsClient(true)
+    const handleResize = () => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
     }
-    mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange);
+
+    // Initial check
+    handleResize()
+
+    // Setup listener for window resize
+    window.addEventListener('resize', handleResize)
+    
+    // Clean up
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  return !!isMobile
+  return isClient ? isMobile : false
 }

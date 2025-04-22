@@ -13,7 +13,7 @@ export async function processImage(imageFile, params = {}) {
   try {
     const ClientClass = await getClient();
     
-    const client = await ClientClass.connect("lllyasviel/iclight-v2");
+    const client = await ClientClass.connect("lllyasviel/iclight-v2-vary"); // 'llllyasviel/iclight-v2' back-up space
 
     // Merge default parameters with provided params
     const processParams = {
@@ -26,8 +26,8 @@ export async function processImage(imageFile, params = {}) {
       n_prompt: params.negativePrompt || DEFAULT_PARAMS.negativePrompt,
       cfg: params.cfg || 1,
       gs: params.gs || 5,
-      rs: params.rs || 1,
-      init_denoise: params.initDenoise || 0.999
+      //rs: params.rs || 1,
+      //init_denoise: params.initDenoise || 0.999
     };
 
     const result = await client.predict("/process", {
