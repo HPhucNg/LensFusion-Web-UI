@@ -12,6 +12,12 @@ import {
   Send,
   Settings2,
   SquareTerminal,
+  Image,
+  Eraser,
+  Scissors,
+  Expand,
+  Trash2,
+  ZoomIn,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -29,11 +35,6 @@ import {
 } from "@/components/ui/sidebar"
 
 const data = {
-  user: {
-    name: "User",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "Playground",
@@ -123,52 +124,71 @@ const data = {
   ],
   navSecondary: [
     {
-      title: "Support",
-      url: "#",
-      icon: LifeBuoy,
+      title: "Contact",
+      url: "/contact",
+      icon: Send,
     },
     {
-      title: "Feedback",
-      url: "#",
-      icon: Send,
+      title: "About Us",
+      url: "/about",
+      icon: LifeBuoy,
     },
   ],
   projects: [
     {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
+      name: "Background Generation",
+      url: "/workspace/backgroundgeneration",
+      icon: Image,
     },
     {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
+      name: "Object Retouch",
+      url: "/workspace/objectRetouch",
+      icon: Eraser,
     },
     {
-      name: "Travel",
-      url: "#",
-      icon: Map,
+      name: "Object Removal",
+      url: "/dashboard/tools/object-removal",
+      icon: Trash2,
+    },
+    {
+      name: "Background Expansion",
+      url: "/workspace/backgroundexpansion",
+      icon: Expand,
+    },
+    {
+      name: "Background Removal",
+      url: "/dashboard/tools/background-remover",
+      icon: Scissors,
+    },
+    {
+      name: "Image UpScale",
+      url: "/dashboard/tools/image-upscaler",
+      icon: ZoomIn,
     },
   ],
 }
 
 export function AppSidebar({
+  user,
   ...props
 }) {
+  // Prepare user data for NavUser component with proper fallbacks
+  const userData = React.useMemo(() => ({
+    name: user?.displayName || "User",
+    email: user?.email || "user@example.com",
+    avatar: user?.photoURL || "",
+  }), [user?.displayName, user?.email, user?.photoURL]);
+
   return (
-
-
-      (<Sidebar variant="inset" className="bg-[#18181B] text-white" {...props}>
-        <SidebarFooter className="bg-[#18181B]">
-          <NavUser user={data.user} />
-        </SidebarFooter>
-        <SidebarContent className="bg-[#18181B]">
-          <NavMain items={data.navMain}/>
-          <NavProjects projects={data.projects} />
-          <NavSecondary items={data.navSecondary} className="mt-auto" />
-        </SidebarContent>
-       
-      </Sidebar>)
-    
+    <Sidebar variant="inset" className="bg-[#18181B] text-white" {...props}>
+      <SidebarFooter className="bg-[#18181B]">
+        <NavUser user={userData} />
+      </SidebarFooter>
+      <SidebarContent className="bg-[#18181B]">
+        <NavProjects projects={data.projects} />
+        <NavMain items={data.navMain}/>
+        <NavSecondary items={data.navSecondary} className="mt-auto" />
+      </SidebarContent>
+    </Sidebar>
   );
 }

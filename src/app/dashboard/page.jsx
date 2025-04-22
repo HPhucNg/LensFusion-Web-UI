@@ -57,7 +57,7 @@ export default function Page() {
   return (
     <div className="min-h-screen">
       <SidebarProvider>
-        <AppSidebar />
+        <AppSidebar user={user} />
         <SidebarInset>
           <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white">
             {/* Hero Section - More Responsive */}
