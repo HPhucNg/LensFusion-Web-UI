@@ -26,8 +26,11 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
                         if (userDoc.exists()) {
                             const userImageData = userDoc.data();
                             // if image has communityPost field = image can be posted to community - imageStatus gets set, else remains null
-                            if (userImageData.hasOwnProperty('communityPost')){
-                                setImageStatus(userImageData.communityPost)}
+                            if (userImageData.type === 'background-generated'){
+                                    if (userImageData.hasOwnProperty('communityPostId')){
+                                        setImageStatus(userImageData.communityPostId)}
+                                    else { setImageStatus(false)}
+                                } 
                         } else {
                             console.log("User Image not found.");
                         }
@@ -201,7 +204,7 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
         // check if the image has the required properties for deletion
         console.log('Image to delete:', image);
         // check if it has communityPost field and if so, is it true? then delete from community
-        if (image?.hasOwnProperty('communityPost') && image.communityPost === true) {
+        if (image?.hasOwnProperty('communityPostID')){
             const userConfirmed = window.confirm(
                 "This image is posted in the community. Are you sure you want to delete it?"
             );
