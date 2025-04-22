@@ -15,6 +15,7 @@ import { auth, db } from "@/firebase/FirebaseConfig";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
+import { MobileNav } from "@/components/mobile-nav";
 
 export default function Page() {
   const [user, setUser] = useState(null);
@@ -24,11 +25,17 @@ export default function Page() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
         if (currentUser) {
-          setUser(currentUser); 
             const userRef = doc(db, "users", currentUser.uid);
             const unsubscribeSnapshot = onSnapshot(userRef, (userDoc) => {
               if (userDoc.exists()) {
-                setTokens(userDoc.data().tokens || 0);
+              const userData = userDoc.data();
+              // Merge user auth data with Firestore data
+              setUser({
+                ...currentUser,
+                subscriptionStatus: userData.subscriptionStatus || "inactive",
+                tokens: userData.tokens || 0
+              });
+              setTokens(userData.tokens || 0);
                 setLoading(false);
               }
             });
@@ -55,17 +62,16 @@ export default function Page() {
       };
 
   return (
-    <div className="min-h-screen">
-      <SidebarProvider>
+    <div className="relative">
+      <SidebarProvider defaultOpen={true}>
         <AppSidebar user={user} />
-        <SidebarInset>
-          <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white">
+        <SidebarInset className="overflow-y-auto">
+          <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white min-h-screen pb-16 md:pb-0">
             {/* Hero Section - More Responsive */}
-            <header className="flex h-16 shrink-0 items-center">
-              <div className="container mx-auto flex items-center px-4">
-                <SidebarTrigger className="fixed z-50" />
+            <header className="w-full flex h-16 shrink-0 items-center justify-between px-4 sticky top-0 z-10 bg-gradient-to-r from-gray-900/90 via-gray-800/90 to-black/90 backdrop-blur-sm">
+              <div className="flex items-center">
+                <SidebarTrigger className="relative" />
               </div>
-              <div className="ml-auto">
               <div className="flex items-center gap-4">
                   {loading ? (
                     <span className="text-lg font-medium">...Loading...</span>
@@ -73,19 +79,18 @@ export default function Page() {
                     <span className="text-lg font-medium">Please log in to view your tokens.</span>
                   ) : (
                     <span
-                      className="text-center py-1 border-2 mr-4 border-white bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-10 whitespace-nowrap overflow-hidden cursor-pointer"
+                    className="text-center py-1 border-2 border-white bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-10 whitespace-nowrap overflow-hidden cursor-pointer"
                       onClick={() => handleTokens('/payment')}
                     >
                       Tokens: {tokens}
                     </span>
                   )}
-                </div>
               </div>
             </header>
           
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
               {/* Hero Content - Enhanced Flexibility */}
-              <div className="w-full  min-h-[15rem] lg:min-h-[20rem] bg-[#1E1E1E] rounded-lg shadow-md flex flex-col lg:flex-row items-center justify-center text-gray-300 p-6 sm:p-8 space-y-6 lg:space-y-0 lg:space-x-8">
+              <div className="w-full min-h-[15rem] lg:min-h-[20rem] bg-[#1E1E1E] rounded-lg shadow-md flex flex-col lg:flex-row items-center justify-center text-gray-300 p-6 sm:p-8 space-y-6 lg:space-y-0 lg:space-x-8">
                 <div className="w-full lg:w-1/2 text-center lg:text-left space-y-6">
                   <h1 className="text-2xl md:text-3lg lg:text-6lg font-bold text-white leading-tight">
                     Introducing AI Object Removal
@@ -193,6 +198,7 @@ export default function Page() {
           </div>
         </SidebarInset>
       </SidebarProvider>
+      <MobileNav user={user} />
       <ScrollToTop/>
     </div>
   );
