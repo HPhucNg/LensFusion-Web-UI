@@ -146,8 +146,20 @@ async function handleCheckoutSessionCompleted(session) {
 
         //update the user document on firebase
         if (userDoc.exists()) {
+            const userData = userDoc.data();
+            let newTokenCount;
+            
+            if (userData.subscriptionStatus === 'active' || userData.subscriptionStatus === 'canceling') {
+                const currentPlanTokens = includedTokensInSubscriptions[userData.currentPlanPriceId] || 0;
+                const nonSubscriptionTokens = Math.max(0, userData.tokens - currentPlanTokens);
+                
+                newTokenCount = nonSubscriptionTokens + tokensToAdd;
+            } else {
+                newTokenCount = (userData.tokens || 0) + tokensToAdd;
+            }
+            
             await updateDoc(userRef, {
-                tokens: (userDoc.data().tokens || 0) + tokensToAdd,
+                tokens: newTokenCount,
                 customerId,
                 subscriptionStatus: "active",
                 currentPlan: planTitle,
