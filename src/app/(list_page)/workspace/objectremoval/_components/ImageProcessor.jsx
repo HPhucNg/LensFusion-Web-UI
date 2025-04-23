@@ -497,16 +497,8 @@ export default function ObjectRemovalUI() {
 
     setSaving(true);
     try {
-      const success = await saveToGallery(resultImage, user.uid, 'objectremoval');
-      
-      if (success) {
-        setNotification({
-          type: 'success',
-          message: 'Image saved to your gallery'
-        });
-      } else {
-        throw new Error('Failed to save to gallery');
-      }
+      await saveToGallery(resultImage, user.uid, 'objectremoval');
+      // Success notification removed - silent success
     } catch (error) {
       console.error('Error saving to gallery:', error);
       setNotification({

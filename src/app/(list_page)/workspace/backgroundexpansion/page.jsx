@@ -5,6 +5,7 @@ import { generateImage } from './apiHelper';
 import BackButton from '@/components/BackButton';
 import DownloadOptions from '@/components/DownloadOptions';
 import { GenerateButton } from '../backgroundgeneration/_components/GenerateButton';
+import WorkspaceNavbar from '@/components/WorkspaceNavbar';
 
 
 export default function Home() {
@@ -191,7 +192,7 @@ export default function Home() {
     return (
         <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black font-sans relative overflow-hidden">
             <main className="container mx-auto p-4">
-                <BackButton /> {/* Use the BackButton component */}
+               <WorkspaceNavbar/>
                 <h1 className="text-2xl font-bold mb-6">
                     Diffuser Image Outpaint
                 </h1>

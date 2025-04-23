@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { db } from '@/firebase/FirebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 
-const stripe = new Stripe(process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 //API route handler
 export async function POST(req) {
