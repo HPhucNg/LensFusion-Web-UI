@@ -22,6 +22,7 @@ import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import DoughnutChart from './DoughnutChart';
 import { Category, categoriesData } from './Category'
 import { useTheme } from '@/hooks/useTheme';
+import SubscriptionManagement from './SubscriptionManagement'
 
 import { 
   doc, 
@@ -923,6 +924,9 @@ export default function UserProfile() {
     }
   });
  
+  //subscription management
+  const [isSubscriptionManagementOpen, setIsSubscriptionManagementOpen] = useState(false);
+
   //const [categories, setCategories] = useState (null)
   const [activeCategory, setActiveCategory] = useState(-1);
   const [categoryData, setCategoryData] = useState(categoriesData);
@@ -1127,7 +1131,7 @@ export default function UserProfile() {
                   <Settings className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Account</span>
                 </Button>
-                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700  transition-all duration-300 overflow-hidden">
+                <Button variant="outline" className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700  transition-all duration-300 overflow-hidden" onClick={() => setIsSubscriptionManagementOpen(true)}>
                   <User2 className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Subscription</span>
                 </Button>
@@ -1260,6 +1264,12 @@ export default function UserProfile() {
                 />
       )}
 
+      {/* subscription management */}
+      {isSubscriptionManagementOpen && (
+        <SubscriptionManagement 
+          onClose={() => setIsSubscriptionManagementOpen(false)}
+        />
+      )}
             
     </div>
   );
