@@ -279,3 +279,23 @@ button.border-purple-600,
 .border-purple-600 {
   border-color: var(--accent-color) !important;
 }
+
+/* Gradient for light and dark mode used in subscription management */
+.gradient-plan-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  position: relative;
+}
+
+/* Light mode gradient */
+html.light .gradient-plan-text {
+  background-image: linear-gradient(to right, #6b46c1, #3b82f6);
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode gradient */
+.dark .gradient-plan-text {
+  background-image: linear-gradient(to right, #a78bfa, #60a5fa);
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+}
