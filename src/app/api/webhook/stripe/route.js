@@ -18,7 +18,7 @@ const getPSTTime = (utcTimestamp) => {
     });
   };
 
-const stripe = new Stripe(process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 //set tokens for each price

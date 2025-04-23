@@ -68,8 +68,12 @@ body {
 
   /* Custom Scrollbar Styles */
   .scrollbar {
-    scrollbar-color: #4b5563 #1f2937;
     scrollbar-width: thin;
+  }
+
+  /* Light mode scrollbar */
+  .scrollbar {
+    scrollbar-color: #d1d5db #f3f4f6;
   }
 
   .scrollbar::-webkit-scrollbar {
@@ -78,17 +82,37 @@ body {
   }
 
   .scrollbar::-webkit-scrollbar-track {
-    background: #1f293780;
+    background: #f3f4f680;
     border-radius: 100vh;
   }
 
   .scrollbar::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 100vh;
+    border: 1px solid #e5e7eb;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+
+  /* Dark mode scrollbar */
+  .dark .scrollbar {
+    scrollbar-color: #4b5563 #1f2937;
+  }
+
+  .dark .scrollbar::-webkit-scrollbar-track {
+    background: #1f293780;
+    border-radius: 100vh;
+  }
+
+  .dark .scrollbar::-webkit-scrollbar-thumb {
     background: #4b5563;
     border-radius: 100vh;
     border: 1px solid #374151;
   }
 
-  .scrollbar::-webkit-scrollbar-thumb:hover {
+  .dark .scrollbar::-webkit-scrollbar-thumb:hover {
     background: #6b7280;
   }
 }
@@ -120,14 +144,18 @@ body {
         --chart-4: 43 74% 66%;
         --chart-5: 27 87% 67%;
         --radius: 0.5rem;
-        --sidebar-background: 0 0% 98%;
-        --sidebar-foreground: 240 5.3% 26.1%;
+        --sidebar-background: linear-gradient(to bottom, rgba(235, 244, 255, 0.95), rgba(240, 249, 255, 0.95));
+        --sidebar-foreground: 240 10% 20%;
+        --sidebar-muted: 240 10% 30%;
+        --sidebar-muted-foreground: 240 10% 40%;
         --sidebar-primary: 240 5.9% 10%;
         --sidebar-primary-foreground: 0 0% 98%;
         --sidebar-accent: 240 4.8% 95.9%;
         --sidebar-accent-foreground: 240 5.9% 10%;
         --sidebar-border: 220 13% 91%;
         --sidebar-ring: 217.2 91.2% 59.8%;
+        --sidebar-width: 18rem;
+        --sidebar-width-collapsed: 3.5rem;
     }
 
 
@@ -173,8 +201,10 @@ html.light .hover\:from-gray-800:hover {
         --chart-3: 30 80% 55%;
         --chart-4: 280 65% 60%;
         --chart-5: 340 75% 55%;
-        --sidebar-background: 240 5.9% 10%;
-        --sidebar-foreground: 240 4.8% 95.9%;
+        --sidebar-background: linear-gradient(to bottom, #18181B, #1F1F23);
+        --sidebar-foreground: 0 0% 98%;
+        --sidebar-muted: 240 5% 64.9%;
+        --sidebar-muted-foreground: 240 5% 64.9%;
         --sidebar-primary: 224.3 76.3% 48%;
         --sidebar-primary-foreground: 0 0% 100%;
         --sidebar-accent: 240 3.7% 15.9%;

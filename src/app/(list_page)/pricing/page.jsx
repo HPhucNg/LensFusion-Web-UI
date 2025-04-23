@@ -19,6 +19,7 @@ function PricingPage() {
   const [user, setUser] = useState(null);
   //subscription info of the user
   const { status: subscriptionStatus, currentPlan, planCycle, subscriptionId, cancellationDate, loading: isLoading } = useSubscription();
+  const [hasExpired, setHasExpired] = useState(false);
 
 
   //check user authentication
@@ -29,6 +30,17 @@ function PricingPage() {
     return () => unsubscribe();
   }, []);
 
+  //checks if user subscription has expired.
+  useEffect(() => {
+    if (subscriptionStatus === 'canceling' && cancellationDate) {
+      const now = new Date();
+      const expirationDate = new Date(cancellationDate);
+      setHasExpired(now > expirationDate);
+    } else {
+      setHasExpired(false);
+    }
+  }, [subscriptionStatus, cancellationDate]);
+  
   //navigate to corresponding subscription plan
   const handleSubscription = async (priceId) => {
     if (!user) {
@@ -135,7 +147,10 @@ function PricingPage() {
         </div>
       ) : (
       <section className="flex flex-wrap justify-center gap-6 px-4">
-        {PricingPlans.map((plan, index) => (
+        {PricingPlans.map((plan, index) => {
+          const isCurrentActivePlan = subscriptionStatus === 'active' && currentPlan === plan.title && planCycle === pricingType;
+          const isCurrentCancelingPlan = subscriptionStatus === 'canceling' && !hasExpired && currentPlan === plan.title && planCycle === pricingType;
+          return (
           <div
             key={plan.title}
             className={`rounded-lg p-6 shadow-lg w-full sm:w-80 md:w-72 lg:w-64 h-full flex flex-col justify-center items-center text-center border-2  ${
@@ -160,8 +175,8 @@ function PricingPage() {
             </ul>
             <button
               className={`w-full px-4 py-2 rounded-lg ${
-                (subscriptionStatus === 'active' || subscriptionStatus === 'canceling') && currentPlan === plan.title && planCycle === pricingType
-                  ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                isCurrentActivePlan || isCurrentCancelingPlan
+                ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
                   : index === 1
                   ? 'bg-black text-white hover:bg-gray-600'
                   : 'bg-white text-black hover:bg-gray-500'
@@ -172,37 +187,34 @@ function PricingPage() {
                   : plan.priceIdYearly;
                 handleSubscription(priceId);
               }}
-              disabled={(subscriptionStatus === 'active' || subscriptionStatus === 'canceling') && currentPlan === plan.title && planCycle === pricingType}
-            >
-              {subscriptionStatus === 'active' && currentPlan === plan.title && planCycle === pricingType
-                ? 'Subscribed'
-                : subscriptionStatus === 'canceling' && currentPlan === plan.title && planCycle === pricingType
-                ? 'Canceled Subscription'
-                : `Get ${plan.title}`}
+              disabled={isCurrentActivePlan || isCurrentCancelingPlan}
+              >
+             {isCurrentActivePlan
+                  ? 'Subscribed'
+                  : isCurrentCancelingPlan
+                  ? 'Canceled Subscription'
+                  : `Get ${plan.title}`}
             </button>
 
             {/* if the user is subscribed to one of the plans, show 'cancel subscription' */}
-            {subscriptionStatus === 'active' && currentPlan === plan.title && planCycle === pricingType && (
-              <div className="absolute bottom-0 left-4">
+            {isCurrentActivePlan && (
                 <button
-                  className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors w-full text-left"
                   onClick={handleCancelSubscription}
                 >
                   Cancel Subscription
                 </button>
-              </div>
-            )}
+              )}
             
             {/* after the user canceled the plan, show end of users billing period */}
-            {subscriptionStatus === 'canceling' && currentPlan === plan.title &&  planCycle === pricingType && (
-              <div className="absolute bottom-0 left-4">
+            {isCurrentCancelingPlan && (
                 <span className="text-xs text-green-400">
                 Access until {new Date(cancellationDate).toLocaleDateString()}
                 </span>
-              </div>
-            )}
+              )}
           </div>
-        ))}
+          );
+        })}
       </section>
       )}
 
