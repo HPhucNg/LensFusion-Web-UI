@@ -65,7 +65,7 @@ const useCommentsAndLikes = (image) => {
         const userRef = doc(db, 'users', userId);
         const userDoc = await getDoc(userRef);
         const userProfileImage = userDoc.exists() ? userDoc.data().photoURL : null;
-        const userName = userDoc.exists() ? userDoc.data().name : null;
+        const userName = userDoc.exists() ? userDoc.data().name : 'Anonymous ';
 
         // state updates in one go
         dispatch({
