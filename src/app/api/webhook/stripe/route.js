@@ -97,17 +97,16 @@ async function handleCheckoutSessionCompleted(session) {
         const existingSubscriptionQuery = query(
             collection(db, 'subscriptions'),
             where('userId', '==', userId),
+            where('hasAccess', '==', true),
             limit(1)
         );
 
         const existingSubscriptions = await getDocs(existingSubscriptionQuery);
 
         if (!existingSubscriptions.empty) {
-            const subscriptionDoc = existingSubscriptions.docs[0];
-            const subscriptionData = subscriptionDoc.data();
-            
-            // Check if subscription is still active
-            if (Date.now() < new Date(subscriptionData.subscriptionEndDate).getTime()) {
+            for (const subscriptionDoc of existingSubscriptions.docs) {
+                const subscriptionData = subscriptionDoc.data();
+                
                 if (subscriptionData.subscriptionId) {
                     try {
                         await stripe.subscriptions.cancel(subscriptionData.subscriptionId);
@@ -167,6 +166,8 @@ async function handleCheckoutSessionCompleted(session) {
                 subscriptionStartDate,
                 subscriptionEndDate,
                 planCycle,
+                cancel_at_period_end: false,
+                cancelationDate: null
             });
         } else {
             console.error("User document not found!");
@@ -238,12 +239,24 @@ export async function POST(req) {
                     const userId = userData.userId;
                     
                     if (userId) {
-                        const userRef = doc(db, 'users', userId);
-                        await updateDoc(userRef, {
-                            subscriptionStatus: 'inactive',
-                            cancel_at_period_end: false,
-                            cancelationDate: null
-                        });
+                        const activeSubscriptionsQuery = query(
+                            collection(db, 'subscriptions'),
+                            where('userId', '==', userId),
+                            where('hasAccess', '==', true),
+                        );
+                        const subscriptions = await getDocs(activeSubscriptionsQuery);
+                        const otherActiveSubscriptions = subscriptions.docs.filter(
+                            doc => doc.data().subscriptionId !== subscriptionId
+                        );
+                        
+                        if (otherActiveSubscriptions.length === 0) {
+                            const userRef = doc(db, 'users', userId);
+                            await updateDoc(userRef, {
+                                subscriptionStatus: 'inactive',
+                                cancel_at_period_end: false,
+                                cancelationDate: null
+                            });
+                        }
                         
                         // Update subscription document
                         await updateDoc(doc(db, 'subscriptions', subscriptionDoc.id), {
@@ -254,6 +267,52 @@ export async function POST(req) {
                 }             
                 break;
             }
+            case 'customer.subscription.created': {
+                const subscription = event.data.object;
+                const subscriptionId = subscription.id;
+                
+                // Find the user with this subscription
+                const subscriptionQuery = query(
+                    collection(db, 'subscriptions'),
+                    where('subscriptionId', '==', subscriptionId),
+                    limit(1)
+                );
+                
+                const subscriptionDocs = await getDocs(subscriptionQuery);
+                if (!subscriptionDocs.empty) {
+                    const subscriptionDoc = subscriptionDocs.docs[0];
+                    const userData = subscriptionDoc.data();
+                    const userId = userData.userId;
+                    
+                    if (userId) {
+                        const userRef = doc(db, 'users', userId);
+                        await updateDoc(userRef, {
+                            subscriptionStatus: 'active',
+                            cancel_at_period_end: false,
+                            cancelationDate: null
+                        });
+                        
+                        console.log(`Subscription created event: Updated user ${userId} status to active`);
+                    }
+                }
+                
+                console.log('Subscription created:', subscription);
+                break;
+            }
+
+            case 'customer.subscription.updated': {
+                console.log('Subscription updated:', event.data.object);
+                break;
+            }
+
+            case 'invoice.paid':
+            case 'invoice.payment_succeeded': {
+                console.log('Invoice paid:', event.data.object);
+                break;
+            }
+            case 'invoice.upcoming':
+                console.log('Invoice upcoming:', event.data.object);
+                break;
 
             default:
                 console.log(`Unhandled event type: ${event.type}`);

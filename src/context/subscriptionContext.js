@@ -1,7 +1,7 @@
 'use client';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from '@/firebase/FirebaseConfig';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { saveUserToFirebase } from '@/firebase/firebaseUtils';
 
 // this is used to manage the subscription status
@@ -19,6 +19,51 @@ export function SubscriptionProvider({ children }) {
     loading: true,
     subscriptionEndDate: null,
   });
+
+  const refreshSubscription = async () => {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          
+          // Format the subscription end date
+          let formattedEndDate = null;
+          if (userData.subscriptionEndDate) {
+            if (userData.subscriptionEndDate.toDate) {
+              formattedEndDate = userData.subscriptionEndDate.toDate().toLocaleDateString();
+            } 
+            else if (typeof userData.subscriptionEndDate === 'string') {
+              formattedEndDate = new Date(userData.subscriptionEndDate).toLocaleDateString();
+            }
+          }
+          
+          // Update the subscription data state with fresh data
+          setSubscriptionData({
+            status: userData.subscriptionStatus || 'inactive',
+            currentPlan: userData.currentPlan || 'No Plan',
+            planCycle: userData.planCycle || null,
+            tokens: userData.tokens || 0,
+            customerId: userData.customerId || null,
+            subscriptionId: userData.subscriptionId,
+            cancel_at_period_end: userData.cancel_at_period_end || false,
+            cancelationDate: userData.cancelationDate || null,
+            loading: false,
+            subscriptionEndDate: formattedEndDate
+          });
+          
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Error refreshing subscription data:', error);
+      return false;
+    }
+  };
 
   // Token management - Token update when user subscribes to new plan
   const updateTokenCount = async (newTokens) => {
@@ -112,6 +157,8 @@ export function SubscriptionProvider({ children }) {
   const value = {
     ...subscriptionData,
     updateTokenCount,
+    refreshSubscription
+
   };
 
   //context provider rendering

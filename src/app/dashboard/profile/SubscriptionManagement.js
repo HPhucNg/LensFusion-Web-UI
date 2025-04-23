@@ -65,10 +65,7 @@ export default function SubscriptionManagement({ onClose }) {
                 return;
             }
         }
-        
-        if (newTokens) {
-            updateTokenCount(newTokens);
-        }
+       
         setActiveTab('current');
     };
   
