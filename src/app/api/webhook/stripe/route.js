@@ -103,11 +103,31 @@ async function handleCheckoutSessionCompleted(session) {
         const existingSubscriptions = await getDocs(existingSubscriptionQuery);
 
         if (!existingSubscriptions.empty) {
-            const subscriptionData = existingSubscriptions.docs[0].data();
+            const subscriptionDoc = existingSubscriptions.docs[0];
+            const subscriptionData = subscriptionDoc.data();
+            
+            // Check if subscription is still active
             if (Date.now() < new Date(subscriptionData.subscriptionEndDate).getTime()) {
-                throw new Error("User already has an active subscription.");
+                if (subscriptionData.subscriptionId) {
+                    try {
+                        await stripe.subscriptions.cancel(subscriptionData.subscriptionId);
+                    } catch (err) {
+                        console.error(`Error canceling previous subscription: ${err.message}`);
+                    }
+                }
+                
+                try {
+                    await updateDoc(doc(db, 'subscriptions', subscriptionDoc.id), {
+                        hasAccess: false,
+                        cancelationReason: 'plan_change',
+                        updatedAt: serverTimestamp()
+                    });
+                } catch (err) {
+                    console.error(`Error updating subscription document: ${err.message}`);
+                }
             }
         }
+        
         const tokensToAdd = includedTokensInSubscriptions[priceId] || 0;
         const subscription = session.subscription
             ? await stripe.subscriptions.retrieve(session.subscription)
@@ -119,8 +139,6 @@ async function handleCheckoutSessionCompleted(session) {
             ? new Date(subscription.current_period_end * 1000).toISOString()
             : null;
 
-        const userRef = doc (db, 'users', userId);
-        const userDoc = await getDoc(userRef);
         if (!subscription) {
             throw new Error("No subscription found in session");
         }
@@ -175,7 +193,6 @@ export async function POST(req) {
     }
 
     try {
-        const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
         //stripe webhook handler that process events
         switch (event.type) {
             case 'checkout.session.completed': {
@@ -192,19 +209,37 @@ export async function POST(req) {
             //update user's subscription status after user unsubscribes
             case 'customer.subscription.deleted': {
                 const subscription = event.data.object;
-                const userId = subscription.metadata.userId;
+                const subscriptionId = subscription.id;
                 
-                if (!userId) {
-                    console.error('No userId found in subscription metadata');
-                    break;
-                }
-
-                const userRef = doc(db, 'users', userId);
+                // Find the user with this subscription
+                const subscriptionsQuery = query(
+                    collection(db, 'subscriptions'),
+                    where('subscriptionId', '==', subscriptionId),
+                    limit(1)
+                );
                 
-                await updateDoc(userRef, {
-                    subscriptionStatus: subscription.status === 'active' ? 'active' : subscription.cancel_at_period_end ? 'canceling' : 'inactive',
-                    subscriptionEndDate: subscription.cancel_at_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null
-                });
+                const subscriptionDocs = await getDocs(subscriptionsQuery);
+                
+                if (!subscriptionDocs.empty) {
+                    const subscriptionDoc = subscriptionDocs.docs[0];
+                    const userData = subscriptionDoc.data();
+                    const userId = userData.userId;
+                    
+                    if (userId) {
+                        const userRef = doc(db, 'users', userId);
+                        await updateDoc(userRef, {
+                            subscriptionStatus: 'inactive',
+                            cancel_at_period_end: false,
+                            cancelationDate: null
+                        });
+                        
+                        // Update subscription document
+                        await updateDoc(doc(db, 'subscriptions', subscriptionDoc.id), {
+                            hasAccess: false,
+                            updatedAt: serverTimestamp()
+                        });
+                    }
+                }             
                 break;
             }
 
