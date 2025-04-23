@@ -20,7 +20,7 @@ import ActiveSessions from '@/components/ActiveSessions';
 import { useSubscription } from '@/context/subscriptionContext';
 import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import DoughnutChart from './DoughnutChart';
-import { Category, categoriesData } from './Category'
+import { Category, categoriesData, categoryMapping } from './Category'
 import { useTheme } from '@/hooks/useTheme';
 import SubscriptionManagement from './SubscriptionManagement'
 
@@ -936,11 +936,28 @@ export default function UserProfile() {
   };
 
   const imagesPerPage = 8;
-  const totalPages = Math.ceil(userImages.length / imagesPerPage);
+
+  // Get selected category images in user gallery
+  const getSelectedCategoryImages = () => {
+    if (activeCategory === -1) {
+      return userImages;
+    } else {
+      const selectedCategory = categoryData[activeCategory]?.name;
+      
+      const categoryKey = Object.keys(categoryMapping).find(
+        key => categoryMapping[key] === selectedCategory
+      );
+      
+      return userImages.filter(image => image.type === categoryKey);
+    }
+  };
+
+  const categoryImages = getSelectedCategoryImages();
+  const totalPages = Math.ceil(categoryImages.length / imagesPerPage);
   // Paginate the images
   const startIndex = (currentPage - 1) * imagesPerPage;
   const endIndex = startIndex + imagesPerPage;
-  const paginatedImages = userImages.slice(startIndex, endIndex);
+  const paginatedImages = categoryImages.slice(startIndex, endIndex);
 
   // Handle page click
   const handlePageClick = (page) => {
@@ -1226,6 +1243,7 @@ export default function UserProfile() {
   </div>
 
               {/* Pagination */}
+              {categoryImages.length > 0 ? (
               <div className="flex justify-center items-center gap-3 mt-8">
               {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
                   <Button
@@ -1242,6 +1260,7 @@ export default function UserProfile() {
                   </Button>
                 ))}
               </div>
+              ) : null}
             </div>
           </div>
         </div>
