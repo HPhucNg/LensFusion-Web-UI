@@ -26,7 +26,7 @@ async function blobToBase64(blob) {
 export async function removeObjectFromImage(imageData, options = {}) {
   try {
     const ClientClass = await getClient();
-    const client = await ClientClass.connect("hpng/AttentiveEraser", {hf_token: process.env.HUGGING_FACE_TOKEN});
+    const client = await ClientClass.connect("hpng/AttentiveEraser", {hf_token: process.env.HF_ACCESS_TOKEN});
 
     // Convert base64 images to File objects
     const backgroundFile = await dataURLToFile(imageData.background, "background.png");

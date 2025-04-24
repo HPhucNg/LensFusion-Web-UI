@@ -47,7 +47,7 @@ export const generateImage = async (params) => {
         const { Client: ClientClass, handleFile } = await getClient();
 
         const HF_SPACE_NAME = "hpng/diffusers-image-outpaint";
-        const HF_TOKEN = process.env.HUGGING_FACE_TOKEN;
+        const HF_TOKEN = process.env.HF_ACCESS_TOKEN;
 
         const client = await ClientClass.connect(
             HF_SPACE_NAME,
