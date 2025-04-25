@@ -21,10 +21,7 @@ export const Cancel = ({ setActiveTab, setSuccess: setParentSuccess }) => {
         try {
             const result = await cancelSubscription(subscriptionId);
             
-            if (result) {
-                
-                setSuccess('Your subscription has been canceled!');
-                
+            if (result) {                
                 setTimeout(() => {
                     setActiveTab('current');
                 }, 1500);
