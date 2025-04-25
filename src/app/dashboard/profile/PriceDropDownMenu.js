@@ -294,7 +294,7 @@ export const PriceDropDownMenu = ({ setActiveTab, pricingType: parentPricingType
                                 </ul>
                             </div>
                         )}
-                        <p className='py-4 px-4 text-sm text-gray-600'> Changing to a new plan will replace your previous subscription plan. The remaining credits from the previous plan will be added on with your new plan credits and be available to use.</p>
+                        <p className='py-4 px-4 text-sm text-gray-600'> * If you have a active plan, changing to a new plan will replace your previous subscription plan. The remaining credits from the previous plan will be added on with your new plan credits and be available to use.</p>
                     </div>
                 </div>
             
