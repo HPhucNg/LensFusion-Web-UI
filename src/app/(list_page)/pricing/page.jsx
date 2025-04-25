@@ -70,14 +70,8 @@ function PricingPage() {
 
       const confirmed = window.confirm('Are you sure you want to cancel your subscription?');
       
-      if (!confirmed) return;
-
-      const result = await cancelSubscription(subscriptionId);
-    
-      if (result.success) {
-        alert('Your subscription is canceling and will remain active until the end of your billing period');
-        window.location.reload();
-      }
+      if (!confirmed) return;    
+     
     } catch (error) {
       console.error('Error canceling subscription:', error);
       alert('Unable to cancel subscription. Please try again.');
