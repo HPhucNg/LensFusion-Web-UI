@@ -51,6 +51,7 @@
     "react-icons": "^5.5.0",
     "react-remove-scroll": "^2.6.3",
     "react-responsive-masonry": "^2.7.1",
+    "react-turnstile": "^1.1.4",
     "react-use": "^17.6.0",
     "shadcn-ui": "^0.9.4",
     "sharp": "^0.33.5",
@@ -64,12 +65,12 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@gradio/client": "^1.12.0",
-    "autoprefixer": "^10.4.20",
+    "autoprefixer": "^10.4.21",
     "eslint": "^8",
     "eslint-config-next": "14.2.13",
-    "postcss": "^8.4.49",
-    "tailwind-scrollbar": "^3.0.0",
-    "tailwindcss": "^3.4.15"
+    "postcss": "^8.5.3",
+    "tailwind-scrollbar": "^3.1.0",
+    "tailwindcss": "^3.4.17"
   },
   "eslintConfig": {
     "extends": "next"

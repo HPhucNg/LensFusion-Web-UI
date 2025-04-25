@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaGoogle, FaGithub } from 'react-icons/fa';
@@ -15,12 +15,15 @@ import {
 } from "firebase/auth";
 import { setAuthCookie } from '@/utils/authCookies';
 import { useAuth } from '@/context/AuthContext';
+import Turnstile from 'react-turnstile';
 
 export default function LoginPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [turnstileVerified, setTurnstileVerified] = useState(false);
+  const turnstileRef = useRef(null);
 
   // Redirect to profile if already logged in
   useEffect(() => {
@@ -29,8 +32,53 @@ export default function LoginPage() {
     }
   }, [user, loading, router]);
 
+  // Function to handle when Turnstile is verified
+  const onTurnstileVerify = async (token) => {
+    try {
+      const response = await fetch('/api/verify-turnstile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setTurnstileVerified(true);
+        setError('');
+      } else {
+        setTurnstileVerified(false);
+        setError(data.error || 'CAPTCHA verification failed');
+        // Reset Turnstile if verification fails
+        if (turnstileRef.current) {
+          turnstileRef.current.reset();
+        }
+      }
+    } catch (error) {
+      console.error('Error verifying Turnstile token:', error);
+      setTurnstileVerified(false);
+      setError('CAPTCHA verification failed. Please try again.');
+      // Reset Turnstile on error
+      if (turnstileRef.current) {
+        turnstileRef.current.reset();
+      }
+    }
+  };
+
+  // Function to handle when Turnstile verification expires
+  const onTurnstileExpire = () => {
+    setTurnstileVerified(false);
+  };
+
   // Handle Google login
   const handleGoogleLogin = async () => {
+    if (!turnstileVerified) {
+      setError('Please complete the CAPTCHA verification first');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
   
@@ -54,6 +102,11 @@ export default function LoginPage() {
 
   // Handle GitHub login
   const handleGithubLogin = async () => {
+    if (!turnstileVerified) {
+      setError('Please complete the CAPTCHA verification first');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
@@ -109,10 +162,20 @@ export default function LoginPage() {
             </div>
           )}
 
+          <div className="flex justify-center mb-4">
+            <Turnstile
+              ref={turnstileRef}
+              sitekey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || "YOUR_CLOUDFLARE_TURNSTILE_SITE_KEY"}
+              onVerify={onTurnstileVerify}
+              onExpire={onTurnstileExpire}
+              theme="dark"
+            />
+          </div>
+
           <div className="space-y-6">
             <Button
               onClick={handleGoogleLogin}
-              disabled={isLoading}
+              disabled={isLoading || !turnstileVerified}
               className="w-full py-6 bg-transparent border border-gray-700 hover:bg-gray-800 text-white flex items-center justify-center"
             >
               <FaGoogle className="mr-3 h-5 w-5" />
@@ -121,7 +184,7 @@ export default function LoginPage() {
             
                   <Button
               onClick={handleGithubLogin}
-              disabled={isLoading}
+              disabled={isLoading || !turnstileVerified}
               className="w-full py-6 bg-transparent border border-gray-700 hover:bg-gray-800 text-white flex items-center justify-center"
             >
               <FaGithub className="mr-3 h-5 w-5" />

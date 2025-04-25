@@ -9,6 +9,8 @@ import Branding from "./Branding";
 import { auth } from '@/firebase/FirebaseConfig';
 import { signOut } from "firebase/auth";
 import { clearAuthCookie } from '@/utils/authCookies';
+import { useSubscription } from '@/context/subscriptionContext';
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +22,7 @@ export default function Navbar() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { status: subscriptionStatus} = useSubscription();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -41,6 +44,8 @@ export default function Navbar() {
     }
   };
 
+  const hasActiveSubscription = subscriptionStatus === 'active' || subscriptionStatus === 'canceling';
+
   const authenticatedLinks = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/resources', label: 'Resources' },
@@ -60,7 +65,13 @@ export default function Navbar() {
     { href: '/about', label: 'About' }
   ];
 
-  const currentLinks = user ? authenticatedLinks : unauthenticatedLinks;
+
+  const authenticated = authenticatedLinks.filter(link => 
+    !(link.href === '/pricing' && hasActiveSubscription)
+  );
+  
+  const unauthenticated = unauthenticatedLinks;
+  const currentLinks = user ? authenticated : unauthenticated;
 
   return (
     <header className="relative top-0 w-full z-50 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">

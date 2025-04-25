@@ -27,8 +27,8 @@ export async function POST(req) {
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, {
         subscriptionStatus: 'canceling',
-        cancelAtPeriodEnd: true,
-        cancellationDate: new Date(subscription.current_period_end * 1000).toISOString()
+        cancel_at_period_end: true,
+        cancelationDate: new Date(subscription.current_period_end * 1000).toISOString()
       });
   
       return NextResponse.json({ 

@@ -47,7 +47,7 @@ export const generateImage = async (params) => {
         const { Client: ClientClass, handleFile } = await getClient();
 
         const HF_SPACE_NAME = "hpng/diffusers-image-outpaint";
-        const HF_TOKEN = process.env.HUGGING_FACE_TOKEN;
+        const HF_TOKEN = process.env.HF_ACCESS_TOKEN;
 
         const client = await ClientClass.connect(
             HF_SPACE_NAME,
@@ -98,10 +98,10 @@ export const generateImage = async (params) => {
 
             // fetch the file from the remote URL include authorization header
             const response1 = await fetch(image1_url, {
-                headers: { "Authorization": `Bearer ${process.env.HUGGING_FACE_TOKEN}` }
+                headers: { "Authorization": `Bearer ${process.env.HF_ACCESS_TOKEN}` }
                 });
             const response2 = await fetch(image2_url, {
-                headers: { "Authorization": `Bearer ${process.env.HUGGING_FACE_TOKEN}` }
+                headers: { "Authorization": `Bearer ${process.env.HF_ACCESS_TOKEN}` }
                 });
 
             const blob1 = await response1.blob();
