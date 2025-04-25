@@ -75,7 +75,7 @@ export async function removeObjectFromImage(imageData, options = {}) {
       
       // Fetch the file from the remote URL include authorization header
       const response = await fetch(imageUrl, {
-        headers: { "Authorization": `Bearer ${process.env.HUGGING_FACE_TOKEN}` }
+        headers: { "Authorization": `Bearer ${process.env.HF_ACCESS_TOKEN}` }
       });
       const blob = await response.blob();
       const base64Data = await blobToBase64(blob);

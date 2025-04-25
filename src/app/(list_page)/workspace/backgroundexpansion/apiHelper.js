@@ -98,10 +98,10 @@ export const generateImage = async (params) => {
 
             // fetch the file from the remote URL include authorization header
             const response1 = await fetch(image1_url, {
-                headers: { "Authorization": `Bearer ${process.env.HUGGING_FACE_TOKEN}` }
+                headers: { "Authorization": `Bearer ${process.env.HF_ACCESS_TOKEN}` }
                 });
             const response2 = await fetch(image2_url, {
-                headers: { "Authorization": `Bearer ${process.env.HUGGING_FACE_TOKEN}` }
+                headers: { "Authorization": `Bearer ${process.env.HF_ACCESS_TOKEN}` }
                 });
 
             const blob1 = await response1.blob();
