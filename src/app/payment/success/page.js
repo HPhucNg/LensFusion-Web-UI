@@ -20,13 +20,12 @@ export default function Success() {
     <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white">
       <Navbar />
       <div className="flex items-center justify-center">
-        <div className="text-center p-8 rounded-xl shadow-2xl border border-gray-800">
+        <div className="text-center p-8 ">
           <h1 className="text-3xl font-bold mb-4">Payment Successful!</h1>
           <p className="mb-4">Thank you for your purchase!</p>
           <p className="text-gray-400"> You will be redirected to your profile in a few seconds...</p>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }
