@@ -13,7 +13,8 @@ import {
   writeBatch,
   Timestamp,
   limit,
-  getDoc
+  getDoc,
+  onSnapshot
 } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { deleteCookie } from 'cookies-next';
@@ -337,3 +338,91 @@ export const getSessions = async (userId) => {
     throw error;
   }
 };
+
+export async function deleteSession(sessionId) {
+  try {
+    const sessionRef = doc(db, 'sessions', sessionId);
+    
+    // First get the session data
+    const sessionDoc = await getDoc(sessionRef);
+    if (!sessionDoc.exists()) {
+      console.warn('Session not found:', sessionId);
+      return false;
+    }
+
+    const sessionData = sessionDoc.data();
+    
+    // Mark the session as terminated
+    await updateDoc(sessionRef, {
+      status: 'terminated',
+      terminatedAt: serverTimestamp(),
+      terminatedBy: auth.currentUser?.uid
+    });
+
+    // Create a termination log
+    const terminationLog = {
+      sessionId,
+      userId: sessionData.userId,
+      deviceInfo: sessionData.deviceInfo,
+      terminatedAt: serverTimestamp(),
+      terminatedBy: auth.currentUser?.uid,
+      reason: 'manual_termination'
+    };
+
+    // Add termination log
+    await addDoc(collection(db, 'session_terminations'), terminationLog);
+    
+    // Update cache if it exists
+    if (sessionCache && sessionCache.data && sessionCache.data.sessions) {
+      sessionCache.data.sessions = sessionCache.data.sessions.filter(
+        session => session.id !== sessionId
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting session:', error);
+    throw error;
+  }
+}
+
+export function monitorSessions(userId, onSessionRemoved) {
+  if (!userId) return;
+
+  const sessionsRef = collection(db, 'sessions');
+  const q = query(
+    sessionsRef,
+    where('userId', '==', userId)
+  );
+
+  let initialSessionFound = false;
+
+  // Set up real-time listener
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    // Get current device info
+    const currentDeviceInfo = {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform
+    };
+
+    // Check if current session exists in the snapshot
+    const currentSessionExists = snapshot.docs.some(doc => {
+      const sessionData = doc.data();
+      return (
+        sessionData.deviceInfo.userAgent === currentDeviceInfo.userAgent &&
+        sessionData.deviceInfo.platform === currentDeviceInfo.platform &&
+        sessionData.status !== 'terminated'
+      );
+    });
+
+    // Only trigger if we've found the initial session and then it's removed or terminated
+    if (currentSessionExists) {
+      initialSessionFound = true;
+    } else if (initialSessionFound) {
+      // Only trigger if we previously found the session and now it's gone or terminated
+      onSessionRemoved();
+    }
+  });
+
+  return unsubscribe;
+}

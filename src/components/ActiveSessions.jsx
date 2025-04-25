@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { getSessions } from '@/lib/sessionManager';
+import React, { useState, useEffect } from 'react';
+import { getSessions, deleteSession, monitorSessions } from '@/lib/sessionManager';
 import { Button } from '@/components/ui/button';
 import { 
   Laptop, 
@@ -7,34 +7,64 @@ import {
   Globe, 
   X, 
   Tablet, 
-  Search, 
   Clock, 
   MapPin,
-  Shield,
-  SortAsc,
-  SortDesc,
-  Filter
+  Shield
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { signOut } from 'firebase/auth';
+import { format } from 'date-fns';
+import { UAParser } from 'ua-parser-js';
+import ReauthPopup from './ReauthPopup';
 
 export default function ActiveSessions({ userId, onClose }) {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('lastActive');
-  const [sortOrder, setSortOrder] = useState('desc');
-  const [filterBy, setFilterBy] = useState('all');
+  const [showReauth, setShowReauth] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
   const { currentUser, auth } = useAuth();
 
   useEffect(() => {
-    fetchSessions();
-    // Refresh sessions every 30 seconds
-    const interval = setInterval(fetchSessions, 30000);
-    return () => clearInterval(interval);
+    let unsubscribe;
+
+    const setupSessionMonitoring = async () => {
+      try {
+        // First fetch the current sessions
+        const userSessions = await getSessions(userId);
+        setSessions(userSessions);
+
+        // Identify current session
+        const currentSession = userSessions.find(session => 
+          session.deviceInfo.userAgent === navigator.userAgent && 
+          session.deviceInfo.platform === navigator.platform
+        );
+
+        if (currentSession) {
+          setCurrentSessionId(currentSession.id);
+        }
+
+        // Only set up real-time monitoring if we have a current session
+        if (currentSession) {
+          unsubscribe = monitorSessions(userId, () => {
+            console.log('Session removed, showing reauth popup');
+            setShowReauth(true);
+          });
+        }
+      } catch (error) {
+        console.error('Error setting up session monitoring:', error);
+        setError('Failed to load sessions');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    setupSessionMonitoring();
+
+    // Clean up listener
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [userId]);
 
   const fetchSessions = async () => {
@@ -42,9 +72,52 @@ export default function ActiveSessions({ userId, onClose }) {
       const userSessions = await getSessions(userId);
       setSessions(userSessions);
     } catch (error) {
+      console.error('Error fetching sessions:', error);
       setError('Failed to load sessions');
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const handleRemoveDevice = async (sessionId) => {
+    try {
+      if (!window.confirm('Are you sure you want to remove this device? This will sign out the user on that device.')) {
+        return;
+      }
+
+      console.log('Attempting to remove device:', sessionId);
+      
+      // Get the session details from local state
+      const sessionToRemove = sessions.find(session => session.id === sessionId);
+      if (!sessionToRemove) {
+        setError('Session not found');
+        return;
+      }
+
+      // Remove the session
+      await deleteSession(sessionId);
+      
+      // Update local state
+      setSessions(sessions.filter(session => session.id !== sessionId));
+      
+      // Check if this was the current session
+      const isCurrentSession = 
+        sessionToRemove.deviceInfo.userAgent === navigator.userAgent && 
+        sessionToRemove.deviceInfo.platform === navigator.platform;
+
+      if (isCurrentSession) {
+        console.log('Current session removed, showing reauth popup');
+        setShowReauth(true);
+      } else {
+        // For other devices, we need to force a sign-out
+        // This will be handled by the real-time listener on the other device
+        console.log('Session terminated for another device');
+      }
+
+      // Show success message
+      setError('Device removed successfully');
+      setTimeout(() => setError(''), 3000);
+    } catch (error) {
+      console.error('Error removing device:', error);
+      setError('Failed to remove device: ' + error.message);
     }
   };
 
@@ -110,6 +183,39 @@ export default function ActiveSessions({ userId, onClose }) {
     }
   };
 
+  const getDeviceType = (userAgent) => {
+    const parser = new UAParser(userAgent);
+    const device = parser.getDevice();
+    const browser = parser.getBrowser();
+    const os = parser.getOS();
+
+    if (device.type === 'mobile') {
+      return `${os.name} ${device.model || 'Mobile'}`;
+    } else if (device.type === 'tablet') {
+      return `${os.name} ${device.model || 'Tablet'}`;
+    } else {
+      return `${browser.name} on ${os.name}`;
+    }
+  };
+
+  const formatDate = (date) => {
+    try {
+      const d = new Date(date);
+      return format(d, 'MM/dd/yy');
+    } catch (error) {
+      return 'Unknown date';
+    }
+  };
+
+  const formatFullDate = (date) => {
+    try {
+      const d = new Date(date);
+      return format(d, 'MMMM do, yyyy');
+    } catch (error) {
+      return 'Unknown date';
+    }
+  };
+
   const getDeviceIcon = (userAgent) => {
     if (userAgent.toLowerCase().includes('mobile')) {
       return <Smartphone className="h-5 w-5" />;
@@ -133,46 +239,6 @@ export default function ActiveSessions({ userId, onClose }) {
     return 'Just now';
   };
 
-  const filteredAndSortedSessions = useMemo(() => {
-    let result = [...sessions];
-
-    // Filter by search query
-    if (searchQuery) {
-      result = result.filter(session => 
-        session.deviceInfo.platform.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        session.deviceInfo.userAgent.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Filter by device type
-    if (filterBy !== 'all') {
-      result = result.filter(session => {
-        const userAgent = session.deviceInfo.userAgent.toLowerCase();
-        if (filterBy === 'mobile') return userAgent.includes('mobile');
-        if (filterBy === 'tablet') return userAgent.includes('tablet');
-        if (filterBy === 'desktop') return !userAgent.includes('mobile') && !userAgent.includes('tablet');
-        return true;
-      });
-    }
-
-    // Sort sessions
-    result.sort((a, b) => {
-      const aValue = a[sortBy];
-      const bValue = b[sortBy];
-      const multiplier = sortOrder === 'asc' ? 1 : -1;
-
-      if (sortBy === 'lastActive' || sortBy === 'createdAt') {
-        // Handle both Timestamp and Date objects
-        const aTime = aValue?.toDate ? aValue.toDate().getTime() : new Date(aValue).getTime();
-        const bTime = bValue?.toDate ? bValue.toDate().getTime() : new Date(bValue).getTime();
-        return (aTime - bTime) * multiplier;
-      }
-      return String(aValue).localeCompare(String(bValue)) * multiplier;
-    });
-
-    return result;
-  }, [sessions, searchQuery, sortBy, sortOrder, filterBy]);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-4">
@@ -182,114 +248,87 @@ export default function ActiveSessions({ userId, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#0D161F] border border-gray-800 rounded-lg w-full max-w-2xl m-4">
-        <div className="border-b border-gray-800 p-4 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-white">Active Sessions</h2>
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            className="text-gray-400 hover:text-white"
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        <div className="p-4">
-          {/* Controls */}
-          <div className="flex flex-col gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search sessions..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-gray-800/50 border-gray-700"
-                />
-              </div>
-              <Select value={filterBy} onValueChange={setFilterBy}>
-                <SelectTrigger className="w-[180px] bg-gray-800/50 border-gray-700">
-                  <SelectValue placeholder="Filter by device" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Devices</SelectItem>
-                  <SelectItem value="desktop">Desktop</SelectItem>
-                  <SelectItem value="mobile">Mobile</SelectItem>
-                  <SelectItem value="tablet">Tablet</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="bg-gray-800/50 border-gray-700"
-              >
-                {sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
-              </Button>
-            </div>
-            {sessions.length > 1 && (
-              <Button
-                variant="destructive"
-                onClick={handleSignOutAll}
-                className="w-full bg-red-600 hover:bg-red-700 text-white"
-              >
-                Sign Out of All Devices
-              </Button>
-            )}
+    <>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-[#0D161F] border border-gray-800 rounded-lg w-full max-w-2xl m-4">
+          <div className="border-b border-gray-800 p-4 flex justify-between items-center">
+            <h2 className="text-xl font-bold text-white">Manage Your Devices</h2>
+            <Button
+              variant="ghost"
+              onClick={onClose}
+              className="text-gray-400 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </Button>
           </div>
 
-          {error && (
-            <div className="mb-4 p-2 bg-red-500/10 border border-red-500 rounded text-red-500">
-              {error}
-            </div>
-          )}
+          <div className="p-4">
+            {/* Devices Table */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-sm text-gray-400 border-b border-gray-800 pb-2">
+                <div>Devices</div>
+                <div>Date Added</div>
+                <div className="text-right">Actions</div>
+              </div>
 
-          <div className="space-y-4 max-h-[50vh] overflow-y-auto">
-            {filteredAndSortedSessions.map((session) => {
-              const isCurrentSession = 
-                session.deviceInfo.userAgent === navigator.userAgent && 
-                session.deviceInfo.platform === navigator.platform;
+              {sessions.map((session) => {
+                const isCurrentSession = 
+                  session.deviceInfo.userAgent === navigator.userAgent && 
+                  session.deviceInfo.platform === navigator.platform;
 
-              return (
-                <div
-                  key={session.id}
-                  className={`flex items-center justify-between p-4 bg-gray-800/50 rounded-lg ${
-                    isCurrentSession ? 'border-l-4 border-blue-500' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {getDeviceIcon(session.deviceInfo.userAgent)}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-white">
-                          {session.deviceInfo.platform}
-                        </h4>
+                return (
+                  <div
+                    key={session.id}
+                    className="grid grid-cols-3 gap-4 items-center py-3 border-b border-gray-800"
+                  >
+                    <div className="flex items-center gap-2">
+                      {getDeviceIcon(session.deviceInfo.userAgent)}
+                      <div>
+                        <div className="font-medium text-white">
+                          {getDeviceType(session.deviceInfo.userAgent)}
+                        </div>
                         {isCurrentSession && (
                           <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
-                            Current Session
+                            Current Device
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-400 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Last active: {formatDuration(session.lastActive)}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {session.deviceInfo.userAgent}
-                      </p>
+                    </div>
+                    <div>
+                      <div className="text-white">{formatDate(session.createdAt)}</div>
+                      <div className="text-xs text-gray-400">{formatFullDate(session.createdAt)}</div>
+                    </div>
+                    <div className="text-right">
+                      {!isCurrentSession && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveDevice(session.id)}
+                          className="text-red-500 hover:text-red-400"
+                        >
+                          Remove
+                        </Button>
+                      )}
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
 
-            {filteredAndSortedSessions.length === 0 && (
-              <p className="text-center text-gray-400">No active sessions found</p>
+              {sessions.length === 0 && (
+                <p className="text-center text-gray-400 py-4">No devices found</p>
+              )}
+            </div>
+
+            {error && (
+              <div className="mt-4 p-2 bg-red-500/10 border border-red-500 rounded text-red-500">
+                {error}
+              </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+
+      {showReauth && <ReauthPopup onClose={() => setShowReauth(false)} />}
+    </>
   );
 } 
