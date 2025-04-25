@@ -1,4 +1,4 @@
-import { db } from '@/firebase/FirebaseConfig';
+import { db, auth } from '@/firebase/FirebaseConfig';
 import {
   collection,
   addDoc,
@@ -12,8 +12,11 @@ import {
   doc,
   writeBatch,
   Timestamp,
-  limit
+  limit,
+  getDoc
 } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { deleteCookie } from 'cookies-next';
 
 // Constants
 const SESSION_EXPIRY_DAYS = 14;
@@ -21,6 +24,14 @@ const LAST_ACTIVE_UPDATE_INTERVAL = 30 * 60 * 1000; // 30 minutes in millisecond
 const MAX_SESSIONS_PER_USER = 5;
 const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes in milliseconds
 const BATCH_SIZE = 20; // Maximum number of operations per batch
+
+// Helper function to safely get timestamp
+const getTimestampValue = (timestamp) => {
+  if (!timestamp) return null;
+  if (timestamp.toDate) return timestamp.toDate();
+  if (timestamp instanceof Date) return timestamp;
+  return new Date(timestamp);
+};
 
 // Client-side cache
 let sessionCache = {
@@ -47,6 +58,13 @@ const getExpirationTimestamp = () => {
   const expirationDate = new Date();
   expirationDate.setDate(expirationDate.getDate() + SESSION_EXPIRY_DAYS);
   return Timestamp.fromDate(expirationDate);
+};
+
+/**
+ * Get current timestamp
+ */
+const getCurrentTimestamp = () => {
+  return Timestamp.fromDate(new Date());
 };
 
 /**
@@ -91,9 +109,12 @@ const cleanupExpiredSessions = async (userId) => {
   try {
     // Check cache first
     if (isCacheValid() && sessionCache.data.userId === userId) {
-      const now = Date.now();
+      const now = getCurrentTimestamp();
       const expiredSessions = sessionCache.data.sessions.filter(
-        session => session.expiresAt.toDate().getTime() <= now
+        session => {
+          const expiresAt = getTimestampValue(session.expiresAt);
+          return expiresAt && expiresAt.getTime() <= now.toDate().getTime();
+        }
       );
       
       if (expiredSessions.length > 0) {
@@ -104,7 +125,10 @@ const cleanupExpiredSessions = async (userId) => {
         
         // Update cache
         sessionCache.data.sessions = sessionCache.data.sessions.filter(
-          session => session.expiresAt.toDate().getTime() > now
+          session => {
+            const expiresAt = getTimestampValue(session.expiresAt);
+            return expiresAt && expiresAt.getTime() > now.toDate().getTime();
+          }
         );
       }
       return;
@@ -114,8 +138,8 @@ const cleanupExpiredSessions = async (userId) => {
     const expiredQuery = query(
       sessionsRef,
       where('userId', '==', userId),
-      where('expiresAt', '<=', Timestamp.now()),
-      limit(BATCH_SIZE) // Limit the number of documents to process
+      where('expiresAt', '<=', getCurrentTimestamp()),
+      limit(BATCH_SIZE)
     );
     
     const expiredSessions = await getDocs(expiredQuery);
@@ -285,17 +309,17 @@ export const getSessions = async (userId) => {
     const q = query(
       sessionsRef,
       where('userId', '==', userId),
-      where('expiresAt', '>', Timestamp.now()),
-      limit(MAX_SESSIONS_PER_USER) // Limit the number of documents to fetch
+      where('expiresAt', '>', getCurrentTimestamp()),
+      limit(MAX_SESSIONS_PER_USER)
     );
     const querySnapshot = await getDocs(q);
 
     const sessions = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-      lastActive: doc.data().lastActive?.toDate(),
-      createdAt: doc.data().createdAt?.toDate(),
-      expiresAt: doc.data().expiresAt?.toDate()
+      lastActive: getTimestampValue(doc.data().lastActive),
+      createdAt: getTimestampValue(doc.data().createdAt),
+      expiresAt: getTimestampValue(doc.data().expiresAt)
     }));
 
     // Update cache
@@ -310,27 +334,6 @@ export const getSessions = async (userId) => {
     return sessions;
   } catch (error) {
     console.error('Error getting sessions:', error);
-    throw error;
-  }
-};
-
-/**
- * Delete a session by ID
- */
-export const deleteSession = async (sessionId) => {
-  try {
-    await deleteDoc(doc(db, 'user_sessions', sessionId));
-    
-    // Update cache if exists
-    if (isCacheValid()) {
-      sessionCache.data.sessions = sessionCache.data.sessions.filter(
-        session => session.id !== sessionId
-      );
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error deleting session:', error);
     throw error;
   }
 };
