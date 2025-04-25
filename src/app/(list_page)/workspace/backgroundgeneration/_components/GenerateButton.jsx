@@ -1,12 +1,19 @@
 import React from 'react';
+import { Gem } from 'lucide-react';
 
-export const GenerateButton = ({ handleGenerate, isProcessing, selectedFile }) => {
+export const GenerateButton = ({ 
+  handleGenerate, 
+  isProcessing, 
+  selectedFile, 
+  userTokens,
+  insufficientTokens 
+}) => {
   return (
     <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-gray-800/90 to-transparent">
       <button
         onClick={handleGenerate}
-        disabled={isProcessing || !selectedFile}
-        className="w-full py-1.5 text-sm bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 disabled:bg-gradient-to-r disabled:from-gray-700 disabled:to-gray-600 rounded-md transition-all disabled:cursor-not-allowed relative overflow-hidden"
+        disabled={isProcessing || !selectedFile || insufficientTokens}
+        className="w-full py-2 text-white font-medium text-base bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 disabled:bg-gradient-to-r disabled:from-gray-700 disabled:to-gray-600 rounded-md transition-all disabled:cursor-not-allowed relative overflow-hidden flex items-center justify-center"
       >
         {isProcessing ? (
           <div className="flex items-center justify-center space-x-2">
@@ -16,8 +23,14 @@ export const GenerateButton = ({ handleGenerate, isProcessing, selectedFile }) =
             </svg>
             <span>Processing...</span>
           </div>
+        ) : insufficientTokens ? (
+          'Insufficient Tokens'
         ) : (
-          'Generate'
+          <div className="flex items-center justify-center">
+            <span>Generate Image</span>
+            <Gem className="w-4 h-4 mx-1.5 text-white" />
+            <span>10</span>
+          </div>
         )}
       </button>
     </div>

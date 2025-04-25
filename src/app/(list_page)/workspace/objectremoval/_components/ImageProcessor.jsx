@@ -12,6 +12,8 @@ import ImageUploader from './ImageUploader';
 import DrawingTools from './DrawingTools';
 import ResultViewer from './ResultViewer';
 import ActionButtons from './ActionButtons';
+import { auth } from '@/firebase/FirebaseConfig';
+import { saveToGallery } from '@/lib/saveToGallery';
 
 export default function ObjectRemovalUI() {
   const [uploadLoading, setUploadLoading] = useState(false);
@@ -25,6 +27,9 @@ export default function ObjectRemovalUI() {
   const [paddingMetadata, setPaddingMetadata] = useState(null);
   const [originalDimensions, setOriginalDimensions] = useState(null);
   const [resultDimensions, setResultDimensions] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [user, setUser] = useState(null);
+  const [notification, setNotification] = useState(null);
   
   const [paddedDebugImage, setPaddedDebugImage] = useState(null);
   const [paddedDebugMask, setPaddedDebugMask] = useState(null);
@@ -110,6 +115,32 @@ export default function ObjectRemovalUI() {
       console.warn('maskCanvasRef is not initialized');
     }
   }, [maskCanvasRef]);
+
+  // Check for user authentication
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Clear notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  // Auto-save whenever a new result is available
+  useEffect(() => {
+    if (resultImage && user && !saving) {
+      handleSaveToGallery();
+    }
+  }, [resultImage]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -422,11 +453,81 @@ export default function ObjectRemovalUI() {
     };
   }, []);
 
+  // Function to convert image to WebP format
+  const convertToWebP = (dataUrl, quality = 0.85) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          // Create canvas with original dimensions
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          
+          // Draw image to canvas
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          
+          // Convert to WebP
+          const webpDataUrl = canvas.toDataURL('image/webp', quality);
+          
+          resolve(webpDataUrl);
+        };
+        img.onerror = (err) => {
+          console.error('Error loading image for WebP conversion:', err);
+          reject(err);
+        };
+        img.src = dataUrl;
+      } catch (error) {
+        console.error('Error converting to WebP:', error);
+        reject(error);
+      }
+    });
+  };
+
+  // Helper function to save to gallery using the utility
+  const handleSaveToGallery = async () => {
+    if (!resultImage || !user) {
+      setNotification({
+        type: 'error',
+        message: user ? 'No result to save' : 'Please sign in to save to gallery'
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await saveToGallery(resultImage, user.uid, 'objectremoval');
+      // Success notification removed - silent success
+    } catch (error) {
+      console.error('Error saving to gallery:', error);
+      setNotification({
+        type: 'error',
+        message: 'Failed to save to gallery'
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="w-full p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-gray-900 to-black text-white">
       <h1 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
         AI Object Remover
       </h1>
+      
+      {/* Notification banner */}
+      {notification && (
+        <div className={`mb-4 p-3 rounded-lg text-white flex items-center justify-between ${
+          notification.type === 'success' ? 'bg-green-500/20 border border-green-500/30' : 
+          'bg-red-500/20 border border-red-500/30'
+        }`}>
+          <p>{notification.message}</p>
+          <button onClick={() => setNotification(null)} className="text-white/80 hover:text-white">
+            <FiX size={18} />
+          </button>
+        </div>
+      )}
       
       <div className="mb-6 flex items-center flex-wrap gap-3">
         <DrawingTools isEraser={isEraser} setIsEraser={setIsEraser} brushSize={brushSize} setBrushSize={setBrushSize} />
@@ -457,12 +558,13 @@ export default function ObjectRemovalUI() {
           <CanvasSetup originalImage={originalImage} setOriginalDimensions={setOriginalDimensions} canvasRef={canvasRef} maskCanvasRef={maskCanvasRef} imageContainerRef={imageContainerRef} setPaddingMetadata={setPaddingMetadata} />
         </div>
 
-        {/* Output Section - Ensure ResultViewer handles image scaling */}
+        {/* Output Section - Restore ResultViewer component */}
         <ResultViewer 
           resultImage={resultImage} 
           isProcessing={processing}
           onDownload={downloadResult}
           onRegenerate={handleRemoveObject}
+          isSaving={saving}
         />
       </div>
       

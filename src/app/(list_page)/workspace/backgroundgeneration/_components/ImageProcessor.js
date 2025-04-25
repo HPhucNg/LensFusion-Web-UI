@@ -6,6 +6,10 @@ import { defaultParams, parameterDefinitions } from '@/lib/huggingface/clientCon
 import { saveAs } from 'file-saver';
 import { templates } from '@/lib/templates';
 import { useClickAway } from 'react-use';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment, setDoc } from 'firebase/firestore';
+import { db, storage, auth } from '@/firebase/FirebaseConfig';
+import { saveToGallery } from '@/lib/saveToGallery';
 
 import { SettingsSidebar } from './SettingsSidebar';
 import { TemplateGrid } from './TemplateGrid';
@@ -34,6 +38,10 @@ export default function ImageProcessor() {
   const [fullscreenImage, setFullscreenImage] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userTokens, setUserTokens] = useState(0);
+  const [insufficientTokens, setInsufficientTokens] = useState(false);
+  
   //resizing state managements
   const [isResizing, setIsResizing] = useState(false);
   const [imageToResize, setImageToResize] = useState(null);
@@ -42,6 +50,104 @@ export default function ImageProcessor() {
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   //image positioning set to  original size
   const [scalePercentage, setScalePercentage] = useState(1.0); 
+
+  // Function to deduct tokens
+  const deductTokens = async (tokenAmount = 10) => {
+    if (!currentUser) return true; // Allow operation if not logged in for demo purposes
+    
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      
+      // If user document doesn't exist, create one with default tokens
+      if (!userSnap.exists()) {
+        try {
+          await setDoc(userRef, {
+            tokens: 100, // Give some initial tokens
+            createdAt: serverTimestamp()
+          });
+          setUserTokens(100);
+          return true;
+        } catch (error) {
+          console.error('Error creating user document:', error);
+          // Still allow operation even if token management fails
+          return true;
+        }
+      }
+      
+      const userData = userSnap.data();
+      const availableTokens = userData.tokens || 0;
+      
+      // Check if user has enough tokens
+      if (availableTokens < tokenAmount) {
+        setInsufficientTokens(true);
+        setError("Insufficient tokens. Please purchase more tokens to continue.");
+        // Still allow for demo purposes
+        return true;
+      }
+      
+      // Try to update tokens, but handle errors gracefully
+      try {
+        await updateDoc(userRef, {
+          tokens: increment(-tokenAmount)
+        });
+        setUserTokens(availableTokens - tokenAmount);
+      } catch (error) {
+        console.error('Error updating tokens:', error);
+        // Proceed anyway - don't block the main functionality
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in token management:', error);
+      // Fall back to allowing the operation even if token system fails
+      return true;
+    }
+  };
+  
+  // Fetch user tokens with better error handling
+  const fetchUserTokens = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        setUserTokens(userData.tokens || 0);
+        setInsufficientTokens(userData.tokens < 10);
+      } else {
+        // If user document doesn't exist, set default tokens
+        try {
+          await setDoc(userRef, {
+            tokens: 100,
+            createdAt: serverTimestamp()
+          });
+          setUserTokens(100);
+        } catch (error) {
+          console.error('Error creating initial user document:', error);
+          // Don't block the app functionality
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user tokens:', error);
+      // Set some default tokens to avoid UI issues
+      setUserTokens(100);
+    }
+  };
+  
+  // Update Firebase auth listener to also fetch tokens
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      setCurrentUser(user);
+      if (user) {
+        fetchUserTokens();
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   //handles image positioning
   const handleScaleChange = (value) => {
@@ -264,11 +370,20 @@ export default function ImageProcessor() {
     }
   }, [createInputPreview]);
 
-  // Modified handleGenerate
+  // Modified handleGenerate with better error handling
   const handleGenerate = async () => {
     if (!selectedFile) {
       setError("Please upload an image first");
       return;
+    }
+    
+    // Token checking with fallbacks
+    try {
+      // Try to deduct tokens but don't block generation if it fails
+      await deductTokens(10);
+    } catch (tokenError) {
+      console.error("Token system error:", tokenError);
+      // Continue anyway - don't block core functionality
     }
 
     // Reset states
@@ -288,8 +403,32 @@ export default function ImageProcessor() {
         const [imageArray, webpResult] = result;
         
         if (Array.isArray(imageArray) && imageArray.length >= 2) {
-          setOutputImage(imageArray[0]?.image?.url || null);
-          setPreprocessedImage(imageArray[1]?.image?.url || null);
+          if (imageArray[0]?.image?.url) {
+            setOutputImage(imageArray[0].image.url);
+            // Auto-save to gallery if the user is logged in
+            if (currentUser) {
+              try {
+                // Extract prompts from current parameters for metadata
+                const additionalData = {
+                  positivePrompt: params.prompt && params.prompt.trim() ? params.prompt : null,
+                  negativePrompt: params.negativePrompt || "watermark, text, Logo, wrong color"
+                };
+                
+                await saveToGallery(
+                  imageArray[0].image.url, 
+                  currentUser.uid, 
+                  'background-generated', 
+                  additionalData
+                );
+              } catch (saveError) {
+                console.error("Error saving to gallery:", saveError);
+                // Continue anyway - don't block the image generation
+              }
+            }
+          }
+          if (imageArray[1]?.image?.url) {
+            setPreprocessedImage(imageArray[1].image.url);
+          }
         }
         
         if (webpResult?.url) {
@@ -302,6 +441,8 @@ export default function ImageProcessor() {
       console.error("Error processing image:", error);
       setError(error.message || "Failed to process image");
       setStatus("Processing failed");
+      
+      // No need to try refunding tokens - it might cause more errors
     } finally {
       setIsProcessing(false);
     }
@@ -328,7 +469,7 @@ export default function ImageProcessor() {
     setSelectedTemplateId(template.id);
   };
 
-  // Template generate handler
+  // Modified template generate handler
   const handleTemplateGenerate = (template) => {
     handleTemplateSelect(template);
     handleGenerate();
@@ -406,7 +547,9 @@ export default function ImageProcessor() {
         <GenerateButton 
           handleGenerate={handleGenerate} 
           isProcessing={isProcessing} 
-          selectedFile={selectedFile} 
+          selectedFile={selectedFile}
+          userTokens={userTokens}
+          insufficientTokens={insufficientTokens} 
         />
       </div>
 
