@@ -1,7 +1,7 @@
 'use client';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from '@/firebase/FirebaseConfig';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { saveUserToFirebase } from '@/firebase/firebaseUtils';
 
 // this is used to manage the subscription status
@@ -14,10 +14,75 @@ export function SubscriptionProvider({ children }) {
     planCycle: null,
     tokens: 0,
     subscriptionId: null,
-    cancelAtPeriodEnd: false,
-    cancellationDate: null,
-    loading: true
+    cancel_at_period_end: false,
+    cancelationDate: null,
+    loading: true,
+    subscriptionEndDate: null,
   });
+
+  const refreshSubscription = async () => {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          
+          // Format the subscription end date
+          let formattedEndDate = null;
+          if (userData.subscriptionEndDate) {
+            if (userData.subscriptionEndDate.toDate) {
+              formattedEndDate = userData.subscriptionEndDate.toDate().toLocaleDateString();
+            } 
+            else if (typeof userData.subscriptionEndDate === 'string') {
+              formattedEndDate = new Date(userData.subscriptionEndDate).toLocaleDateString();
+            }
+          }
+          
+          // Update the subscription data state with fresh data
+          setSubscriptionData({
+            status: userData.subscriptionStatus || 'inactive',
+            currentPlan: userData.currentPlan || 'No Plan',
+            planCycle: userData.planCycle || null,
+            tokens: userData.tokens || 0,
+            customerId: userData.customerId || null,
+            subscriptionId: userData.subscriptionId,
+            cancel_at_period_end: userData.cancel_at_period_end || false,
+            cancelationDate: userData.cancelationDate || null,
+            loading: false,
+            subscriptionEndDate: formattedEndDate
+          });
+          
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Error refreshing subscription data:', error);
+      return false;
+    }
+  };
+
+  // Token management - Token update when user subscribes to new plan
+  const updateTokenCount = async (newTokens) => {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, {
+          tokens: newTokens
+        });
+        console.log('Token count updated');
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error updating token count ', error);
+      return false;
+    }
+  };
 
   //authentication and data sync
   useEffect(() => {
@@ -29,6 +94,16 @@ export function SubscriptionProvider({ children }) {
             const userData = userDoc.data();
             console.log('Firestore user data:', userData); // Debug log
 
+            let formattedEndDate = null;
+            if (userData.subscriptionEndDate) {
+              if (userData.subscriptionEndDate.toDate) {
+                formattedEndDate = userData.subscriptionEndDate.toDate().toLocaleDateString();
+              } 
+              else if (typeof userData.subscriptionEndDate === 'string') {
+                formattedEndDate = new Date(userData.subscriptionEndDate).toLocaleDateString();
+              }
+            }
+
             setSubscriptionData({
               status: userData.subscriptionStatus || 'inactive',
               currentPlan: userData.currentPlan || 'No Plan',
@@ -36,12 +111,13 @@ export function SubscriptionProvider({ children }) {
               tokens: userData.tokens || 0,
               customerId: userData.customerId || null,
               subscriptionId: userData.subscriptionId,
-              cancelAtPeriodEnd: userData.cancelAtPeriodEnd || false,
-              cancellationDate: userData.cancellationDate || null,
-              loading: false
+              cancel_at_period_end: userData.cancel_at_period_end || false,
+              cancelationDate: userData.cancelationDate || null,
+              loading: false,
+              subscriptionEndDate: formattedEndDate
             });
           } else {
-            //if the user document doesn't exist, create it with default values
+            //If user document doesn't exist, create default values
             saveUserToFirebase(user);
             setSubscriptionData({
               status: 'inactive',
@@ -50,15 +126,16 @@ export function SubscriptionProvider({ children }) {
               tokens: 0,
               customerId: null,
               subscriptionId: null,
-              cancelAtPeriodEnd: false,
-              cancellationDate: null,
-              loading: false
+              cancel_at_period_end: false,
+              cancelationDate: null,
+              loading: false,
+              subscriptionEndDate: null
             });
           }
         });
         return () => unsubscribeSnapshot();
       } else {
-        //this resets the states when user not authenticated
+        // Resets the states when user not authenticated
         setSubscriptionData({
           status: 'inactive',
           currentPlan: 'No Plan',
@@ -66,9 +143,10 @@ export function SubscriptionProvider({ children }) {
           tokens: 0,
           customerId: null,
           subscriptionId: null,
-          cancelAtPeriodEnd: false,
-          cancellationDate: null,
-          loading: false
+          cancel_at_period_end: false,
+          cancelationDate: null,
+          loading: false,
+          subscriptionEndDate: null
         });
       }
     });
@@ -76,9 +154,16 @@ export function SubscriptionProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
+  const value = {
+    ...subscriptionData,
+    updateTokenCount,
+    refreshSubscription
+
+  };
+
   //context provider rendering
   return (
-    <SubscriptionContext.Provider value={subscriptionData}>
+    <SubscriptionContext.Provider value={value}>
       {children}
     </SubscriptionContext.Provider>
   );
