@@ -98,8 +98,6 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
       router.push(`/workspace/backgroundgeneration?${query}`);
     }; 
 
-    console.log(selectedPost.id);
-
 
     return (
         <div className='md:w-[80%] md:flex-row flex flex-col font-sans relative rounded-xl shadow-md overflow-hidden' style={{ background: 'var(--modal-background)' }}>

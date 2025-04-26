@@ -2,7 +2,6 @@
 import React, { useState, useEffect} from 'react';
 import { defaultParams, ratioSettings } from './config';
 import { generateImage } from './apiHelper'; 
-import BackButton from '@/components/BackButton';
 import DownloadOptions from '@/components/DownloadOptions';
 import { GenerateButton } from '../backgroundgeneration/_components/GenerateButton';
 import WorkspaceNavbar from '@/components/WorkspaceNavbar';
