@@ -10,6 +10,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { db, storage, auth } from '@/firebase/FirebaseConfig';
 import { saveToGallery } from '@/lib/saveToGallery';
+import { removeImageBackground } from '@/utils/backgroundRemoval';
 
 import { SettingsSidebar } from './SettingsSidebar';
 import { TemplateGrid } from './TemplateGrid';
@@ -309,6 +310,25 @@ export default function ImageProcessor() {
     reader.readAsDataURL(file);//convert to base64
   }, []);
 
+  // Handles background removal for the uploaded image
+  const removeImageBackgroundLocal = async (file) => {
+    try {
+      setStatus("Removing background...");
+      
+      // Just forward to the imported utility
+      const processedFile = await removeImageBackground(file, (percentage, key) => {
+        setStatus(`Removing background: ${percentage}% (${key})`);
+      });
+      
+      setStatus("Background removed successfully");
+      return processedFile;
+    } catch (error) {
+      console.error("Error removing background:", error);
+      setStatus("Background removal failed, using original image");
+      return file; // Return original file if background removal fails
+    }
+  };
+
   // Generates a random seed between 1 and 100000
   const generateRandomSeed = () => {
     const randomSeed = Math.floor(Math.random() * 100000) + 1;
@@ -375,11 +395,13 @@ export default function ImageProcessor() {
   };
 
   // Modified handleImageUpload
-  const handleImageUpload = useCallback((e) => {
+  const handleImageUpload = useCallback(async (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      setStatus("Processing image...");
       setSelectedFile(file);
       createInputPreview(file);
+      setStatus("Image uploaded successfully");
     }
   }, [createInputPreview]);
 
@@ -408,8 +430,41 @@ export default function ImageProcessor() {
     setStatus("Starting processing...");
 
     try {
+      // First remove background from the image
+      setStatus("Removing background...");
+      let fileToProcess = selectedFile;
+      
+      try {
+        console.log("Starting background removal with file:", selectedFile.name, "size:", selectedFile.size);
+        
+        // Define progress callback
+        const handleBgProgress = (percentage, key) => {
+          console.log(`Background removal progress: ${percentage}% (${key})`);
+          setStatus(`Removing background: ${percentage}%`);
+        };
+        
+        // Remove background using our imported utility
+        fileToProcess = await removeImageBackground(selectedFile, handleBgProgress);
+        
+        console.log("Background removal successful, got processed file:", fileToProcess.name, "size:", fileToProcess.size);
+        setStatus("Background removed, now generating image...");
+        
+        // Create a preview of the background-removed image (optional)
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          console.log("Preview updated with background-removed image");
+          setInputPreview(reader.result);
+        };
+        reader.readAsDataURL(fileToProcess);
+        
+      } catch (bgError) {
+        console.error("Background removal failed, continuing with original image:", bgError);
+        setStatus("Background removal failed, proceeding with original image...");
+        // Continue with original image if background removal fails
+      }
+
       setStatus("Processing with Hugging Face...");
-      const result = await processImage(selectedFile, params);
+      const result = await processImage(fileToProcess, params);
       
       // Handle the response
       if (Array.isArray(result) && result.length >= 2) {
