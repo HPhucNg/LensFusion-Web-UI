@@ -1,11 +1,12 @@
 "use client";
-import React, { useState} from 'react';
+import React, { useState, useEffect} from 'react';
 import { defaultParams, ratioSettings } from './config';
 import { generateImage } from './apiHelper'; 
-import BackButton from '@/components/BackButton';
 import DownloadOptions from '@/components/DownloadOptions';
 import { GenerateButton } from '../backgroundgeneration/_components/GenerateButton';
 import WorkspaceNavbar from '@/components/WorkspaceNavbar';
+import { saveToGallery } from '@/lib/saveToGallery';
+import { auth } from '@/firebase/FirebaseConfig';
 
 
 export default function Home() {
@@ -17,40 +18,15 @@ export default function Home() {
     const [isLoading, setIsLoading] = useState(false);
     const [sliderPosition, setSliderPosition] = useState(50); // for the sliding effect of prev and generated image 
 
-    // Reused function from Peter //
-    // Add function to save image to user gallery
-    const saveToUserGallery = async (imageUrl, userId) => {
-      try {
-        // Create a unique filename
-        const timestamp = Date.now();
-        const filename = `background-expansion-${timestamp}.png`;
-        
-        // Create a reference to the storage location
-        const storageRef = ref(storage, `user_images/${userId}/${filename}`);
-        
-        // Fetch the image and convert to blob
-        const response = await fetch(imageUrl);
-        const blob = await response.blob();
-        
-        // Upload to Firebase Storage
-        await uploadBytes(storageRef, blob);
-        const downloadURL = await getDownloadURL(storageRef);
-        
-        // Add to Firestore user_images collection
-        const userImageRef = collection(db, 'user_images');
-        await addDoc(userImageRef, {
-          userID: userId,
-          img_data: downloadURL,
-          createdAt: new Date(),
-          type: 'background-expansion'
+    const [currentUser, setCurrentUser] = useState(null);
+
+     useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged(user => {
+          setCurrentUser(user);
         });
-    
-        return true;
-      } catch (error) {
-        console.error('Error saving to gallery:', error);
-        return false;
-      }
-    };
+        
+        return () => unsubscribe();
+      }, []);
 
     // file input change and set the selected file
     const handleFileChange = (event) => {
@@ -140,7 +116,21 @@ export default function Home() {
             }
             if (image2_base64) {
                 setGeneratedImage(image2_base64);
+                // auto-save to gallery if the user is logged in
+                if (currentUser) {
+                    try {
+                        await saveToGallery(
+                            image2_base64, 
+                            currentUser.uid, 
+                            'background-expansion', 
+                        );
+                    } catch (saveError) {
+                    console.error("Error saving to gallery:", saveError);
+                    // Continue anyway - don't block the image generation
+                    }
+                }
             }
+            
         } else {
             console.error("No valid result received from the inference.");
         }
