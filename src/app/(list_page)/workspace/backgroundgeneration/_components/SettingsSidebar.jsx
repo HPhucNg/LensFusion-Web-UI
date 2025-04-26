@@ -57,7 +57,7 @@ export const SettingsSidebar = ({
             id={param.id}
             placeholder={param.placeholder}
             className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
-                      focus:ring-0 focus:outline-none resize-y"
+                      focus:ring-0 focus:outline-none resize-y scrollbar scrollbar-thin scrollbar-track-gray-900/50 scrollbar-thumb-gray-700/50"
             value={params[param.id]}
             onChange={(e) => handleParamChange(param.id, e.target.value)}
             rows={3}
@@ -135,7 +135,7 @@ export const SettingsSidebar = ({
               value={params.prompt}
               onChange={(e) => handleParamChange('prompt', e.target.value)}
               placeholder="Describe what you want to generate..."
-              className="w-full p-3 text-sm bg-gray-800/20 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[120px] border border-gray-700"
+              className="w-full p-3 text-sm bg-gray-800/20 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[120px] border border-gray-700 scrollbar scrollbar-thin scrollbar-track-gray-900/50 scrollbar-thumb-gray-700/50"
               rows={10}
             />
           </div>
@@ -145,7 +145,7 @@ export const SettingsSidebar = ({
               value={params.negativePrompt}
               onChange={(e) => handleParamChange('negativePrompt', e.target.value)}
               placeholder="Describe what you want to avoid..."
-              className="w-full p-3 text-sm bg-gray-800/20 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[50px] border border-gray-700"
+              className="w-full p-3 text-sm bg-gray-800/20 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[50px] border border-gray-700 scrollbar scrollbar-thin scrollbar-track-gray-900/50 scrollbar-thumb-gray-700/50"
               rows={4}
             />
           </div>

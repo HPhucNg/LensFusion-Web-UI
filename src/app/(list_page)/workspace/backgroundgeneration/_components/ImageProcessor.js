@@ -516,7 +516,7 @@ export default function ImageProcessor() {
 
   // Component UI
   return (
-    <div className="h-screen flex bg-gray-900 text-white">
+    <div className="h-full flex bg-gray-900 text-white">
       {/* Mobile menu button */}
       <MobileMenuButton 
         setIsSidebarOpen={setIsSidebarOpen} 
@@ -569,8 +569,8 @@ export default function ImageProcessor() {
       </div>
 
       {/* Image Processing Area */}
-      <div className="flex-1 p-4">
-        <div className="max-w-4xl mx-auto flex flex-col lg:flex-row gap-8 h-full">
+      <div className="flex-1 p-4 flex items-center justify-center">
+        <div className="max-w-4xl w-full mx-auto flex flex-col lg:flex-row gap-8 justify-center">
           <ImageContainer
             imageSrc={inputPreview}
             altText="Input preview"
