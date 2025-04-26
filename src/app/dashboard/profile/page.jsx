@@ -1116,8 +1116,8 @@ export default function UserProfile() {
   return (
     <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
       <Navbar /> 
-      <main className="container mx-auto px-4 py-1">
-        <div className="flex flex-col lg:flex-row gap-12">
+      <main className="container mx-auto">
+        <div className="flex flex-col lg:flex-row gap-4">
           {/* Left Column - Profile */}
           <div className="flex-shrink-0 w-full lg:w-1/4">
             <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl  border border-[var(--border-gray)]">
@@ -1199,11 +1199,11 @@ export default function UserProfile() {
 
             {/* Gallery Section */}
             <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
-              <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
+              <h3 className="text-xl font-bold mb-4">Your Gallery</h3>
              {/* <div className={`grid ${getGridViewClasses(userSettings?.interfaceSettings?.gridViewType || 'compact')}`}>
                 {userImages.length > 0 ? (
                   userImages.map((image, index) => (*/}
-             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
                 {paginatedImages.length > 0 ? (
                   paginatedImages.map((image, index) => (
               
@@ -1223,7 +1223,7 @@ export default function UserProfile() {
                         blurDataURL={`data:image/svg+xml;base64,...`}  // Optional for blur effect
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        <div className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <div className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
                         <Check className="w-5 h-5 text-white" />
                         </div>
                       </div>
