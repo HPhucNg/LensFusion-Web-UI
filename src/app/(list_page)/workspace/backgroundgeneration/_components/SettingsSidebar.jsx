@@ -71,9 +71,7 @@ export const SettingsSidebar = ({
             <div>
               <div className="grid grid-cols-2 mb-1">
                 <span className="text-xs font-medium text-gray-300">Image Size</span>
-                {inputImage && onResize && (
-                  <span className="text-xs font-medium text-gray-300">Image Resize</span>
-                )}
+                <span className="text-xs font-medium text-gray-300">Image Resize</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <select
@@ -89,16 +87,18 @@ export const SettingsSidebar = ({
                     </option>
                   ))}
                 </select>
-                {inputImage && onResize && (
-                  <button
-                    onClick={onResize}
-                    className="w-full px-3 py-3 bg-gray-900/50 border border-gray-700 rounded-lg hover:bg-gray-800
-                              focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
-                    title="Resize image"
-                  >
-                    <span className="text-sm">Resize Image</span>
-                  </button>
-                )}
+                <button
+                  onClick={onResize}
+                  className={`w-full px-3 py-3 border rounded-lg text-center ${
+                    inputImage 
+                      ? "bg-gray-900/50 border-gray-700 hover:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                      : "bg-gray-900/30 border-gray-700/50 text-gray-500 cursor-not-allowed"
+                  }`}
+                  title={inputImage ? "Resize image" : "Upload an image first"}
+                  disabled={!inputImage}
+                >
+                  <span className="text-sm">Resize Image</span>
+                </button>
               </div>
             </div>
           );

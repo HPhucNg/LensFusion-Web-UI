@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState, useEffect } from 'react';
+import Image from 'next/image';
 
-const ResizePreview = ({ originalDimensions, newDimensions, onPositionChange, scalePercentage = 1.0 }) => {
+const ResizePreview = ({ originalDimensions, newDimensions, onPositionChange, scalePercentage = 1.0, imageSrc }) => {
   //resizing state managements
   const previewContainerRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -122,8 +123,40 @@ const ResizePreview = ({ originalDimensions, newDimensions, onPositionChange, sc
     setIsDragging(false);
   };
 
+  // Handle mouse wheel for resizing
+  const handleWheel = (e) => {
+    e.preventDefault();
+    
+    // Get scroll direction (-1 for up/zoom in, 1 for down/zoom out)
+    const delta = e.deltaY > 0 ? -0.05 : 0.05;
+    
+    // Calculate new scale percentage (with limits)
+    const newScalePercentage = Math.max(0.1, Math.min(1, scalePercentage + delta));
+    
+    // Pass the new scale to parent component
+    if (onPositionChange) {
+      const scaledWidth = originalDimensions.width * newScalePercentage;
+      const scaledHeight = originalDimensions.height * newScalePercentage;
+      
+      const x = (newDimensions.width - scaledWidth) / 2;
+      const y = (newDimensions.height - scaledHeight) / 2;
+      
+      setImagePosition({ x, y });
+      onPositionChange({ x, y });
+    }
+    
+    // This would be handled in the parent component which would update scalePercentage
+    // The parent component needs to expose a callback function
+    if (window.resizeCallbacks && window.resizeCallbacks.onScaleChange) {
+      window.resizeCallbacks.onScaleChange(newScalePercentage);
+    }
+  };
+
   return (
-    <div ref={previewContainerRef} className="relative w-full h-full flex items-center justify-center overflow-hidden">
+    <div 
+      ref={previewContainerRef} 
+      className="relative w-full h-full flex items-center justify-center overflow-hidden"
+    >
       {/* New canvas background */}
       <div 
         className="absolute bg-gray-800 flex items-center justify-center"
@@ -138,25 +171,43 @@ const ResizePreview = ({ originalDimensions, newDimensions, onPositionChange, sc
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onWheel={handleWheel}
       >
-        {/* Original image indicator */}
+        {/* Original image with actual image */}
         <div 
-          className={`absolute border-2 ${isDragging ? 'border-purple-500' : 'border-blue-500'} bg-blue-500/10 flex items-center justify-center`}
+          className={`absolute ${isDragging ? 'border-purple-500' : 'border-blue-500'} flex items-center justify-center overflow-hidden`}
           style={{
             width: originalDimensions.width * scalePercentage,
             height: originalDimensions.height * scalePercentage,
             left: imagePosition.x,
             top: imagePosition.y,
-            color: 'rgba(255,255,255,0.7)',
-            fontSize: '40px',
           }}
         >
-          Image
+          {imageSrc ? (
+            <div className="relative w-full h-full">
+              <Image
+                src={imageSrc}
+                alt="Preview"
+                fill
+                className="object-contain"
+                style={{ imageRendering: 'auto' }}
+              />
+            </div>
+          ) : (
+            <div className="w-full h-full bg-blue-500/10 border-2 border-dashed flex items-center justify-center">
+              <span className="text-white/70 text-lg">Upload Image</span>
+            </div>
+          )}
         </div>
         
         {/* Dimensions indicator */}
         <div className="absolute bottom-2 right-2 text-xs text-gray-400 bg-gray-900/80 px-2 py-1 rounded">
           {newDimensions.width} × {newDimensions.height}
+        </div>
+        
+        {/* Mouse wheel hint */}
+        <div className="absolute top-2 right-2 text-xs text-gray-400 bg-gray-900/80 px-2 py-1 rounded opacity-70">
+          <span>Use mouse wheel to resize</span>
         </div>
       </div>
     </div>
@@ -165,7 +216,8 @@ const ResizePreview = ({ originalDimensions, newDimensions, onPositionChange, sc
 
 //default valuee of onPositionChange just incase no changes made
 ResizePreview.defaultProps = {
-  onPositionChange: () => {}
+  onPositionChange: () => {},
+  imageSrc: null
 };
 
 export default ResizePreview;

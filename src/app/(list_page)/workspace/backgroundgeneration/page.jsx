@@ -9,7 +9,7 @@ export default function Home() {
      <WorkspaceNavbar/>
 
       <h1 className="text-2xl font-bold mb-6">
-        Image Processing with HuggingFace
+        Background Generation
       </h1>
       <ImageProcessor />
     </main>

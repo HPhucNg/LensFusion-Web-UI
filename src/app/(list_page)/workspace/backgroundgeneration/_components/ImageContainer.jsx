@@ -17,13 +17,20 @@ export const ImageContainer = ({
       <div className="w-full h-[500px] flex items-center justify-center relative">
         {imageSrc ? (
           <div className="relative w-full h-full rounded-lg overflow-hidden">
-            <Image
-              src={imageSrc}
-              alt={altText}
-              fill
-              className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105"
-              style={{ imageRendering: 'auto' }}
-            />
+            {/* Image container, clickable if it's an input image */}
+            <div 
+              className={`relative w-full h-full ${isInput ? 'cursor-pointer' : ''}`} 
+              onClick={isInput && onResize ? onResize : undefined}
+              title={isInput ? "Click to resize image" : ""}
+            >
+              <Image
+                src={imageSrc}
+                alt={altText}
+                fill
+                className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105"
+                style={{ imageRendering: 'auto' }}
+              />
+            </div>
             
             {/* Action Buttons */}
             <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">

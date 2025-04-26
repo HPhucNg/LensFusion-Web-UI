@@ -164,6 +164,19 @@ export default function ImageProcessor() {
     setImagePosition({ x, y });
   };
 
+  // Set up the global resize callbacks for mouse wheel support
+  useEffect(() => {
+    // Create global callback object for wheel resize
+    window.resizeCallbacks = {
+      onScaleChange: (newScale) => handleScaleChange(newScale)
+    };
+    
+    return () => {
+      // Clean up when component unmounts
+      window.resizeCallbacks = null;
+    };
+  }, []);
+
   //keep the original image when user clicks on 'cancel'
   const closeResizeModal = () => {
     setIsResizing(false);
@@ -636,6 +649,7 @@ export default function ImageProcessor() {
                     newDimensions={resizeDimensions} 
                     onPositionChange={handlePositionChange}
                     scalePercentage={scalePercentage}
+                    imageSrc={imageToResize}
                   />
                 </div>
               </div>
