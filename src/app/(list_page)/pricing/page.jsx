@@ -18,7 +18,7 @@ function PricingPage() {
   const [pricingType, setPricingType] = useState('monthly');
   const [user, setUser] = useState(null);
   //subscription info of the user
-  const { status: subscriptionStatus, currentPlan, planCycle, subscriptionId, cancellationDate, loading: isLoading } = useSubscription();
+  const { status: subscriptionStatus, currentPlan, planCycle, subscriptionId, cancelationDate, loading: isLoading } = useSubscription();
   const [hasExpired, setHasExpired] = useState(false);
 
 
@@ -32,14 +32,14 @@ function PricingPage() {
 
   //checks if user subscription has expired.
   useEffect(() => {
-    if (subscriptionStatus === 'canceling' && cancellationDate) {
+    if (subscriptionStatus === 'canceling' && cancelationDate) {
       const now = new Date();
-      const expirationDate = new Date(cancellationDate);
+      const expirationDate = new Date(cancelationDate);
       setHasExpired(now > expirationDate);
     } else {
       setHasExpired(false);
     }
-  }, [subscriptionStatus, cancellationDate]);
+  }, [subscriptionStatus, cancelationDate]);
   
   //navigate to corresponding subscription plan
   const handleSubscription = async (priceId) => {
@@ -70,16 +70,10 @@ function PricingPage() {
 
       const confirmed = window.confirm('Are you sure you want to cancel your subscription?');
       
-      if (!confirmed) return;
-
-      const result = await cancelSubscription(subscriptionId);
-    
-      if (result.success) {
-        alert('Your subscription is canceling and will remain active until the end of your billing period');
-        window.location.reload();
-      }
+      if (!confirmed) return;    
+     
     } catch (error) {
-      console.error('Error cancelling subscription:', error);
+      console.error('Error canceling subscription:', error);
       alert('Unable to cancel subscription. Please try again.');
     }
   };
@@ -209,7 +203,7 @@ function PricingPage() {
             {/* after the user canceled the plan, show end of users billing period */}
             {isCurrentCancelingPlan && (
                 <span className="text-xs text-green-400">
-                Access until {new Date(cancellationDate).toLocaleDateString()}
+                Access until {new Date(cancelationDate).toLocaleDateString()}
                 </span>
               )}
           </div>

@@ -124,3 +124,40 @@ export const cancelSubscription = async (subscriptionId) => {
     throw error;
   }
 };
+
+
+// Handeling reactivation 
+export const reactivateSubscription = async (subscriptionId) => {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('User must be logged in to reactivate subscription');
+    }
+  
+    if (!subscriptionId) {
+      throw new Error('Subscription ID is required');
+    }
+    
+    const response = await fetch('/api/stripe/reactivate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'reactivate',
+        subscriptionId,
+        userId: currentUser.uid,
+        userEmail: currentUser.email,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to reactivate subscription');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error reactivating subscription:', error);
+    throw error;
+  }
+};
