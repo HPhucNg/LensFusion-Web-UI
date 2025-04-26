@@ -41,16 +41,6 @@ export const defaultParams = {
       defaultValue: defaultParams.imageHeight
     },
     {
-      id: "steps",
-      label: "Quality Steps",
-      type: "select",
-      options: [
-        { value: 30, label: "Balanced" },
-        { value: 40, label: "High Quality" }
-      ],
-      defaultValue: defaultParams.steps
-    },
-    {
         id: "seed",
         label: "Seed",
         type: "text",

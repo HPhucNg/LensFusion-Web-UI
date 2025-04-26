@@ -533,6 +533,8 @@ export default function ImageProcessor() {
               parameterDefinitions={parameterDefinitions}
               status={status}
               error={error}
+              onResize={() => handleResize(inputPreview)}
+              inputImage={inputPreview}
             />
           ) : (
             <TemplateGrid
