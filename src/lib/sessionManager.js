@@ -14,7 +14,8 @@ import {
   Timestamp,
   limit,
   getDoc,
-  onSnapshot
+  onSnapshot,
+  collectionGroup
 } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { deleteCookie } from 'cookies-next';
@@ -166,11 +167,30 @@ export const createSession = async (userId, deviceInfo) => {
     // Clean up expired sessions first
     await cleanupExpiredSessions(userId);
 
-    // Check for existing session first, regardless of cache
+    // Check cache first for existing session
+    if (isCacheValid() && sessionCache.data?.userId === userId) {
+      const cachedSession = sessionCache.data.sessions.find(session => 
+        session.deviceInfo.userAgent === deviceInfo.userAgent &&
+        session.deviceInfo.platform === deviceInfo.platform &&
+        session.deviceInfo.language === deviceInfo.language &&
+        session.status === 'active'
+      );
+
+      if (cachedSession) {
+        const expiresAt = getTimestampValue(cachedSession.expiresAt);
+        if (expiresAt && expiresAt > new Date()) {
+          return cachedSession.id;
+        }
+      }
+    }
+
+    // If no valid cached session, check Firestore
     const existingSessionsQuery = query(
       sessionsRef,
       where('userId', '==', userId),
-      where('expiresAt', '>', Timestamp.now())
+      where('status', '==', 'active'),
+      orderBy('expiresAt', 'desc'),
+      limit(1) // Only get the most recent active session
     );
     
     const existingSessionsSnapshot = await getDocs(existingSessionsQuery);
@@ -179,12 +199,14 @@ export const createSession = async (userId, deviceInfo) => {
     let existingSession = null;
     existingSessionsSnapshot.forEach(doc => {
       const session = { id: doc.id, ...doc.data() };
+      const expiresAt = getTimestampValue(session.expiresAt);
+      const now = new Date();
       
-      // Compare more device properties for better matching
       if (session.deviceInfo && 
           session.deviceInfo.userAgent === deviceInfo.userAgent &&
           session.deviceInfo.platform === deviceInfo.platform &&
-          session.deviceInfo.language === deviceInfo.language) {
+          session.deviceInfo.language === deviceInfo.language &&
+          expiresAt && expiresAt > now) {
         existingSession = session;
       }
     });
@@ -197,47 +219,22 @@ export const createSession = async (userId, deviceInfo) => {
       if ((now - lastActiveTime) > LAST_ACTIVE_UPDATE_INTERVAL) {
         await updateDoc(doc(db, 'user_sessions', existingSession.id), {
           lastActive: serverTimestamp(),
-          expiresAt: getExpirationTimestamp()
+          expiresAt: getExpirationTimestamp(),
+          status: 'active'
         });
         
-        // Update cache if it exists
+        // Update cache
         if (isCacheValid() && sessionCache.data.userId === userId) {
           const sessionIndex = sessionCache.data.sessions.findIndex(s => s.id === existingSession.id);
           if (sessionIndex !== -1) {
-            // Store actual Timestamp objects in cache, not serverTimestamp sentinel values
             sessionCache.data.sessions[sessionIndex].lastActive = Timestamp.now();
             sessionCache.data.sessions[sessionIndex].expiresAt = getExpirationTimestamp();
+            sessionCache.data.sessions[sessionIndex].status = 'active';
           }
         }
       }
       
       return existingSession.id;
-    }
-
-    // If no existing session for this device, check if we've reached the limit
-    if (existingSessionsSnapshot.size >= MAX_SESSIONS_PER_USER) {
-      // Sort sessions by lastActive date to find the oldest one
-      const sessions = existingSessionsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      sessions.sort((a, b) => {
-        const aTime = a.lastActive?.toDate().getTime() || a.createdAt?.toDate().getTime() || 0;
-        const bTime = b.lastActive?.toDate().getTime() || b.createdAt?.toDate().getTime() || 0;
-        return aTime - bTime;
-      });
-      
-      // Delete the oldest session
-      const oldestSession = sessions[0];
-      await deleteDoc(doc(db, 'user_sessions', oldestSession.id));
-      
-      // Update cache if it exists
-      if (isCacheValid() && sessionCache.data.userId === userId) {
-        sessionCache.data.sessions = sessionCache.data.sessions.filter(
-          session => session.id !== oldestSession.id
-        );
-      }
     }
 
     // Create new session
@@ -246,26 +243,25 @@ export const createSession = async (userId, deviceInfo) => {
       deviceInfo,
       lastActive: serverTimestamp(),
       createdAt: serverTimestamp(),
-      expiresAt: getExpirationTimestamp()
+      expiresAt: getExpirationTimestamp(),
+      status: 'active'
     };
 
     const docRef = await addDoc(sessionsRef, sessionData);
     
-    // Update cache with actual Timestamp objects
+    // Update cache
     const cacheSessionData = {
       ...sessionData,
       lastActive: Timestamp.now(),
       createdAt: Timestamp.now()
     };
     
-    // Update cache
     if (isCacheValid() && sessionCache.data.userId === userId) {
       sessionCache.data.sessions.push({
         id: docRef.id,
         ...cacheSessionData
       });
     } else {
-      // Initialize cache
       sessionCache = {
         data: {
           userId,
@@ -310,9 +306,10 @@ export const getSessions = async (userId) => {
     const q = query(
       sessionsRef,
       where('userId', '==', userId),
-      where('expiresAt', '>', getCurrentTimestamp()),
-      limit(MAX_SESSIONS_PER_USER)
+      where('status', '==', 'active'),
+      orderBy('expiresAt', 'desc')
     );
+    
     const querySnapshot = await getDocs(q);
 
     const sessions = querySnapshot.docs.map(doc => ({
@@ -341,7 +338,7 @@ export const getSessions = async (userId) => {
 
 export async function deleteSession(sessionId) {
   try {
-    const sessionRef = doc(db, 'sessions', sessionId);
+    const sessionRef = doc(db, 'user_sessions', sessionId);
     
     // First get the session data
     const sessionDoc = await getDoc(sessionRef);
@@ -352,11 +349,15 @@ export async function deleteSession(sessionId) {
 
     const sessionData = sessionDoc.data();
     
+    // Create a batch write for atomic operations
+    const batch = writeBatch(db);
+    
     // Mark the session as terminated
-    await updateDoc(sessionRef, {
+    batch.update(sessionRef, {
       status: 'terminated',
       terminatedAt: serverTimestamp(),
-      terminatedBy: auth.currentUser?.uid
+      terminatedBy: auth.currentUser?.uid,
+      expiresAt: serverTimestamp() // Immediately expire the session
     });
 
     // Create a termination log
@@ -366,11 +367,16 @@ export async function deleteSession(sessionId) {
       deviceInfo: sessionData.deviceInfo,
       terminatedAt: serverTimestamp(),
       terminatedBy: auth.currentUser?.uid,
-      reason: 'manual_termination'
+      reason: 'manual_termination',
+      ipAddress: sessionData.deviceInfo?.ipAddress || 'unknown'
     };
 
     // Add termination log
-    await addDoc(collection(db, 'session_terminations'), terminationLog);
+    const terminationRef = doc(collection(db, 'session_terminations'));
+    batch.set(terminationRef, terminationLog);
+    
+    // Commit the batch
+    await batch.commit();
     
     // Update cache if it exists
     if (sessionCache && sessionCache.data && sessionCache.data.sessions) {
@@ -389,39 +395,62 @@ export async function deleteSession(sessionId) {
 export function monitorSessions(userId, onSessionRemoved) {
   if (!userId) return;
 
-  const sessionsRef = collection(db, 'sessions');
+  // Use collection for monitoring
+  const sessionsRef = collection(db, 'user_sessions');
   const q = query(
     sessionsRef,
-    where('userId', '==', userId)
+    where('userId', '==', userId),
+    where('status', '==', 'active'),
+    orderBy('expiresAt', 'desc'),
+    limit(1) // Only get the most recent active session
   );
 
   let initialSessionFound = false;
+  let currentSessionId = null;
+  let lastCheckTime = Date.now();
+  const CHECK_INTERVAL = 30000; // 30 seconds
 
   // Set up real-time listener
   const unsubscribe = onSnapshot(q, (snapshot) => {
+    const now = Date.now();
+    // Throttle checks to reduce reads
+    if (now - lastCheckTime < CHECK_INTERVAL) {
+      return;
+    }
+    lastCheckTime = now;
+
     // Get current device info
     const currentDeviceInfo = {
       userAgent: navigator.userAgent,
-      platform: navigator.platform
+      platform: navigator.platform,
+      language: navigator.language
     };
 
     // Check if current session exists in the snapshot
-    const currentSessionExists = snapshot.docs.some(doc => {
+    const currentSession = snapshot.docs.find(doc => {
       const sessionData = doc.data();
+      const expiresAt = getTimestampValue(sessionData.expiresAt);
+      const now = new Date();
+      
       return (
         sessionData.deviceInfo.userAgent === currentDeviceInfo.userAgent &&
         sessionData.deviceInfo.platform === currentDeviceInfo.platform &&
-        sessionData.status !== 'terminated'
+        sessionData.deviceInfo.language === currentDeviceInfo.language &&
+        expiresAt && expiresAt > now
       );
     });
 
-    // Only trigger if we've found the initial session and then it's removed or terminated
-    if (currentSessionExists) {
+    if (currentSession) {
       initialSessionFound = true;
+      currentSessionId = currentSession.id;
     } else if (initialSessionFound) {
       // Only trigger if we previously found the session and now it's gone or terminated
       onSessionRemoved();
     }
+  }, (error) => {
+    console.error('Error monitoring sessions:', error);
+    // If there's an error, we should still trigger the reauth to be safe
+    onSessionRemoved();
   });
 
   return unsubscribe;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getSessions, deleteSession, monitorSessions } from '@/lib/sessionManager';
 import { Button } from '@/components/ui/button';
 import { 
@@ -24,33 +24,36 @@ export default function ActiveSessions({ userId, onClose }) {
   const [showReauth, setShowReauth] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const { currentUser, auth } = useAuth();
+  const isComponentMounted = useRef(true);
 
   useEffect(() => {
-    let unsubscribe;
+    let unsubscribe = null;
 
-    const setupSessionMonitoring = async () => {
+    const fetchAndMonitorSessions = async () => {
       try {
-        // First fetch the current sessions
+        // First fetch all active sessions
         const userSessions = await getSessions(userId);
         setSessions(userSessions);
 
         // Identify current session
         const currentSession = userSessions.find(session => 
           session.deviceInfo.userAgent === navigator.userAgent && 
-          session.deviceInfo.platform === navigator.platform
+          session.deviceInfo.platform === navigator.platform &&
+          session.deviceInfo.language === navigator.language
         );
 
         if (currentSession) {
           setCurrentSessionId(currentSession.id);
+          localStorage.setItem('current_session_id', currentSession.id);
         }
 
-        // Only set up real-time monitoring if we have a current session
-        if (currentSession) {
-          unsubscribe = monitorSessions(userId, () => {
+        // Set up real-time monitoring
+        unsubscribe = monitorSessions(userId, () => {
+          if (isComponentMounted.current && currentSessionId) {
             console.log('Session removed, showing reauth popup');
             setShowReauth(true);
-          });
-        }
+          }
+        });
       } catch (error) {
         console.error('Error setting up session monitoring:', error);
         setError('Failed to load sessions');
@@ -59,23 +62,15 @@ export default function ActiveSessions({ userId, onClose }) {
       }
     };
 
-    setupSessionMonitoring();
+    fetchAndMonitorSessions();
 
-    // Clean up listener
     return () => {
-      if (unsubscribe) unsubscribe();
+      isComponentMounted.current = false;
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
     };
-  }, [userId]);
-
-  const fetchSessions = async () => {
-    try {
-      const userSessions = await getSessions(userId);
-      setSessions(userSessions);
-    } catch (error) {
-      console.error('Error fetching sessions:', error);
-      setError('Failed to load sessions');
-    }
-  };
+  }, [userId, currentSessionId]);
 
   const handleRemoveDevice = async (sessionId) => {
     try {
@@ -101,7 +96,8 @@ export default function ActiveSessions({ userId, onClose }) {
       // Check if this was the current session
       const isCurrentSession = 
         sessionToRemove.deviceInfo.userAgent === navigator.userAgent && 
-        sessionToRemove.deviceInfo.platform === navigator.platform;
+        sessionToRemove.deviceInfo.platform === navigator.platform &&
+        sessionToRemove.deviceInfo.language === navigator.language;
 
       if (isCurrentSession) {
         console.log('Current session removed, showing reauth popup');
@@ -274,7 +270,8 @@ export default function ActiveSessions({ userId, onClose }) {
               {sessions.map((session) => {
                 const isCurrentSession = 
                   session.deviceInfo.userAgent === navigator.userAgent && 
-                  session.deviceInfo.platform === navigator.platform;
+                  session.deviceInfo.platform === navigator.platform &&
+                  session.deviceInfo.language === navigator.language;
 
                 return (
                   <div

@@ -1,14 +1,33 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Shield, AlertTriangle } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/firebase/FirebaseConfig';
+import { deleteSession } from '@/lib/sessionManager';
 
 export default function ReauthPopup({ onClose }) {
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
     // Automatically sign out when the popup appears
     const handleSignOut = async () => {
       try {
+        setIsSigningOut(true);
+        setError(null);
+
+        // Get current session ID from localStorage
+        const currentSessionId = localStorage.getItem('current_session_id');
+        
+        if (currentSessionId) {
+          try {
+            // Delete the current session
+            await deleteSession(currentSessionId);
+          } catch (error) {
+            console.warn('Error deleting session:', error);
+          }
+        }
+
         // Clear all auth-related cookies
         document.cookie.split(';').forEach(cookie => {
           const [name] = cookie.split('=');
@@ -23,11 +42,11 @@ export default function ReauthPopup({ onClose }) {
         await signOut(auth);
         
         // Force a page reload to clear any cached state
-        window.location.reload();
+        window.location.href = '/login?reauth=1&redirect=' + encodeURIComponent(window.location.pathname);
       } catch (error) {
         console.error('Error during sign out:', error);
-        // Even if there's an error, still redirect to login
-        window.location.href = '/login?reauth=1';
+        setError('Failed to sign out properly. Please try again.');
+        setIsSigningOut(false);
       }
     };
 
@@ -62,19 +81,27 @@ export default function ReauthPopup({ onClose }) {
             </p>
           </div>
 
+          {error && (
+            <div className="text-red-500 text-sm">
+              {error}
+            </div>
+          )}
+
           <div className="flex gap-4 mt-4 w-full">
             <Button
               variant="outline"
               onClick={onClose}
               className="flex-1 text-gray-400 hover:text-white"
+              disabled={isSigningOut}
             >
               Close
             </Button>
             <Button
               onClick={handleReauth}
               className="flex-1 bg-red-500 hover:bg-red-600"
+              disabled={isSigningOut}
             >
-              Sign In Again
+              {isSigningOut ? 'Signing Out...' : 'Sign In Again'}
             </Button>
           </div>
         </div>
