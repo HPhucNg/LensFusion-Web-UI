@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { useSubscription } from '@/context/subscriptionContext';
 import { Cancel } from './Cancel';
 import { PriceDropDownMenu } from './PriceDropDownMenu';
+import { Credits } from './BuyCredits'
 
 export default function SubscriptionManagement({ onClose }) {
     const [activeTab, setActiveTab] = useState('current');
@@ -143,6 +144,12 @@ export default function SubscriptionManagement({ onClose }) {
                                             >
                                                 Cancel Subscription
                                             </Button>
+                                            <Button
+                                                onClick={() => setActiveTab('credit')}
+                                                className="bg-transparent hover:bg-gray-800 text-white border border-gray-700 self-start sm:self-auto"
+                                            >
+                                                Buy credits
+                                            </Button>
                                         </div>
                                     </div>
 
@@ -228,6 +235,12 @@ export default function SubscriptionManagement({ onClose }) {
                                     onClose={() => setActiveTab('current')} 
                                     setActiveTab={setActiveTab}
                                     setSuccess={setSuccess}
+                                />
+                            )}
+                              {activeTab === 'credit' && (
+                                <Credits 
+                                    onClose={() => setActiveTab('current')} 
+                                    setActiveTab={setActiveTab}
                                 />
                             )}
                         </>
