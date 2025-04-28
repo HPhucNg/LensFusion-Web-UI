@@ -167,6 +167,7 @@ html.light .bg-gradient-to-r {
   --modal-background: rgba(255, 255, 255, 0.404);
   --modal-backdrop: blur(10px); /* Equivalent to backdrop-blur-lg */
   --border-gray:#e0e0e0; 
+
 }
 
 html.light .hover\:from-gray-800:hover {

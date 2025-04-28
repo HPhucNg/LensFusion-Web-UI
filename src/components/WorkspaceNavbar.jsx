@@ -97,7 +97,7 @@ export default function WorkspaceNavbar() {
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-[#0D161F] border-gray-800">
+                <DropdownMenuContent align="end" className="w-56 bg-[var(--card-background)] border-[var(--border-gray)]">
                   <DropdownMenuItem onClick={() => router.push('/dashboard')} className="text-slate-400 hover:text-white cursor-pointer">
                     Dashboard
                   </DropdownMenuItem>

@@ -181,10 +181,10 @@ export default function Page() {
                     </div>
                     
                     {/* Title and Description */}
-                    <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                    <h2 className="text-4xl md:text-5xl font-bold mb-4">
                       LensFusion 2.0
                     </h2>
-                    <p className="text-xl md:text-2xl text-gray-100 mb-8 max-w-xl">
+                    <p className="text-xl md:text-2xl  mb-8 max-w-xl">
                       Transform Your Vision, Perfect Every Pixel
                     </p>
                     
