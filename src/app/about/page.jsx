@@ -16,7 +16,7 @@ function page() {
         {/* left section */}
         <div className="w-full md:w-1/3">
           <img 
-            src='/about.avif' 
+            src='/about.webp' 
             alt="About Us"
             className="w-full h-full object-cover" 
           />
