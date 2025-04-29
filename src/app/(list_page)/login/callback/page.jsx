@@ -12,7 +12,7 @@ export default function CallbackPage() {
     const processCallback = async () => {
       try {
         await handleRedirectCallback();
-        router.push("/profile"); // Redirect to the profile page after login
+        router.push("/dashboard"); // Redirect to the profile page after login
       } catch (error) {
         console.error("Error during callback processing:", error);
         router.push("/"); // Redirect to home in case of error
