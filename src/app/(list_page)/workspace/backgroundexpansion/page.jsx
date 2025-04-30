@@ -6,7 +6,8 @@ import DownloadOptions from '@/components/DownloadOptions';
 import { GenerateButton } from '../backgroundgeneration/_components/GenerateButton';
 import WorkspaceNavbar from '@/components/WorkspaceNavbar';
 import { saveToGallery } from '@/lib/saveToGallery';
-import { auth } from '@/firebase/FirebaseConfig';
+import { auth, db } from '@/firebase/FirebaseConfig';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 
 
 export default function Home() {
@@ -18,17 +19,27 @@ export default function Home() {
     const [isLoading, setIsLoading] = useState(false);
     const [sliderPosition, setSliderPosition] = useState(50); // for the sliding effect of prev and generated image 
 
-    const [currentUser, setCurrentUser] = useState(null);
-    const [userTokens, setUserTokens] = useState(0);
+    const [user, setUser] = useState(null);
+    const [tokens, setTokens] = useState(0);
     const [insufficientTokens, setInsufficientTokens] = useState(false);
 
-     useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged(user => {
-          setCurrentUser(user);
+    // get user tokens count
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+          if (currentUser) {
+            setUser(currentUser);
+            const userRef = doc(db, "users", currentUser.uid);
+            const userDoc = await getDoc(userRef);
+            if (userDoc.exists()) {
+              setTokens(userDoc.data().tokens || 0);
+              if (tokens < 10){ // if not enough tokens, warn user by disabling generate button
+                setInsufficientTokens(true);
+                } 
+            }
+          }
         });
-        
         return () => unsubscribe();
-      }, []);
+    }, []);
 
     // file input change and set the selected file
     const handleFileChange = (event) => {
@@ -108,6 +119,13 @@ export default function Home() {
         setIsLoading(true); // start loading
         const result = await generateImage(params);
         setIsLoading(false); // stop loading once the request completes
+
+        // deduct tokens
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, {
+            tokens: tokens - 10
+        });
+        setTokens(prev => prev - 10);
 
         if (result) {
             // set both images
@@ -507,6 +525,8 @@ export default function Home() {
                                     handleGenerate={handleGenerateClick} 
                                     isProcessing={isLoading} 
                                     selectedFile={selectedImage} 
+                                    userTokens={tokens}
+                                    insufficientTokens={insufficientTokens}
                                 />
                             </div>
                         </div>
