@@ -999,7 +999,29 @@ export default function UserProfile() {
       if (userDoc.exists()) {
         const userData = userDoc.data();
         setUserSettings(userData);
-        
+         // lock tokens for 60 days
+        if (userData.lockedTokens && userData.lockedTokensExpirationDate) {
+          const expirationDate = userData.lockedTokensExpirationDate.toDate 
+            ? userData.lockedTokensExpirationDate.toDate() 
+            : new Date(userData.lockedTokensExpirationDate);
+          
+          if (new Date() > expirationDate && userData.tokens > 0) {
+            // Delete users tokens after 60 days and inactive
+            await updateDoc(userDocRef, {
+              tokens: 0,
+              lockedTokens: null,
+              lockedTokensExpirationDate: null
+            });
+              
+            // Refresh the data after update
+            const updatedDoc = await getDoc(userDocRef);
+            setUserSettings(updatedDoc.data());
+          } else {
+            setUserSettings(userData);
+          }
+        } else {
+          setUserSettings(userData);
+      }
         if (userData.interfaceSettings) {
           applyInterfaceSettings(userData.interfaceSettings);
         }
@@ -1138,11 +1160,30 @@ export default function UserProfile() {
               <p className="text-gray-400 text-lg mb-4">
                 {user?.email || "No email provided"}
               </p>
-              <div className="w-full justify-start text-center py-3 border-2 border-purple-400 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-8 mb-6">
-                <h3 className="text- font-semibold truncate">
-                  Credits: {tokens}
-                </h3>
+              <div className="w-full justify-start text-center py-3 border-2 border-purple-400 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full px-4 sm:px-8 mb-6">
+                <div className="flex items-center justify-center gap-2 w-full overflow-visible">
+                  <span className="text-lg font-semibold whitespace-nowrap">Credits: {tokens}</span>
+                  {userSettings?.subscriptionStatus === 'inactive' && userSettings?.lockedTokens > 0 && (
+                    <Lock className="flex-shrink-0 w-4 h-4 text-yellow-500" />
+                  )}
+                </div>
               </div>
+              {/* Display 60 day countdown before resetting credits */}
+              {userSettings?.lockedTokens > 0 && (
+                <div className=" text-sm">
+                  <span className="text-gray-400">
+                    {Math.ceil((new Date(userSettings.lockedTokensExpirationDate.toDate()) - new Date()) / (1000 * 60 * 60 * 24))} days remaining
+                  </span>
+                </div>
+              )}
+              {/* Message to user to subscribe */}
+              {userSettings?.subscriptionStatus === 'inactive' && tokens > 0 && (
+                <div className="mb-4 text-sm">
+                  <span className="text-gray-400">
+                    Subscribe to enable credits
+                  </span>
+                </div>
+              )}
               <div className="w-full space-y-3">
                 <Button variant="outline" onClick={() => setIsManageAccountOpen(true)} className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700 overflow-hidden transition-all duration-300">
                   <Settings className="mr-3 h-5 w-5 " />

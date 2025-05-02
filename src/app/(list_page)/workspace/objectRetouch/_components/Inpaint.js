@@ -203,6 +203,18 @@ export default function Inpaint() {
     setOutputImage(null);
   
     try {
+      // Locked token for unsubscribed users
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data();
+        
+        if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
+          setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
+          setIsProcessing(false);
+          return;
+        }
+      }
       const processParams = { ...params, responseType: 'base64' };
 
       // create URL for both mask and image

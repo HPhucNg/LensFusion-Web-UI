@@ -147,7 +147,22 @@ async function handleCheckoutSessionCompleted(session) {
         if (userDoc.exists()) {
             const userData = userDoc.data();
             let newTokenCount;
-            
+            let tokensToRestore = 0;
+
+            // Check if locked token is valid
+            if (userData.lockedTokens && userData.lockedTokensExpirationDate) {
+                const expirationDate = userData.lockedTokensExpirationDate.toDate 
+                    ? userData.lockedTokensExpirationDate.toDate() 
+                    : new Date(userData.lockedTokensExpirationDate);
+                
+                if (new Date() < expirationDate) {
+                    tokensToRestore = userData.lockedTokens;
+                    console.log(`Restoring ${tokensToRestore} locked tokens `);
+                } else {
+                    console.log(`Locked tokens have expired for user ${userId}`);
+                }
+            }
+
             if (userData.subscriptionStatus === 'active' || userData.subscriptionStatus === 'canceling') {
                 const currentPlanTokens = includedTokensInSubscriptions[userData.currentPlanPriceId] || 0;
                 const nonSubscriptionTokens = Math.max(0, userData.tokens - currentPlanTokens);
@@ -167,7 +182,9 @@ async function handleCheckoutSessionCompleted(session) {
                 subscriptionEndDate,
                 planCycle,
                 cancel_at_period_end: false,
-                cancelationDate: null
+                cancelationDate: null,
+                lockedTokens: null,
+                lockedTokensExpirationDate: null
             });
         } else {
             console.error("User document not found!");
@@ -251,10 +268,17 @@ export async function POST(req) {
                         
                         if (otherActiveSubscriptions.length === 0) {
                             const userRef = doc(db, 'users', userId);
+                            const userDoc = await getDoc(userRef);
+                            const currentTokens = userDoc.data().tokens;
+
                             await updateDoc(userRef, {
                                 subscriptionStatus: 'inactive',
                                 cancel_at_period_end: false,
-                                cancelationDate: null
+                                cancelationDate: null,
+                                lockedTokens: currentTokens,
+                                // After 60 days credits willl set to 0
+                                lockedTokensExpirationDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+                                tokens: currentTokens
                             });
                         }
                         
