@@ -7,9 +7,9 @@ export const categoryMapping = {
   'background-generated': 'Background Generation',
   'background-removed': 'Background Removal',
   'object-retouched': 'Object Retouch',
-  'object-removed': 'Object Removal',
+  'objectremoval': 'Object Removal',
   'upscaled': 'Upscale',
-  'background-expanded': 'Background Expansion'
+  'background-expansion': 'Background Expansion'
 };
 
 export const categoriesData = [
