@@ -57,6 +57,7 @@ export const Cancel = ({ setActiveTab, setSuccess: setParentSuccess }) => {
                             <ul className="text-sm text-gray-500 space-y-2">
                                 <li>Your subscription plan will be active until {subscriptionEndDate}</li>
                                 <li>You will lose all access to our AI features when your subscription ends</li>
+                                <li>You will loose access to purchasing credits</li>
                                 <li>At the end of your subscription date on {subscriptionEndDate}, your credits will be locked for 60 days. If you renew within that time, your credits will be restored and new plan credits will be added. If not, the unused credits will be permanently deleted</li>
                                 <li>Resubscribe to your plan anytime within the time of your subscription date</li>
                             </ul>

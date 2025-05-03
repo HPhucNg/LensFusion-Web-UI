@@ -2,7 +2,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 
 //displays after user cancels the subscriptions
 export default function Cancel() {
@@ -27,7 +26,6 @@ export default function Cancel() {
           <p className="text-gray-400"> You will be redirected to your profile in a few seconds...</p>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

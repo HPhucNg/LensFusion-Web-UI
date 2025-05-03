@@ -88,6 +88,7 @@ export function SubscriptionProvider({ children }) {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
+        await refreshSubscription();
         const userRef = doc(db, 'users', user.uid);
         const unsubscribeSnapshot = onSnapshot(userRef, (userDoc) => {
           if (userDoc.exists()) {

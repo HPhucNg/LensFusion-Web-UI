@@ -30,7 +30,8 @@ import {
   getDoc, 
   deleteDoc, 
   updateDoc,
-  serverTimestamp 
+  serverTimestamp ,
+  onSnapshot
 } from 'firebase/firestore';
 import { 
   deleteUser, 
@@ -988,6 +989,19 @@ export default function UserProfile() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        setUserSettings(docSnapshot.data());
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [user]);
+
   // Helper functions
   const fetchUserSettings = async () => {
     if (!user) return;
@@ -999,7 +1013,37 @@ export default function UserProfile() {
       if (userDoc.exists()) {
         const userData = userDoc.data();
         setUserSettings(userData);
-        
+         // lock tokens for 60 days
+        if (userData.lockedTokens && userData.lockedTokensExpirationDate) {
+          const expirationDate = userData.lockedTokensExpirationDate.toDate 
+            ? userData.lockedTokensExpirationDate.toDate() 
+            : new Date(userData.lockedTokensExpirationDate);
+          
+          if (userData.subscriptionStatus === 'active' || userData.subscriptionStatus === 'canceling') {
+            // Clear locked tokens after user subscribes back to plan
+            await updateDoc(userDocRef, {
+                lockedTokens: null,
+                lockedTokensExpirationDate: null
+            });
+            const updatedDoc = await getDoc(userDocRef);
+            setUserSettings(updatedDoc.data());
+          } else if (new Date() > expirationDate && userData.tokens > 0) {
+            // Delete users tokens after 60 days and inactive
+            await updateDoc(userDocRef, {
+              tokens: 0,
+              lockedTokens: null,
+              lockedTokensExpirationDate: null
+            });
+              
+            // Refresh the data after update
+            const updatedDoc = await getDoc(userDocRef);
+            setUserSettings(updatedDoc.data());
+          } else {
+            setUserSettings(userData);
+          }
+        } else {
+          setUserSettings(userData);
+      }
         if (userData.interfaceSettings) {
           applyInterfaceSettings(userData.interfaceSettings);
         }
@@ -1116,11 +1160,10 @@ export default function UserProfile() {
   return (
     <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
       <Navbar /> 
-      <main className="container mx-auto px-4 py-1">
-        <div className="flex flex-col lg:flex-row gap-12">
+      <main className="container mx-auto">
           {/* Left Column - Profile */}
-          <div className="flex-shrink-0 w-full lg:w-1/4">
-            <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl  border border-[var(--border-gray)]">
+        <div className="flex flex-col md:flex-row lg:flex-row gap-4  w-full">
+          <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl  border border-[var(--border-gray)]">
               {user?.photoURL ? (
                 <img
                   src={user.photoURL}
@@ -1138,11 +1181,30 @@ export default function UserProfile() {
               <p className="text-gray-400 text-lg mb-4">
                 {user?.email || "No email provided"}
               </p>
-              <div className="w-full justify-start text-center py-3 border-2 border-purple-400 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-8 mb-6">
-                <h3 className="text- font-semibold truncate">
-                  Credits: {tokens}
-                </h3>
+              <div className="w-full justify-start text-center py-3 border-2 border-purple-400 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full px-4 sm:px-8 mb-6">
+                <div className="flex items-center justify-center gap-2 w-full overflow-visible">
+                  <span className="text-lg font-semibold whitespace-nowrap">Credits: {tokens}</span>
+                  {userSettings?.subscriptionStatus === 'inactive' && userSettings?.lockedTokens > 0 && (
+                    <Lock className="flex-shrink-0 w-4 h-4 text-yellow-500" />
+                  )}
+                </div>
               </div>
+              {/* Display 60 day countdown before resetting credits */}
+              {userSettings?.lockedTokens > 0 && (
+                <div className=" text-sm">
+                  <span className="text-gray-400">
+                    {Math.ceil((new Date(userSettings.lockedTokensExpirationDate.toDate()) - new Date()) / (1000 * 60 * 60 * 24))} days remaining
+                  </span>
+                </div>
+              )}
+              {/* Message to user to subscribe */}
+              {userSettings?.subscriptionStatus === 'inactive' && tokens > 0 && (
+                <div className="mb-4 text-sm">
+                  <span className="text-gray-400">
+                    Subscribe to enable credits
+                  </span>
+                </div>
+              )}
               <div className="w-full space-y-3">
                 <Button variant="outline" onClick={() => setIsManageAccountOpen(true)} className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700 overflow-hidden transition-all duration-300">
                   <Settings className="mr-3 h-5 w-5 " />
@@ -1163,7 +1225,7 @@ export default function UserProfile() {
 
               </div>
             </div>
-          </div>
+          
 
           {/* Right Column - Content */}
           <div className="flex-grow">
@@ -1199,11 +1261,11 @@ export default function UserProfile() {
 
             {/* Gallery Section */}
             <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
-              <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
+              <h3 className="text-xl font-bold mb-4">Your Gallery</h3>
              {/* <div className={`grid ${getGridViewClasses(userSettings?.interfaceSettings?.gridViewType || 'compact')}`}>
                 {userImages.length > 0 ? (
                   userImages.map((image, index) => (*/}
-             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
                 {paginatedImages.length > 0 ? (
                   paginatedImages.map((image, index) => (
               
@@ -1223,7 +1285,7 @@ export default function UserProfile() {
                         blurDataURL={`data:image/svg+xml;base64,...`}  // Optional for blur effect
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        <div className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <div className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
                         <Check className="w-5 h-5 text-white" />
                         </div>
                       </div>
