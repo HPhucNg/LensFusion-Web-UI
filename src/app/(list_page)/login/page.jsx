@@ -91,7 +91,7 @@ export default function LoginPage() {
       await setAuthCookie(user);
       
       // Redirect to profile page
-      router.push('/dashboard/profile');
+      router.push('/dashboard');
     } catch (error) {
       console.error("Google login error:", error);
       setError('Error signing in with Google. Please try again.');
@@ -119,7 +119,7 @@ export default function LoginPage() {
       await setAuthCookie(user);
       
       // Redirect to profile page
-      router.push('/dashboard/profile');
+      router.push('/dashboard');
     } catch (error) {
       console.error("GitHub login error:", error);
       setError('Error signing in with GitHub. Please try again.');
