@@ -6,7 +6,11 @@ export function middleware(request) {
   const path = request.nextUrl.pathname;
   
   // Define public paths that don't require authentication
-  const isPublicPath = path === '/login' || 
+  const isPublicPath = path === '/login' ||
+                      path === '/community' ||
+                      path === '/pricing' ||
+                      path === '/contact' ||
+                      path === '/about' ||     
                       path === '/register' || 
                       path === '/' || 
                       path.startsWith('/_next') || 
@@ -14,10 +18,11 @@ export function middleware(request) {
                       path.includes('.mp4') ||  // Allow video files
                       path.includes('.jpg') ||  // Allow image files
                       path.includes('.png') ||  // Allow image files
+                      path.includes('.webp')||
                       path.includes('.svg') ||  // Allow SVG files
                       path.includes('.ico') ||  // Allow icon files
                       path.includes('.css') ||  // Allow CSS files
-                      path.includes('.js');     // Allow JS files
+                      path.includes('.js');
   
   // Get the session token from cookies
   const authToken = request.cookies.get('authToken')?.value || '';

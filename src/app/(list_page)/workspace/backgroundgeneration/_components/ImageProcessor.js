@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, Suspense } from "react";
 import { processImage } from '@/lib/huggingface/client';
 import { defaultParams, parameterDefinitions } from '@/lib/huggingface/clientConfig';
 import { saveAs } from 'file-saver';
@@ -20,6 +20,42 @@ import { MobileMenuButton } from './MobileMenuButton';
 import { ImageContainer } from './ImageContainer';
 import { FullscreenModal } from './FullscreenModal';
 import ResizePreview from "./ResizePreview";
+
+import { useSearchParams } from 'next/navigation'; // to pull id from URL
+
+// Create a separate component that uses useSearchParams
+function SearchParamsHandler({ onParamChange }) {
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    const fetchPrompt = async () => {
+      const id = searchParams.get('id');
+      if (!id) return;
+
+      try {
+        const communityRef = doc(db, 'community', id);
+        const communityDoc = await getDoc(communityRef);
+
+        if (communityDoc.exists()) {
+          const communityData = communityDoc.data();
+          const newPrompt = communityData.prompt || '';
+          const newNegative = communityData.negativePrompt || '';
+
+          onParamChange('prompt', newPrompt);
+          onParamChange('n_prompt', newNegative);
+        } else {
+          console.log("Prompts not found.");
+        }
+      } catch (error) {
+        console.error("Error fetching user data: ", error);
+      }
+    };
+
+    fetchPrompt();
+  }, [searchParams, onParamChange]);
+  
+  return null;
+}
 
 export default function ImageProcessor() {
   // State management for the component
@@ -300,6 +336,9 @@ export default function ImageProcessor() {
     setLoadedTemplates(templates);
     console.log("Loaded templates:", templates);
   }, []);
+
+
+
 
   // Creates a preview of the uploaded image
   const createInputPreview = useCallback((file) => {
@@ -732,6 +771,11 @@ export default function ImageProcessor() {
         fullscreenImage={fullscreenImage}
         closeFullscreen={closeFullscreen}
       />
+
+      {/* Add the SearchParamsHandler with Suspense */}
+      <Suspense fallback={null}>
+        <SearchParamsHandler onParamChange={handleParamChange} />
+      </Suspense>
     </div>
   );
 }

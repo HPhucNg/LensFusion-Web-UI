@@ -8,7 +8,7 @@ import {
   } from "@/components/ui/dropdown-menu";
 import Image from 'next/image'; 
 import { auth, db } from '@/firebase/FirebaseConfig'; 
-import { collection, addDoc, doc, updateDoc, getDoc, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, getDoc, getDocs, deleteDoc, deleteField } from 'firebase/firestore';
 
 function Modal({ closeModal, add_community, selectedImage, initialStatus, setImageStatus }) {
     const [pinDetails, setPinDetails] = useState({
@@ -74,7 +74,10 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
 
                     if (userImageDoc.exists()) {
                         const userImageData = userImageDoc.data();
-                        setCommunityPostId(userImageData.communityPostId);
+                        if (userImageData.hasOwnProperty('communityPostId')) {
+                                setCommunityPostId(userImageData.communityPostId)
+                        } 
+                        else { setCommunityPostId(false)}
 
                         if (userImageData.communityPostId) {
                             //console.log("heree", userImageData.communityPostId)
@@ -134,7 +137,6 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
                 // update the user's image document to set communityPost to true
                 const userImageRef = doc(db, 'user_images', selectedImage.uid);
                 await updateDoc(userImageRef, {
-                    communityPost: true,  
                     communityPostId: communityRef.id, 
                 });
                 setCommunityPostId(communityRef.id);
@@ -187,8 +189,7 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
             // update the user's image document to remove the community post reference
             const userImageRef = doc(db, 'user_images', selectedImage.uid);
             await updateDoc(userImageRef, {
-                communityPost: false,
-                communityPostId: null, // clear the reference to the community post
+                communityPostId: deleteField(),
             });
             // update the parent component's state
             

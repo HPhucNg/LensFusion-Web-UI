@@ -47,7 +47,8 @@ function UploadImage() {
                 img_data: downloadURL,  // Image URL
                 createdAt: new Date(),  // Timestamp
                 prompt: 'This will be the prompt that generated the AI image.',
-                communityPost: false // Whether this image has been posted to community page
+                //communityPost: false // Whether this image has been posted to community page
+                type: 'background-generated'
             });
     
             console.log('Image uploaded successfully, document created with ID:', imageRef.id);
