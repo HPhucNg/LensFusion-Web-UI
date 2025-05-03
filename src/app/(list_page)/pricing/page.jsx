@@ -172,7 +172,7 @@ function PricingPage() {
               ))}
             </ul>
             <button
-              className={`w-full px-4 py-2 rounded-lg ${
+              className={`w-full px-4 py-2 rounded-lg border-2 border-black ${
                 isCurrentActivePlan || isCurrentCancelingPlan
                 ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
                   : index === 1
