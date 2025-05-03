@@ -1161,10 +1161,9 @@ export default function UserProfile() {
     <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
       <Navbar /> 
       <main className="container mx-auto">
-        <div className="flex flex-col lg:flex-row gap-4">
           {/* Left Column - Profile */}
-          <div className="flex-shrink-0 w-full lg:w-1/4">
-            <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl  border border-[var(--border-gray)]">
+        <div className="flex flex-col md:flex-row lg:flex-row gap-4  w-full">
+          <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl  border border-[var(--border-gray)]">
               {user?.photoURL ? (
                 <img
                   src={user.photoURL}
@@ -1226,7 +1225,7 @@ export default function UserProfile() {
 
               </div>
             </div>
-          </div>
+          
 
           {/* Right Column - Content */}
           <div className="flex-grow">
