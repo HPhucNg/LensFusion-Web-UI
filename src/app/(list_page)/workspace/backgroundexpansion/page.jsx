@@ -31,10 +31,9 @@ export default function Home() {
             const userRef = doc(db, "users", currentUser.uid);
             const userDoc = await getDoc(userRef);
             if (userDoc.exists()) {
-              setTokens(userDoc.data().tokens || 0);
-              if (tokens < 10){ // if not enough tokens, warn user by disabling generate button
-                setInsufficientTokens(true);
-                } 
+                const tokenCount = userDoc.data().tokens || 0;
+                setTokens(tokenCount);
+                setInsufficientTokens(tokenCount < 10);                
             }
           }
         });
@@ -137,11 +136,11 @@ export default function Home() {
             if (image2_base64) {
                 setGeneratedImage(image2_base64);
                 // auto-save to gallery if the user is logged in
-                if (currentUser) {
+                if (user) {
                     try {
                         await saveToGallery(
                             image2_base64, 
-                            currentUser.uid, 
+                            user.uid, 
                             'background-expansion', 
                         );
                     } catch (saveError) {
