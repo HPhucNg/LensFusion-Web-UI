@@ -184,6 +184,12 @@ export default function SubscriptionManagement({ onClose }) {
                                                 >
                                                     Change Plan
                                                 </Button>
+                                                <Button
+                                                    onClick={() => setActiveTab('credit')}
+                                                    className="bg-transparent hover:bg-gray-800 text-white border border-gray-700 self-start sm:self-auto"
+                                                >
+                                                    Buy credits
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
