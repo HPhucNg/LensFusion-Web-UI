@@ -30,7 +30,8 @@ import {
   getDoc, 
   deleteDoc, 
   updateDoc,
-  serverTimestamp 
+  serverTimestamp ,
+  onSnapshot
 } from 'firebase/firestore';
 import { 
   deleteUser, 
@@ -988,6 +989,19 @@ export default function UserProfile() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        setUserSettings(docSnapshot.data());
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [user]);
+
   // Helper functions
   const fetchUserSettings = async () => {
     if (!user) return;
@@ -1005,7 +1019,15 @@ export default function UserProfile() {
             ? userData.lockedTokensExpirationDate.toDate() 
             : new Date(userData.lockedTokensExpirationDate);
           
-          if (new Date() > expirationDate && userData.tokens > 0) {
+          if (userData.subscriptionStatus === 'active' || userData.subscriptionStatus === 'canceling') {
+            // Clear locked tokens after user subscribes back to plan
+            await updateDoc(userDocRef, {
+                lockedTokens: null,
+                lockedTokensExpirationDate: null
+            });
+            const updatedDoc = await getDoc(userDocRef);
+            setUserSettings(updatedDoc.data());
+          } else if (new Date() > expirationDate && userData.tokens > 0) {
             // Delete users tokens after 60 days and inactive
             await updateDoc(userDocRef, {
               tokens: 0,
