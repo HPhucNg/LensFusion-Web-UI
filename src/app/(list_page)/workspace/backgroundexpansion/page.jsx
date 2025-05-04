@@ -7,7 +7,7 @@ import { GenerateButton } from '../backgroundgeneration/_components/GenerateButt
 import WorkspaceNavbar from '@/components/WorkspaceNavbar';
 import { saveToGallery } from '@/lib/saveToGallery';
 import { auth, db } from '@/firebase/FirebaseConfig';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, increment } from 'firebase/firestore';
 
 
 export default function Home() {
@@ -78,8 +78,8 @@ export default function Home() {
     };
 
     const handleWidthChange = (event) => {
-        const newWidth = event.target.value
-        const ratioWidth = ratioSettings[ratio].width
+        const newWidth = Number(event.target.value);
+        const ratioWidth = ratioSettings[ratio]?.width
 
         setParams((prevParams) => ({
             ...prevParams,
@@ -92,7 +92,7 @@ export default function Home() {
         
     }
     const handleHeightChange = (event) => {
-        const newHeight = event.target.value
+        const newHeight = Number(event.target.value);
         const ratioHeight = ratioSettings[ratio].height
 
         setParams((prevParams) => ({
@@ -115,6 +115,12 @@ export default function Home() {
 
     // for calling API when user is ready
     const handleGenerateClick = async () => {
+        if (tokens < 10) {
+            setInsufficientTokens(true);
+            console.warn("Insufficient tokens");
+            return;
+          }
+
         setIsLoading(true); // start loading
         const result = await generateImage(params);
         setIsLoading(false); // stop loading once the request completes
@@ -122,9 +128,12 @@ export default function Home() {
         // deduct tokens
         const userRef = doc(db, 'users', user.uid);
         await updateDoc(userRef, {
-            tokens: tokens - 10
-        });
-        setTokens(prev => prev - 10);
+            tokens: increment(-10),
+          });
+          
+        const userDoc = await getDoc(userRef);
+        setTokens(userDoc.data().tokens);
+        
 
         if (result) {
             // set both images
