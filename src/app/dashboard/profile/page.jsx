@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition, useCallback } from 'react';
 import Image from "next/image";
 import { useRouter } from 'next/navigation';
 import { Settings, User2, Share2, Moon, Sun, Check, Lock, Bell, Shield, X, Camera, Smartphone, AlertTriangle } from 'lucide-react';
@@ -38,7 +38,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { applyInterfaceSettings, getAccentColorValue, getFontSizeValue, getGridViewClasses } from '@/lib/interfaceUtils';
 
 // Account Management Dialog Component
@@ -912,6 +912,9 @@ export default function UserProfile() {
   const [userImages, setUserImages] = useState([]); 
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isPending, startTransition] = useTransition();
+  const [prefetchedImages, setPrefetchedImages] = useState({});
+  const [hoveredPage, setHoveredPage] = useState(null);
   //const [showCommunityModal, setShowCommunityModal] = useState(false);
   
   // Use the theme hook instead of inline theme logic
@@ -960,10 +963,66 @@ export default function UserProfile() {
   const endIndex = startIndex + imagesPerPage;
   const paginatedImages = categoryImages.slice(startIndex, endIndex);
 
-  // Handle page click
-  const handlePageClick = (page) => {
-  setCurrentPage(page);
-  };
+  // Handle page click with transition
+  const handlePageClick = useCallback((page) => {
+    if (page === currentPage) return;
+    
+    // Use transition to mark pagination state updates as non-urgent
+    startTransition(() => {
+      setCurrentPage(page);
+    });
+  }, [currentPage]);
+
+  // Prefetch images for a specific page
+  const prefetchImagesForPage = useCallback((page) => {
+    if (prefetchedImages[page] || !categoryImages.length) return;
+    
+    const pageStartIndex = (page - 1) * imagesPerPage;
+    const pageEndIndex = pageStartIndex + imagesPerPage;
+    const pageImages = categoryImages.slice(pageStartIndex, pageEndIndex);
+    
+    // Instead of using new Image(), which conflicts with Next.js's Image component,
+    // we'll just mark these pages as prefetched without creating actual image elements
+    if (typeof window !== 'undefined') {
+      // Only run this on the client side
+      pageImages.forEach(image => {
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = image.img_data;
+        link.as = 'image';
+        document.head.appendChild(link);
+      });
+    }
+    
+    // Store prefetched status
+    setPrefetchedImages(prev => ({
+      ...prev,
+      [page]: true
+    }));
+  }, [categoryImages, imagesPerPage, prefetchedImages]);
+
+  // Handle mouse enter on pagination button
+  const handlePaginationHover = useCallback((page) => {
+    setHoveredPage(page);
+    prefetchImagesForPage(page);
+  }, [prefetchImagesForPage]);
+
+  // Prefetch adjacent pages when current page changes
+  useEffect(() => {
+    if (currentPage > 1) {
+      prefetchImagesForPage(currentPage - 1);
+    }
+    if (currentPage < totalPages) {
+      prefetchImagesForPage(currentPage + 1);
+    }
+  }, [currentPage, prefetchImagesForPage, totalPages]);
+
+  // Prefetch first page images on initial load
+  useEffect(() => {
+    if (categoryImages.length > 0) {
+      prefetchImagesForPage(1);
+    }
+  }, [categoryImages, prefetchImagesForPage]);
 
   // Handle delete image in child component and show in parent
   const handleImageDelete = (imageId) => {
@@ -1056,6 +1115,7 @@ export default function UserProfile() {
   const fetchUserImages = async (user) => {
     setIsLoadingImages(true);
     try {
+      // Fetch without orderBy to avoid requiring composite index
       const userImagesRef = collection(db, 'user_images');
       const q = query(userImagesRef, where('userID', '==', user.uid));
       const querySnapshot = await getDocs(q);
@@ -1063,7 +1123,22 @@ export default function UserProfile() {
         ...doc.data(),
         uid: doc.id
       }));
-      setUserImages(images);
+      
+      // Sort images by createdAt on the client side
+      const sortedImages = images.sort((a, b) => {
+        // Handle different timestamp formats
+        const getTimestamp = (item) => {
+          if (!item.createdAt) return 0;
+          if (item.createdAt.toDate) return item.createdAt.toDate().getTime();
+          if (item.createdAt.seconds) return item.createdAt.seconds * 1000;
+          if (typeof item.createdAt === 'string') return new Date(item.createdAt).getTime();
+          return 0;
+        };
+        
+        return getTimestamp(b) - getTimestamp(a); // Descending order (newest first)
+      });
+      
+      setUserImages(sortedImages);
     } catch (error) {
       console.error('Error fetching user images:', error);
     } finally {
@@ -1273,37 +1348,48 @@ export default function UserProfile() {
             {/* Gallery Section */}
             <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
               <h3 className="text-xl font-bold mb-4">Your Gallery</h3>
-             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
-                {paginatedImages.length > 0 ? (
-                  paginatedImages.map((image, index) => (
-              
-                <div 
-                  key={image.uid || index} 
-                  className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-transform hover:scale-105"
-                  onClick={() => handleImageClick(image)}
-                >
-                  <Image
-                    src={image.img_data}
-                    alt={`Gallery item ${index}`}
-                    width={400}
-                    height={400}
-                    className="object-cover w-full h-full"
-                    placeholder="blur"
-                    blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzFjMWMxYyIvPjwvc3ZnPg=="
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Check className="w-5 h-5 text-white" />
-                    </div>
+
+              {/* Gallery with loading state */}
+              <div className="relative min-h-[300px]">
+                {/* Pending state indicator */}
+                {isPending && (
+                  <div className="absolute inset-0 bg-black/20 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+                    <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
+                )}
+
+                {/* Gallery grid with fade transition */}
+                <div className={`grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6 transition-opacity duration-300 ${isPending ? 'opacity-50' : 'opacity-100'}`}>
+                  {paginatedImages.length > 0 ? (
+                    paginatedImages.map((image, index) => (
+                      <div 
+                        key={image.uid || index} 
+                        className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-transform hover:scale-105"
+                        onClick={() => handleImageClick(image)}
+                      >
+                        <Image
+                          src={image.img_data}
+                          alt={`Gallery item ${index}`}
+                          width={400}
+                          height={400}
+                          className="object-cover w-full h-full"
+                          placeholder="blur"
+                          blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzFjMWMxYyIvPjwvc3ZnPg=="
+                          loading={index < 4 ? "eager" : "lazy"}
+                          priority={index < 4}
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                            <Check className="w-5 h-5 text-white" />
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-400">No images available.</p>
+                  )}
                 </div>
-              
-      ))
-    ) : (
-      <p className="text-gray-400">No images available.</p>
-    )}
-  </div>
+              </div>
 
               {/* Pagination */}
               {categoryImages.length > 0 && totalPages > 1 ? (
@@ -1312,12 +1398,13 @@ export default function UserProfile() {
                   {/* Previous button */}
                   <button
                     onClick={currentPage > 1 ? () => handlePageClick(currentPage - 1) : undefined}
-                    disabled={currentPage === 1}
-                    className={`h-10 px-3 text-sm font-medium flex items-center rounded-lg ${
-                      currentPage === 1 
+                    disabled={currentPage === 1 || isPending}
+                    className={`h-10 px-3 text-sm font-medium flex items-center rounded-lg transition-colors ${
+                      currentPage === 1 || isPending
                         ? 'text-gray-500 cursor-default' 
                         : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
                     }`}
+                    onMouseEnter={currentPage > 1 ? () => handlePaginationHover(currentPage - 1) : undefined}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
                       <path d="m15 18-6-6 6-6"/>
@@ -1330,7 +1417,13 @@ export default function UserProfile() {
                     <>
                       <button 
                         onClick={() => handlePageClick(1)}
-                        className="w-10 h-10 rounded-lg font-medium bg-gray-800/50 hover:bg-gray-700/70 text-gray-200"
+                        disabled={isPending}
+                        className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                          isPending 
+                            ? 'opacity-50 cursor-default' 
+                            : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                        }`}
+                        onMouseEnter={() => handlePaginationHover(1)}
                       >
                         1
                       </button>
@@ -1351,11 +1444,16 @@ export default function UserProfile() {
                         <button
                           key={pageNum}
                           onClick={pageNum !== currentPage ? () => handlePageClick(pageNum) : undefined}
-                          className={`w-10 h-10 rounded-lg font-medium ${
+                          disabled={isPending || pageNum === currentPage}
+                          className={`w-10 h-10 rounded-lg font-medium transition-colors ${
                             pageNum === currentPage 
-                              ? 'bg-purple-600 text-white hover:bg-purple-700' 
-                              : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
-                          }`}
+                              ? 'bg-purple-600 text-white' 
+                              : isPending 
+                                ? 'opacity-50 cursor-default' 
+                                : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                          } ${hoveredPage === pageNum ? 'ring-2 ring-purple-500/50' : ''}`}
+                          onMouseEnter={() => handlePaginationHover(pageNum)}
+                          onMouseLeave={() => setHoveredPage(null)}
                         >
                           {pageNum}
                         </button>
@@ -1370,22 +1468,29 @@ export default function UserProfile() {
                       {currentPage < totalPages - 2 && <span className="text-gray-400">...</span>}
                       <button 
                         onClick={() => handlePageClick(totalPages)}
-                        className="w-10 h-10 rounded-lg font-medium bg-gray-800/50 hover:bg-gray-700/70 text-gray-200"
+                        disabled={isPending}
+                        className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                          isPending 
+                            ? 'opacity-50 cursor-default' 
+                            : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                        }`}
+                        onMouseEnter={() => handlePaginationHover(totalPages)}
                       >
                         {totalPages}
                       </button>
                     </>
                   )}
                   
-                  {/* Next button - original style */}
+                  {/* Next button */}
                   <button
                     onClick={currentPage < totalPages ? () => handlePageClick(currentPage + 1) : undefined}
-                    disabled={currentPage === totalPages}
-                    className={`h-10 px-3 text-sm font-medium flex items-center rounded-lg ${
-                      currentPage === totalPages 
+                    disabled={currentPage === totalPages || isPending}
+                    className={`h-10 px-3 text-sm font-medium flex items-center rounded-lg transition-colors ${
+                      currentPage === totalPages || isPending
                         ? 'text-gray-500 cursor-default' 
                         : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
                     }`}
+                    onMouseEnter={currentPage < totalPages ? () => handlePaginationHover(currentPage + 1) : undefined}
                   >
                     Next
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1">
