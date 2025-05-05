@@ -941,6 +941,14 @@ export default function UserProfile() {
 
   const imagesPerPage = 8;
 
+  // Reset to page 1 when active category changes
+  useEffect(() => {
+    // Reset to first page when category changes
+    setCurrentPage(1);
+    // Clear prefetched images state since we're changing categories
+    setPrefetchedImages({});
+  }, [activeCategory]);
+
   // Get selected category images in user gallery
   const getSelectedCategoryImages = () => {
     if (activeCategory === -1) {
@@ -957,7 +965,15 @@ export default function UserProfile() {
   };
 
   const categoryImages = getSelectedCategoryImages();
-  const totalPages = Math.ceil(categoryImages.length / imagesPerPage);
+  const totalPages = Math.max(1, Math.ceil(categoryImages.length / imagesPerPage));
+  
+  // Adjust current page if it exceeds the total pages after category change
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+  
   // Paginate the images
   const startIndex = (currentPage - 1) * imagesPerPage;
   const endIndex = startIndex + imagesPerPage;
