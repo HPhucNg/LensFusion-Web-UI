@@ -953,6 +953,9 @@ export default function UserProfile() {
   const getSelectedCategoryImages = () => {
     if (activeCategory === -1) {
       return userImages;
+    } else if (activeCategory === -2) { // Special case for Community category
+      // Return only images that have a communityPostId set
+      return userImages.filter(image => image.communityPostId || image.communityPost);
     } else {
       const selectedCategory = categoryData[activeCategory]?.name;
       
@@ -1241,6 +1244,11 @@ export default function UserProfile() {
       (image.uid !== deletedImageId && image.id !== deletedImageId)
     ));
   };*/}
+
+  // Add community posts count
+  const communityPostsCount = userImages.filter(image => 
+    image.communityPostId || image.communityPost
+  ).length;
 
   // Loading states
   if (isLoading || subscriptionLoading || isLoadingImages) {
