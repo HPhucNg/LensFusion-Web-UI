@@ -1305,22 +1305,93 @@ export default function UserProfile() {
   </div>
 
               {/* Pagination */}
-              {categoryImages.length > 0 ? (
-              <div className="flex justify-center items-center gap-3 mt-8">
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant="outline"
-                    className={`w-10 h-10 text-lg font-medium ${
-                    page === currentPage
-                    ? 'bg-white text-black hover:bg-gray-200 hover:text-[#c792ff]'
-                        : 'border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700'
-                    } shadow-lg transition-all duration-300`}
-                  onClick={() => handlePageClick(page)}
+              {categoryImages.length > 0 && totalPages > 1 ? (
+              <div className="flex justify-center mt-8">
+                <div className="inline-flex items-center gap-2">
+                  {/* Previous button */}
+                  <button
+                    onClick={currentPage > 1 ? () => handlePageClick(currentPage - 1) : undefined}
+                    disabled={currentPage === 1}
+                    className={`h-10 px-3 text-sm font-medium flex items-center rounded-lg ${
+                      currentPage === 1 
+                        ? 'text-gray-500 cursor-default' 
+                        : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                    }`}
                   >
-                    {page}
-                  </Button>
-                ))}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                      <path d="m15 18-6-6 6-6"/>
+                    </svg>
+                    Prev
+                  </button>
+                  
+                  {/* First page */}
+                  {totalPages > 3 && currentPage > 2 && (
+                    <>
+                      <button 
+                        onClick={() => handlePageClick(1)}
+                        className="w-10 h-10 rounded-lg font-medium bg-gray-800/50 hover:bg-gray-700/70 text-gray-200"
+                      >
+                        1
+                      </button>
+                      {currentPage > 3 && <span className="text-gray-400">...</span>}
+                    </>
+                  )}
+                  
+                  {/* Current page and adjacent pages */}
+                  {[...Array(totalPages)].map((_, i) => {
+                    const pageNum = i + 1;
+                    // Only render pages near current page
+                    if (
+                      pageNum === currentPage || 
+                      pageNum === currentPage - 1 || 
+                      pageNum === currentPage + 1
+                    ) {
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={pageNum !== currentPage ? () => handlePageClick(pageNum) : undefined}
+                          className={`w-10 h-10 rounded-lg font-medium ${
+                            pageNum === currentPage 
+                              ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                              : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    }
+                    return null;
+                  })}
+                  
+                  {/* Last page */}
+                  {totalPages > 3 && currentPage < totalPages - 1 && (
+                    <>
+                      {currentPage < totalPages - 2 && <span className="text-gray-400">...</span>}
+                      <button 
+                        onClick={() => handlePageClick(totalPages)}
+                        className="w-10 h-10 rounded-lg font-medium bg-gray-800/50 hover:bg-gray-700/70 text-gray-200"
+                      >
+                        {totalPages}
+                      </button>
+                    </>
+                  )}
+                  
+                  {/* Next button - original style */}
+                  <button
+                    onClick={currentPage < totalPages ? () => handlePageClick(currentPage + 1) : undefined}
+                    disabled={currentPage === totalPages}
+                    className={`h-10 px-3 text-sm font-medium flex items-center rounded-lg ${
+                      currentPage === totalPages 
+                        ? 'text-gray-500 cursor-default' 
+                        : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                    }`}
+                  >
+                    Next
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1">
+                      <path d="m9 18 6-6-6-6"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
               ) : null}
             </div>
