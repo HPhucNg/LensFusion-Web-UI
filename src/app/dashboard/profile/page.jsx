@@ -1124,15 +1124,26 @@ export default function UserProfile() {
 
   // Handle image click to open gallery modal
   const handleImageClick = (image) => {
-    setSelectedImage(image);
-    setShowModal(true);
-    setImageStatus(image?.communityPost || false);  // Update the imageStatus when an image is clicked
-    //console.log(image?.communityPost);
+    // Debounce the click to prevent multiple rapid clicks
+    if (window.imageClickTimeout) {
+      return;
+    }
+    
+    window.imageClickTimeout = setTimeout(() => {
+      setSelectedImage(image);
+      setShowModal(true);
+      setImageStatus(image?.communityPost || false);
+      window.imageClickTimeout = null;
+    }, 100);
   };
 
   const closeModal = () => {
     setShowModal(false);
-}
+    // Allow time for modal to properly unmount
+    setTimeout(() => {
+      setSelectedImage(null);
+    }, 300);
+  }
 
   {/*const handleImageDeleted = (deletedImageId) => {
     setUserImages(prevImages => prevImages.filter(image => 
@@ -1262,42 +1273,32 @@ export default function UserProfile() {
             {/* Gallery Section */}
             <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
               <h3 className="text-xl font-bold mb-4">Your Gallery</h3>
-             {/* <div className={`grid ${getGridViewClasses(userSettings?.interfaceSettings?.gridViewType || 'compact')}`}>
-                {userImages.length > 0 ? (
-                  userImages.map((image, index) => (*/}
              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
                 {paginatedImages.length > 0 ? (
                   paginatedImages.map((image, index) => (
               
-                <HoverCard key={index}>
-                  <HoverCardTrigger asChild>
-                    <div
-                      className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-all duration-300 hover:scale-105"
-                      onClick={() => handleImageClick(image)} // Pass the image URL to the modal
-                    >
-                      <Image
-                        src={image.img_data}  // Directly use the img_data (image URL)
-                        alt={`Gallery item ${index}`}
-                        width={400}
-                        height={400}
-                        className="object-cover w-full h-full"
-                        placeholder="blur"
-                        blurDataURL={`data:image/svg+xml;base64,...`}  // Optional for blur effect
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        <div className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                        <Check className="w-5 h-5 text-white" />
-                        </div>
-                      </div>
+                <div 
+                  key={image.uid || index} 
+                  className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-transform hover:scale-105"
+                  onClick={() => handleImageClick(image)}
+                >
+                  <Image
+                    src={image.img_data}
+                    alt={`Gallery item ${index}`}
+                    width={400}
+                    height={400}
+                    className="object-cover w-full h-full"
+                    placeholder="blur"
+                    blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzFjMWMxYyIvPjwvc3ZnPg=="
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Check className="w-5 h-5 text-white" />
                     </div>
-                  </HoverCardTrigger>
-                <HoverCardContent className="w-80 bg-[var(--card-background)] border-[var(--border-gray)]">
-                  <div className="space-y-2">
-                    <h4 className="text-lg font-semibold">Image Details</h4>
-                    <p className="text-gray-400">Gallery item {index + 1}</p>
                   </div>
-                </HoverCardContent>
-              </HoverCard>
+                </div>
+              
       ))
     ) : (
       <p className="text-gray-400">No images available.</p>
@@ -1407,13 +1408,15 @@ export default function UserProfile() {
       />
 
       {/* <Footer /> */}
-      {/* Gallery Modal */}
-      {showModal && (
-                <GalleryModal
-                    closeModal={closeModal}
-                    image={selectedImage}
-                    onDelete={handleImageDelete}  // Pass the delete function
-                />
+      {/* Gallery Modal*/}
+      {showModal && selectedImage && (
+        <div className="fixed inset-0 z-50">
+          <GalleryModal
+            closeModal={closeModal}
+            image={selectedImage}
+            onDelete={handleImageDelete}
+          />
+        </div>
       )}
 
       {/* subscription management */}
