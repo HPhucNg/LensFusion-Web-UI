@@ -138,37 +138,30 @@ export default function Page() {
         <MobileTrigger />
         
         <SidebarInset className="overflow-y-auto">
-          <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white min-h-screen pb-16 md:pb-0">
+          <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white min-h-screen pb-16 md:pb-0 dark:bg-gradient-to-r dark:from-gray-900 dark:via-gray-800 dark:to-black dark:text-white">
             {/* Add padding to account for fixed header */}
             <div className="pt-8">
               <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Featured Banner */}
-                <div className="relative w-full h-[300px] md:h-[400px] rounded-2xl overflow-hidden mb-12">
-                  {/* Background Image */}
+                <div className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] xl:h-[600px] rounded-2xl overflow-hidden mb-12 bg-black">
+                  {/* Background Video */}
                   <div className="absolute inset-0">
-                    <div className="w-full h-full bg-gradient-to-r from-gray-700 via-gray-600 to-gray-800 flex items-center justify-center">
-                      <svg 
-                        className="w-24 h-24 text-gray-400 opacity-30" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={1.5} 
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
-                        />
-                      </svg>
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent"></div>
+                    <video 
+                      className="w-full h-full object-cover"
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                    >
+                      <source src="https://firebasestorage.googleapis.com/v0/b/lensfusion-fc879.firebasestorage.app/o/public_resources%2Fdashboard%2Fvideo%2Fhero1.mp4?alt=media&token=fadaf77f-d7d9-469f-bed9-3b63c2618a59" type="video/mp4" />
+                    </video>
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.7), rgba(0,0,0,0.4), transparent)' }}></div>
                   </div>
                   
                   {/* Banner Content */}
-                  <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-16">
+                  <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-8 md:px-16 lg:px-20">
                     {/* Tab Navigation */}
-                    <div className="flex gap-3 mb-6">
+                    {/* <div className="flex gap-3 mb-6">
                       <div className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-medium">
                         LensFusion 2.0
                       </div>
@@ -178,27 +171,29 @@ export default function Page() {
                       <div className="bg-gray-700/50 backdrop-blur-sm text-gray-200 px-4 py-2 rounded-full text-sm font-medium">
                         Object Removal
                       </div>
-                    </div>
+                    </div> */}
                     
                     {/* Title and Description */}
-                    <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                      LensFusion 2.0
-                    </h2>
-                    <p className="text-xl md:text-2xl text-gray-100 mb-8 max-w-xl">
-                      Transform Your Vision, Perfect Every Pixel
-                    </p>
-                    
-                    {/* Call to Action */}
-                    <div>
-                      <Link 
-                        href="/workspace/backgroundgeneration" 
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-base transition-colors duration-300 inline-flex items-center"
-                      >
-                        Start Creating
-                        <svg className="w-5 h-5 ml-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </Link>
+                    <div className="max-w-[50%] lg:max-w-[40%]">
+                      <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-bold text-white mb-2 sm:mb-4">
+                        LensFusion
+                      </h2>
+                      <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-100 mb-4 sm:mb-6">
+                        Transform Your Vision, Perfect Every Pixel
+                      </p>
+                      
+                      {/* Call to Action */}
+                      <div>
+                        <Link 
+                          href="/workspace/backgroundgeneration" 
+                          className="bg-purple-600 hover:bg-purple-700 text-white px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg text-sm sm:text-base transition-colors duration-300 inline-flex items-center"
+                        >
+                          Start Creating
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5 ml-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>
