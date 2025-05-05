@@ -1407,7 +1407,7 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* Pagination */}
+              {/* Pagination with theme-aware styling */}
               {categoryImages.length > 0 && totalPages > 1 ? (
               <div className="flex justify-center mt-8">
                 <div className="inline-flex items-center gap-2">
@@ -1417,8 +1417,10 @@ export default function UserProfile() {
                     disabled={currentPage === 1 || isPending}
                     className={`h-10 px-3 text-sm font-medium flex items-center rounded-lg transition-colors ${
                       currentPage === 1 || isPending
-                        ? 'text-gray-500 cursor-default' 
-                        : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                        ? 'text-gray-400 cursor-default' 
+                        : theme === 'dark' 
+                          ? 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200' 
+                          : 'bg-gray-200/80 hover:bg-gray-300/80 text-gray-700 border border-gray-300/50'
                     }`}
                     onMouseEnter={currentPage > 1 ? () => handlePaginationHover(currentPage - 1) : undefined}
                   >
@@ -1437,13 +1439,15 @@ export default function UserProfile() {
                         className={`w-10 h-10 rounded-lg font-medium transition-colors ${
                           isPending 
                             ? 'opacity-50 cursor-default' 
-                            : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                            : theme === 'dark'
+                              ? 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                              : 'bg-gray-200/80 hover:bg-gray-300/80 text-gray-700 border border-gray-300/50'
                         }`}
                         onMouseEnter={() => handlePaginationHover(1)}
                       >
                         1
                       </button>
-                      {currentPage > 3 && <span className="text-gray-400">...</span>}
+                      {currentPage > 3 && <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>...</span>}
                     </>
                   )}
                   
@@ -1463,11 +1467,15 @@ export default function UserProfile() {
                           disabled={isPending || pageNum === currentPage}
                           className={`w-10 h-10 rounded-lg font-medium transition-colors ${
                             pageNum === currentPage 
-                              ? 'bg-purple-600 text-white' 
+                              ? theme === 'dark'
+                                ? 'bg-purple-600 text-white' 
+                                : 'bg-purple-500 text-white shadow-sm'
                               : isPending 
                                 ? 'opacity-50 cursor-default' 
-                                : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
-                          } ${hoveredPage === pageNum ? 'ring-2 ring-purple-500/50' : ''}`}
+                                : theme === 'dark'
+                                  ? 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                                  : 'bg-gray-200/80 hover:bg-gray-300/80 text-gray-700 border border-gray-300/50'
+                          } ${hoveredPage === pageNum ? theme === 'dark' ? 'ring-2 ring-purple-500/50' : 'ring-2 ring-purple-400/30' : ''}`}
                           onMouseEnter={() => handlePaginationHover(pageNum)}
                           onMouseLeave={() => setHoveredPage(null)}
                         >
@@ -1481,14 +1489,16 @@ export default function UserProfile() {
                   {/* Last page */}
                   {totalPages > 3 && currentPage < totalPages - 1 && (
                     <>
-                      {currentPage < totalPages - 2 && <span className="text-gray-400">...</span>}
+                      {currentPage < totalPages - 2 && <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>...</span>}
                       <button 
                         onClick={() => handlePageClick(totalPages)}
                         disabled={isPending}
                         className={`w-10 h-10 rounded-lg font-medium transition-colors ${
                           isPending 
                             ? 'opacity-50 cursor-default' 
-                            : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                            : theme === 'dark'
+                              ? 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                              : 'bg-gray-200/80 hover:bg-gray-300/80 text-gray-700 border border-gray-300/50'
                         }`}
                         onMouseEnter={() => handlePaginationHover(totalPages)}
                       >
@@ -1503,8 +1513,10 @@ export default function UserProfile() {
                     disabled={currentPage === totalPages || isPending}
                     className={`h-10 px-3 text-sm font-medium flex items-center rounded-lg transition-colors ${
                       currentPage === totalPages || isPending
-                        ? 'text-gray-500 cursor-default' 
-                        : 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                        ? 'text-gray-400 cursor-default' 
+                        : theme === 'dark' 
+                          ? 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200' 
+                          : 'bg-gray-200/80 hover:bg-gray-300/80 text-gray-700 border border-gray-300/50'
                     }`}
                     onMouseEnter={currentPage < totalPages ? () => handlePaginationHover(currentPage + 1) : undefined}
                   >
