@@ -154,7 +154,7 @@ export function Category({ hoveredIndex, setHoveredIndex, activeCategory, setAct
       text: isDarkMode ? 'white' : 'black',
     },
     community: {
-      hoverColor: '#72efdd', // Gold/amber color for community - distinct from other categories
+      hoverColor: '#72efdd',
       background: isDarkMode ? 'transparent' : '#E5E5E5',
       text: isDarkMode ? 'white' : 'black',
     }

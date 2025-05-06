@@ -46,6 +46,9 @@ function SearchParamsHandler({ onParamChange }) {
       return;
     }
     
+    // Set removeBackground to false by default
+    onParamChange('removeBackground', false);
+    
     // Process the parameters
     if (promptParam) {
       onParamChange('prompt', promptParam);
@@ -107,7 +110,10 @@ export default function ImageProcessor() {
   const [webpImage, setWebpImage] = useState(null);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState("");
-  const [params, setParams] = useState(defaultParams);
+  const [removeBackground, setRemoveBackground] = useState(false);
+  const [params, setParams] = useState({
+    ...defaultParams,
+  });
   const [loadedTemplates, setLoadedTemplates] = useState([]);
   const [activeSidebar, setActiveSidebar] = useState('settings');
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
@@ -415,13 +421,23 @@ export default function ImageProcessor() {
     handleParamChange('seed', randomSeed.toString());
   };
 
-  // Handles changes to any parameter
+  // Update handleParamChange to handle the special removeBackground case
   const handleParamChange = useCallback((id, value) => {
-    setParams(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  }, []); // Empty dependency array to ensure function remains stable
+    if (id === 'removeBackground') {
+      console.log(`Setting removeBackground to: ${value}`);
+      setRemoveBackground(value); // Update the dedicated state
+      
+      // Log the current state after updating for debugging
+      setTimeout(() => {
+        console.log('Current removeBackground state after update:', removeBackground);
+      }, 0);
+    } else {
+      setParams(prev => ({
+        ...prev,
+        [id]: value
+      }));
+    }
+  }, [removeBackground]); // Add removeBackground to the dependency array
 
   // Main function to process the image with current parameters
   const processImageWithParams = async (file) => {
@@ -485,7 +501,7 @@ export default function ImageProcessor() {
     }
   }, [createInputPreview]);
 
-  // Modified handleGenerate with better error handling
+  // Modified handleGenerate with background removal toggle
   const handleGenerate = async () => {
     if (!selectedFile) {
       setError("Please upload an image first");
@@ -523,37 +539,45 @@ export default function ImageProcessor() {
     setStatus("Starting processing...");
 
     try {
-      // First remove background from the image
-      setStatus("Removing background...");
+      // Use the fileToProcess variable for either original or background-removed image
       let fileToProcess = selectedFile;
       
-      try {
-        console.log("Starting background removal with file:", selectedFile.name, "size:", selectedFile.size);
+      // Only remove background if the toggle is enabled
+      console.log(`Background removal is: ${removeBackground ? 'ENABLED' : 'DISABLED'}`);
+      
+      if (removeBackground) {
+        setStatus("Removing background...");
         
-        // Define progress callback
-        const handleBgProgress = (percentage, key) => {
-          console.log(`Background removal progress: ${percentage}% (${key})`);
-          setStatus(`Removing background: ${percentage}%`);
-        };
-        
-        // Remove background using our imported utility
-        fileToProcess = await removeImageBackground(selectedFile, handleBgProgress);
-        
-        console.log("Background removal successful, got processed file:", fileToProcess.name, "size:", fileToProcess.size);
-        setStatus("Background removed, now generating image...");
-        
-        // Create a preview of the background-removed image (optional)
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          console.log("Preview updated with background-removed image");
-          setInputPreview(reader.result);
-        };
-        reader.readAsDataURL(fileToProcess);
-        
-      } catch (bgError) {
-        console.error("Background removal failed, continuing with original image:", bgError);
-        setStatus("Background removal failed, proceeding with original image...");
-        // Continue with original image if background removal fails
+        try {
+          console.log("Starting background removal with file:", selectedFile.name, "size:", selectedFile.size);
+          
+          // Define progress callback
+          const handleBgProgress = (percentage, key) => {
+            console.log(`Background removal progress: ${percentage}% (${key})`);
+            setStatus(`Removing background: ${percentage}%`);
+          };
+          
+          // Remove background using our imported utility
+          fileToProcess = await removeImageBackground(selectedFile, handleBgProgress);
+          
+          console.log("Background removal successful, got processed file:", fileToProcess.name, "size:", fileToProcess.size);
+          setStatus("Background removed, now generating image...");
+          
+          // Create a preview of the background-removed image (optional)
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            console.log("Preview updated with background-removed image");
+            setInputPreview(reader.result);
+          };
+          reader.readAsDataURL(fileToProcess);
+          
+        } catch (bgError) {
+          console.error("Background removal failed, continuing with original image:", bgError);
+          setStatus("Background removal failed, proceeding with original image...");
+          // Continue with original image if background removal fails
+        }
+      } else {
+        setStatus("Skipping background removal (disabled in settings)...");
       }
 
       setStatus("Processing with Hugging Face...");
@@ -688,7 +712,10 @@ export default function ImageProcessor() {
         <div className="flex-1 overflow-y-auto pb-4 scrollbar">
           {activeSidebar === 'settings' ? (
             <SettingsSidebar
-              params={params}
+              params={{
+                ...params,
+                removeBackground: removeBackground,
+              }}
               handleParamChange={handleParamChange}
               generateRandomSeed={generateRandomSeed}
               parameterDefinitions={parameterDefinitions}
