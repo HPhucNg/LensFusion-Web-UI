@@ -18,7 +18,7 @@ import { TabNavigation } from './TabNavigation';
 import { GenerateButton } from './GenerateButton';
 import { MobileMenuButton } from './MobileMenuButton';
 import { ImageContainer } from './ImageContainer';
-import { FullscreenModal } from './FullscreenModal';
+import ViewModal from './ViewModal';
 import ResizePreview from "./ResizePreview";
 
 import { useSearchParams } from 'next/navigation'; // to pull id from URL
@@ -676,7 +676,7 @@ export default function ImageProcessor() {
     }
   };
 
-  const openFullscreen = (imageUrl) => {
+  const openFullscreen = (imageUrl, isInputImage = false) => {
     setFullscreenImage(imageUrl);
     setIsFullscreen(true);
   };
@@ -750,7 +750,7 @@ export default function ImageProcessor() {
             imageSrc={inputPreview}
             altText="Input preview"
             onClear={clearImage}
-            onFullscreen={() => openFullscreen(inputPreview)}
+            onFullscreen={() => openFullscreen(inputPreview, true)}
             uploadHandler={handleImageUpload}
             isInput={true}
             onResize={() => handleResize(inputPreview)}
@@ -760,8 +760,16 @@ export default function ImageProcessor() {
             imageSrc={outputImage}
             altText="Generated output"
             onDownload={() => handleDownload(outputImage)}
-            onFullscreen={() => openFullscreen(outputImage)}
+            onFullscreen={() => openFullscreen(outputImage, false)}
             isInput={false}
+            onUpscale={() => console.log('Upscale')} 
+            onRetouch={() => console.log('Retouch')}
+            onInpaint={() => console.log('Inpaint')}
+            onExpand={() => console.log('Expand')}
+            onRemove={() => console.log('Remove')}
+            onRegenerate={() => handleGenerate()}
+            onReprompt={() => console.log('Reprompt')}
+            prompt={params.prompt}
           />
         </div>
       </div>
@@ -834,10 +842,19 @@ export default function ImageProcessor() {
       )}
       
       {/* Fullscreen Modal */}
-      <FullscreenModal
-        isFullscreen={isFullscreen}
-        fullscreenImage={fullscreenImage}
-        closeFullscreen={closeFullscreen}
+      <ViewModal
+        isOpen={isFullscreen}
+        onClose={closeFullscreen}
+        imageSrc={fullscreenImage}
+        prompt={params.prompt}
+        onUpscale={() => console.log('Upscale')} 
+        onRetouch={() => console.log('Retouch')}
+        onInpaint={() => console.log('Inpaint')}
+        onExpand={() => console.log('Expand')}
+        onRemove={() => console.log('Remove')}
+        onRegenerate={() => handleGenerate()}
+        onReprompt={() => console.log('Reprompt')}
+        onDownload={() => fullscreenImage && handleDownload(fullscreenImage)}
       />
 
       {/* Add the SearchParamsHandler with Suspense */}
