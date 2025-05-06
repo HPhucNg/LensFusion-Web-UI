@@ -16,7 +16,7 @@ function page() {
         {/* left section */}
         <div className="w-full md:w-1/3">
           <img 
-            src='/about.webp' 
+            src='https://firebasestorage.googleapis.com/v0/b/lensfusion-fc879.firebasestorage.app/o/public_resources%2Fabout%2Fabout.webp?alt=media&token=578c9046-5a42-49ec-9f21-55a04b3d2562' 
             alt="About Us"
             className="w-full h-full object-cover" 
           />

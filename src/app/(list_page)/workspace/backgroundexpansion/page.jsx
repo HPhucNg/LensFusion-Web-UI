@@ -6,7 +6,8 @@ import DownloadOptions from '@/components/DownloadOptions';
 import { GenerateButton } from '../backgroundgeneration/_components/GenerateButton';
 import WorkspaceNavbar from '@/components/WorkspaceNavbar';
 import { saveToGallery } from '@/lib/saveToGallery';
-import { auth } from '@/firebase/FirebaseConfig';
+import { auth, db } from '@/firebase/FirebaseConfig';
+import { doc, updateDoc, getDoc, increment } from 'firebase/firestore';
 
 
 export default function Home() {
@@ -18,15 +19,26 @@ export default function Home() {
     const [isLoading, setIsLoading] = useState(false);
     const [sliderPosition, setSliderPosition] = useState(50); // for the sliding effect of prev and generated image 
 
-    const [currentUser, setCurrentUser] = useState(null);
+    const [user, setUser] = useState(null);
+    const [tokens, setTokens] = useState(0);
+    const [insufficientTokens, setInsufficientTokens] = useState(false);
 
-     useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged(user => {
-          setCurrentUser(user);
+    // get user tokens count
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+          if (currentUser) {
+            setUser(currentUser);
+            const userRef = doc(db, "users", currentUser.uid);
+            const userDoc = await getDoc(userRef);
+            if (userDoc.exists()) {
+                const tokenCount = userDoc.data().tokens || 0;
+                setTokens(tokenCount);
+                setInsufficientTokens(tokenCount < 10);                
+            }
+          }
         });
-        
         return () => unsubscribe();
-      }, []);
+    }, []);
 
     // file input change and set the selected file
     const handleFileChange = (event) => {
@@ -66,8 +78,8 @@ export default function Home() {
     };
 
     const handleWidthChange = (event) => {
-        const newWidth = event.target.value
-        const ratioWidth = ratioSettings[ratio].width
+        const newWidth = Number(event.target.value);
+        const ratioWidth = ratioSettings[ratio]?.width
 
         setParams((prevParams) => ({
             ...prevParams,
@@ -80,7 +92,7 @@ export default function Home() {
         
     }
     const handleHeightChange = (event) => {
-        const newHeight = event.target.value
+        const newHeight = Number(event.target.value);
         const ratioHeight = ratioSettings[ratio].height
 
         setParams((prevParams) => ({
@@ -103,9 +115,25 @@ export default function Home() {
 
     // for calling API when user is ready
     const handleGenerateClick = async () => {
+        if (tokens < 10) {
+            setInsufficientTokens(true);
+            console.warn("Insufficient tokens");
+            return;
+          }
+
         setIsLoading(true); // start loading
         const result = await generateImage(params);
         setIsLoading(false); // stop loading once the request completes
+
+        // deduct tokens
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, {
+            tokens: increment(-10),
+          });
+          
+        const userDoc = await getDoc(userRef);
+        setTokens(userDoc.data().tokens);
+        
 
         if (result) {
             // set both images
@@ -117,11 +145,11 @@ export default function Home() {
             if (image2_base64) {
                 setGeneratedImage(image2_base64);
                 // auto-save to gallery if the user is logged in
-                if (currentUser) {
+                if (user) {
                     try {
                         await saveToGallery(
                             image2_base64, 
-                            currentUser.uid, 
+                            user.uid, 
                             'background-expansion', 
                         );
                     } catch (saveError) {
@@ -281,15 +309,15 @@ export default function Home() {
                                     </label>
                                 )}
                             </div>
-                            <div className='flex-1 flex flex-col gap-[16px] w-full p-2 bg-gray-900 rounded-lg pb-4'> {/* change settings */}
-                                <div className='flex text-xs flex-wrap font-medium text-gray-300'>
+                            <div className='flex-1 flex flex-col gap-[16px] w-full p-2 bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900 rounded-lg pb-4'> {/* change settings */}
+                                <div className='flex text-xs flex-wrap font-medium text-gray-500'>
                                     <div className='flex-grow  p-2'> {/* expected ratio */}
                                         <h3 className='pb-2'>Expected Ratio</h3>
                                         <div className='flex flex-wrap'>
                                         {/* 9:16 Radio Button */}
                                         <label
                                             htmlFor='9:16'
-                                            className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                            className='border rounded-md p-2 border-[var(--border-gray)] mr-2 flex items-center cursor-pointer'
                                         >
                                             <input
                                             type='radio'
@@ -306,7 +334,7 @@ export default function Home() {
                                         {/* 16:9 Radio Button */}
                                         <label
                                             htmlFor='16:9'
-                                            className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                            className='border rounded-md p-2 border-[var(--border-gray)] mr-2 flex items-center cursor-pointer'
                                         >
                                             <input
                                             type='radio'
@@ -323,7 +351,7 @@ export default function Home() {
                                         {/* 1:1 Radio Button */}
                                         <label
                                             htmlFor='1:1'
-                                            className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                            className='border rounded-md p-2 border-[var(--border-gray)] mr-2 flex items-center cursor-pointer'
                                         >
                                             <input
                                             type='radio'
@@ -340,7 +368,7 @@ export default function Home() {
                                         {/* Custom Radio Button */}
                                         <label
                                             htmlFor='ratio-custom'
-                                            className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                            className='border rounded-md p-2 border-[var(--border-gray)] mr-2 flex items-center cursor-pointer'
                                         >
                                             <input
                                             type='radio'
@@ -360,7 +388,7 @@ export default function Home() {
                                         <select
                                             value={params.alignment}
                                             onChange={(e) => handleParamChange('alignment', e.target.value)}
-                                            className="bg-transparent w-full border border-gray-700 rounded-md p-2 text-gray-300"
+                                            className="bg-transparent w-full border border-[var(--border-gray)] rounded-md p-2 text-gray-300"
                                         >
                                             <option value="Middle">Middle</option>
                                             <option value="Left">Left</option>
@@ -370,10 +398,10 @@ export default function Home() {
                                         </select>
                                     </div>
                                 </div>
-                                <div className='rounded-md text-xs font-medium p-2 text-gray-300'> {/* advanced settings */}
-                                    <h3 className='flex justify-between text-sm font-semibold text-gray-300'>Advanced settings</h3>
+                                <div className='rounded-md text-xs font-medium p-2'> {/* advanced settings */}
+                                    <h3 className='flex justify-between text-sm font-semibold '>Advanced settings</h3>
                         
-                                        <div className='flex rounded-md mt-2 mb-4'>
+                                        <div className='flex rounded-md mt-2 mb-4 text-gray-500'>
                                             <div className='flex-grow '>
                                                 <h3>Target Width: {params.width}</h3>
                                                 <input
@@ -397,7 +425,7 @@ export default function Home() {
                                             />
                                             </div>
                                         </div>
-                                        <div className='rounded-md mb-4'>
+                                        <div className='rounded-md mb-4 text-gray-500'>
                                             <h3>Steps: {params.num_inference_steps}</h3>
                                             <input
                                                 type="range"
@@ -410,12 +438,12 @@ export default function Home() {
                                         </div>
                                         
                                         <div className='rounded-md mb-2'>
-                                            <h3 className='pb-2'>Resize Input Image</h3>
+                                            <h3 className='pb-2 text-gray-500'>Resize Input Image</h3>
                                             <div className='flex flex-wrap'>
                                                 {/* full option */}
                                                 <label
                                                     htmlFor='Full'
-                                                    className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                                    className='border rounded-md p-2 border-[var(--border-gray)] mr-2 flex items-center cursor-pointer'
                                                 >
                                                     <input
                                                     type='radio'
@@ -432,7 +460,7 @@ export default function Home() {
                                                 {/* 50% option */}
                                                 <label
                                                     htmlFor='50'
-                                                    className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                                    className='border rounded-md p-2 border-[var(--border-gray)] mr-2 flex items-center cursor-pointer'
                                                 >
                                                     <input
                                                     type='radio'
@@ -449,7 +477,7 @@ export default function Home() {
                                                 {/* 33% option */}
                                                 <label
                                                     htmlFor='33'
-                                                    className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                                    className='border rounded-md p-2 border-[var(--border-gray)] mr-2 flex items-center cursor-pointer'
                                                 >
                                                     <input
                                                     type='radio'
@@ -466,7 +494,7 @@ export default function Home() {
                                                 {/* 25% option */}
                                                 <label
                                                     htmlFor='25'
-                                                    className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                                    className='border rounded-md p-2 border-[var(--border-gray)] mr-2 flex items-center cursor-pointer'
                                                 >
                                                     <input
                                                     type='radio'
@@ -483,7 +511,7 @@ export default function Home() {
                                                 {/* custom option */}
                                                 <label
                                                     htmlFor='resize-custom'
-                                                    className='border rounded-md p-2 border-gray-700 mr-2 flex items-center cursor-pointer'
+                                                    className='border rounded-md p-2 border-[var(--border-gray)] mr-2 flex items-center cursor-pointer'
                                                 >
                                                     <input
                                                     type='radio'
@@ -505,6 +533,8 @@ export default function Home() {
                                     handleGenerate={handleGenerateClick} 
                                     isProcessing={isLoading} 
                                     selectedFile={selectedImage} 
+                                    userTokens={tokens}
+                                    insufficientTokens={insufficientTokens}
                                 />
                             </div>
                         </div>

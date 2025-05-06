@@ -58,24 +58,26 @@ export const generateImage = async (params) => {
 
          // handle the image file using handle_file (from api_recorder - ensure the proper file handling for Gradio)
         const imageFile = handleFile(image);  // `image` is the file URL or file path
-
+        const sanitizeDimension = (val, min = 720, max = 1536) =>
+            Math.max(min, Math.min(max, Math.round(Number(val) / 64) * 64));
+          
         // prediction request 
         const result = await client.predict("/infer", { 
-            image: imageFile,  
-            width: width,
-            height: height,
-            overlap_percentage: overlap_percentage,
-            num_inference_steps: num_inference_steps,
+            image: handleFile(image),
+            width: sanitizeDimension(width),
+            height: sanitizeDimension(height),          
+            overlap_percentage: Number(overlap_percentage),
+            num_inference_steps: Number(num_inference_steps),
             resize_option: resize_option,
-            custom_resize_percentage: custom_resize_percentage,
-            prompt_input: prompt_input,
+            custom_resize_percentage: Number(custom_resize_percentage),
+            prompt_input: String(prompt_input || ""),
             alignment: alignment,
-            overlap_left: overlap_left,
-            overlap_right: overlap_right,
-            overlap_top: overlap_top,
-            overlap_bottom: overlap_bottom
-        });
-
+            overlap_left: Boolean(overlap_left),
+            overlap_right: Boolean(overlap_right),
+            overlap_top: Boolean(overlap_top),
+            overlap_bottom: Boolean(overlap_bottom),
+          });
+          
         // result to debug
         console.log("Prediction result:", result);
 

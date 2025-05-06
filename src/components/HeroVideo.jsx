@@ -67,7 +67,7 @@ export default function HeroVideo() {
         poster="/change_background.jpg"
         style={{ opacity: isPlaying ? 1 : 0 }}
       >
-        <source src="/hero-video.mp4" type="video/mp4" />
+        <source src="https://firebasestorage.googleapis.com/v0/b/lensfusion-fc879.firebasestorage.app/o/public_resources%2Fhomepage%2Fvideos%2Fhero-video.mp4?alt=media&token=479526d2-1b4e-4734-911c-8e25fe81750f" type="video/mp4" />
         {/* Fallback for browsers that don't support video */}
         <img 
           src="/change_background.jpg" 
