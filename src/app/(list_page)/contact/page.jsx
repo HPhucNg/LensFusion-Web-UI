@@ -62,16 +62,16 @@ function page() {
 
   return (
     <>
-    <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden'>
+    <div className='min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black  font-sans relative overflow-hidden'>
       <Navbar />
       <div className="container mx-auto px-4 py-12">
         <h1 className="text-4xl md:text-3xl lg:text-5xl font-bold text-center mb-8">Contact Us</h1>
         <main className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-[var(--card-background)] dark:bg-gray-800 dark:border-gray-700 border-[var(--border-gray)]">
             <CardHeader>
-              <CardTitle className="text-2xl text-white">We are here to help</CardTitle>
+              <CardTitle className="text-2xl ">We are here to help</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 text-gray-300">
+            <CardContent className="space-y-4 text-gray-400">
               <p>
                 If you have any questions about LensFusion, or would like to leave us a
                 comment, feel free to contact us.
@@ -83,9 +83,9 @@ function page() {
           </Card>
 
 
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-[var(--card-background)] dark:border-gray-700 dark:bg-gray-800 border-[var(--border-gray)]">
             <CardHeader>
-              <CardTitle className="text-2xl text-white">Send us a message</CardTitle>
+              <CardTitle className="text-2xl ">Send us a message</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -95,7 +95,7 @@ function page() {
                     name="subject"
                     value={formData.subject}
                     onChange={handleChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white"
+                    className="w-full bg-gradient-to-r from-gray-700 via-gray-700 to-gray-700 border border-[var(--border-gray)] rounded-lg p-2 "
                   >
                   <option value="">Select Option</option>
                   <option value="trouble-shooting">Trouble-shooting</option>
@@ -114,7 +114,7 @@ function page() {
                   placeholder="Enter your name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="bg-gray-700 border-gray-600 text-white"
+                  className="bg-gradient-to-r from-gray-700 via-gray-700 to-gray-700 border border-[var(--border-gray)]"
 
                 /><br />
                 
@@ -126,7 +126,7 @@ function page() {
                   placeholder='Enter your email'
                   value={formData.email}
                   onChange={handleChange}
-                  className="bg-gray-700 border-gray-600 text-white"
+                  className="bg-gradient-to-r from-gray-700 via-gray-700 to-gray-700 border border-[var(--border-gray)]"
 
                 /><br />
                 
@@ -138,7 +138,7 @@ function page() {
                   value={formData.message}
                   onChange={handleChange}
                   rows="5"  // row size for better UX
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white"
+                  className="w-full bg-gradient-to-r from-gray-700 via-gray-700 to-gray-700 border border-[var(--border-gray)] rounded-lg p-2 "
 
                 /><br />
               </div>

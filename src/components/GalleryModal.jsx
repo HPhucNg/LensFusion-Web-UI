@@ -243,7 +243,7 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 text-white flex justify-center items-center">
-            <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto min-h-[550px] max-h-[90vh] overflow-y-auto p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}>
+            {!isCommunityModalOpen && ( <>  <div className="border-2 border-transparent rounded-[50px] w-full max-w-3xl h-auto min-h-[550px] max-h-[90vh] overflow-y-auto p-6 md:p-8" style={{ background: 'var(--modal-background)', backdropFilter: 'var(--modal-backdrop)'}}>
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-extrabold">Manage Image</h1>
                     <button onClick={closeModal} className="w-6 h-7 transform hover:scale-90 cursor-pointer bg-[var(--border-gray)] rounded-lg backdrop-blur-sm border">
@@ -270,7 +270,7 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
                     </div>
 
                     {/* Right side - menu */}
-                {!isCommunityModalOpen && ( <>   <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-4">
                         <div>
                                                     {/* Download options */}
                         <div className="w-full mb-4 space-y-4">
@@ -382,9 +382,10 @@ function GalleryModal({ closeModal, image, onDelete}) {  // accept the 'image' p
                             Delete
                         </button>
                     </div>
-                    </>)}
+                   
                 </div>
-            </div>
+                
+            </div>  </>)}
             {isCommunityModalOpen && (
             <Modal 
                 closeModal={closeCommunityModal} 
