@@ -1014,7 +1014,7 @@ export default function UserProfile() {
         const userData = userDoc.data();
         setUserSettings(userData);
          // lock tokens for 60 days
-        if (userData.lockedTokens && userData.lockedTokensExpirationDate) {
+         if (userData && userData.lockedTokens && userData.lockedTokensExpirationDate) {
           const expirationDate = userData.lockedTokensExpirationDate.toDate 
             ? userData.lockedTokensExpirationDate.toDate() 
             : new Date(userData.lockedTokensExpirationDate);
@@ -1029,8 +1029,9 @@ export default function UserProfile() {
             setUserSettings(updatedDoc.data());
           } else if (new Date() > expirationDate && userData.tokens > 0) {
             // Delete users tokens after 60 days and inactive
+            const freeTrialTokens = userData.freeTrialTokens || 0;
             await updateDoc(userDocRef, {
-              tokens: 0,
+              tokens: freeTrialTokens,
               lockedTokens: null,
               lockedTokensExpirationDate: null
             });
@@ -1070,7 +1071,44 @@ export default function UserProfile() {
       setIsLoadingImages(false);
     }
   };
-  
+
+  // Show free trial message - calculates number of days are left in users free trial
+  const useFreeTrialDays = (createdAt, hasFreeTrialTokens) => {
+    if (!createdAt || !hasFreeTrialTokens) return 0;
+    
+    const creationDate = typeof createdAt.toDate === 'function'
+      ? createdAt.toDate() 
+      : new Date(createdAt);
+    const expirationDate = new Date(creationDate);
+    expirationDate.setDate(expirationDate.getDate() + 7);
+    
+    const now = new Date();
+    return Math.max(0, Math.ceil((expirationDate - now) / (1000 * 60 * 60 * 24)));
+  };
+
+  // Message to user to subscribe and show after freeTrialToken expired
+  const subscribeToUseCreditsMessage = (subscriptionStatus, createdAt) => {
+    if (subscriptionStatus !== 'inactive' || !createdAt) {
+      return false;
+    }
+    
+    const creationDate = typeof createdAt.toDate === 'function'
+      ? createdAt.toDate() 
+      : new Date(createdAt);
+    
+    const now = new Date();
+    const daysSinceCreation = Math.floor((now - creationDate) / (1000 * 60 * 60 * 24));
+    
+    return daysSinceCreation > 7;
+  };
+
+  const daysLeft = useFreeTrialDays(userSettings?.createdAt, userSettings?.freeTrialTokens > 0);
+
+  const showMessage = subscribeToUseCreditsMessage(
+    userSettings?.subscriptionStatus, 
+    userSettings?.createdAt
+  );
+
   // Fetch user images when user changes
   useEffect(() => {
     if (user) {
@@ -1181,7 +1219,7 @@ export default function UserProfile() {
               <p className="text-gray-400 text-lg mb-4">
                 {user?.email || "No email provided"}
               </p>
-              <div className="w-full justify-start text-center py-3 border-2 border-purple-400 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full px-4 sm:px-8 mb-6">
+              <div className="w-full justify-start text-center py-3 border-2 border-purple-400 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full px-4 sm:px-8 mb-3">
                 <div className="flex items-center justify-center gap-2 w-full overflow-visible">
                   <span className="text-lg font-semibold whitespace-nowrap">Credits: {tokens}</span>
                   {userSettings?.subscriptionStatus === 'inactive' && userSettings?.lockedTokens > 0 && (
@@ -1189,23 +1227,38 @@ export default function UserProfile() {
                   )}
                 </div>
               </div>
+
+              {/* Only show free trial message if freeTrialTokens exist AND trial hasn't expired */}
+              {(userSettings?.freeTrialTokens > 0) && (
+              <div className="w-full justify-start text-center py-2">
+                <div className="text-xs text-gray-400">
+                  Free trial credits of  {userSettings.freeTrialTokens} / 50 {daysLeft > 0 ? `will expire in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}` : 'available'}
+                </div>
+              </div>
+            )}
+
               {/* Display 60 day countdown before resetting credits */}
-              {userSettings?.lockedTokens > 0 && (
-                <div className=" text-sm">
-                  <span className="text-gray-400">
-                    {Math.ceil((new Date(userSettings.lockedTokensExpirationDate.toDate()) - new Date()) / (1000 * 60 * 60 * 24))} days remaining
+              {userSettings?.lockedTokens > 0 && userSettings?.lockedTokensExpirationDate && (
+                <div className=" text-sm text-center">
+                  <span className="text-yellow-600">
+                    {Math.ceil((new Date(
+                      typeof userSettings.lockedTokensExpirationDate.toDate === 'function' 
+                        ? userSettings.lockedTokensExpirationDate.toDate() 
+                        : new Date(userSettings.lockedTokensExpirationDate)
+                    ) - new Date()) / (1000 * 60 * 60 * 24))} days remaining until your credits reset
+                    <br/> Subscribe to enable credits
                   </span>
                 </div>
               )}
-              {/* Message to user to subscribe */}
-              {userSettings?.subscriptionStatus === 'inactive' && tokens > 0 && (
+              {/* Message to user to subscribe and show after freeTrialToken expired */}
+              {showMessage && (
                 <div className="mb-4 text-sm">
                   <span className="text-gray-400">
                     Subscribe to enable credits
                   </span>
                 </div>
               )}
-              <div className="w-full space-y-3">
+              <div className="w-full space-y-3 mt-4">
                 <Button variant="outline" onClick={() => setIsManageAccountOpen(true)} className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700 overflow-hidden transition-all duration-300">
                   <Settings className="mr-3 h-5 w-5 " />
                   <span className="text-lg">Manage Account</span>
