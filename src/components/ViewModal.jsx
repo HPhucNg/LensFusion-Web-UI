@@ -128,7 +128,7 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
                         <button 
                             onClick={handlePrevious} 
                             disabled={currentIndex === 0} 
-                            className='flex items-center justify-center h-full px-2 text-3xl text-white/70 hover:text-white transition-colors'
+                            className='absolute left-2 top-1/2 transform -translate-y-1/2 z-30 flex items-center justify-center h-12 w-12 text-3xl text-white/70 hover:text-white transition-colors bg-black/30 hover:bg-black/50 rounded-full'
                         >
                             &lt;
                         </button>
@@ -174,7 +174,7 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
                         <button 
                             onClick={handleNext} 
                             disabled={currentIndex === posts.length - 1} 
-                            className='flex items-center justify-center h-full px-2 text-3xl text-white/70 hover:text-white transition-colors'
+                            className='absolute right-2 top-1/2 transform -translate-y-1/2 z-30 flex items-center justify-center h-12 w-12 text-3xl text-white/70 hover:text-white transition-colors bg-black/30 hover:bg-black/50 rounded-full'
                         >
                             &gt;
                         </button>
@@ -281,34 +281,34 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
             
             {/* Comments overlay */}
             {showCommentsOverlay && (
-                <div className="absolute top-0 right-0 w-full md:w-[50%] h-full bg-[var(--card-background)] backdrop-blur-lg z-50 rounded-xl shadow-lg p-4 transition-all duration-300 flex">
+                <div className="absolute top-0 right-0 w-full md:w-[450px] h-full bg-[var(--card-background)]/95 backdrop-blur-xl z-20 rounded-xl shadow-xl p-6 transition-all duration-300 flex border border-gray-700/30">
                     {/* close button */}
-                    <button onClick={handleCloseComments} className="absolute top-2 right-2 p-2 bg-gray-700/70 hover:bg-gray-600/90 rounded-full backdrop-blur-sm border border-gray-500/30 shadow-sm transition-all duration-200 hover:scale-105">
+                    <button onClick={handleCloseComments} className="absolute top-4 right-4 p-2 bg-gray-700/70 hover:bg-gray-600/90 rounded-full backdrop-blur-sm border border-gray-500/30 shadow-sm transition-all duration-200 hover:scale-105">
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                     
                     <div className='flex flex-col w-full'>
-                        <p className='font-semibold text-md p-2 '>{comments.length} Comments</p>
-                        <div className="p-3 w-[90%] flex-1 overflow-y-auto">
+                        <p className='font-semibold text-lg pb-2 border-b border-gray-700/30'>{comments.length} Comments</p>
+                        <div className="py-4 w-full flex-1 overflow-y-auto scrollbar-thin pr-2 space-y-3">
                             {comments.map((comment) => (
-                                <div key={comment.id} className="text-sm hover:bg-[var(--border-gray)] group mb-2 p-2 rounded-lg">
-                                    <div className='flex justify-between'>
-                                        <strong className='font-semibold'>{comment.createdBy}</strong>
+                                <div key={comment.id} className="text-sm hover:bg-[var(--border-gray)]/50 group p-3 rounded-lg transition-all duration-200">
+                                    <div className='flex justify-between items-center'>
+                                        <strong className='font-semibold text-white/90'>{comment.createdBy}</strong>
                                         {comment.createdByUID === user?.uid && state.editingCommentId !== comment.id && (
-                                        <div className='invisible group-hover:visible'>  
+                                        <div className='invisible group-hover:visible transition-opacity'>  
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                 <button className="w-8 transform hover:scale-90">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-6 h-6">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5 text-gray-400">
                                                         <circle cx="5" cy="12" r="2" />
                                                         <circle cx="12" cy="12" r="2" />
                                                         <circle cx="19" cy="12" r="2" />
                                                     </svg>
                                                 </button>
                                                 </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-30  bg-[var(--card-background)] border-[var(--border-gray)]">
+                                                    <DropdownMenuContent align="end" className="w-36 bg-[var(--card-background)] border-[var(--border-gray)]">
                                                         <DropdownMenuItem onClick={() => handleEditComment(comment.id, comment.commentText)} className="text-slate-400 hover:text-white cursor-pointer">
                                                             Edit Comment
                                                         </DropdownMenuItem>
@@ -325,48 +325,56 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
                                             <textarea
                                                 value={editedCommentText}
                                                 onChange={handleEditedCommentChange}
-                                                className="w-full px-3 py-2 mt-1 bg-gray-700/50 border border-gray-600 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                className="w-full px-3 py-2 mt-2 bg-gray-700/50 border border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                                 rows="2"
                                             />
-                                            <div className="flex justify-end mt-1 space-x-2">
+                                            <div className="flex justify-end mt-2 space-x-2">
                                                 <button
                                                     onClick={() => handleEditComment(null, '')}
-                                                    className="px-2 py-1 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-500"
+                                                    className="px-3 py-1.5 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-500 transition-colors"
                                                 >
                                                     Cancel
                                                 </button>
                                                 <button
                                                     onClick={handleSaveEdit}
-                                                    className="px-2 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-500"
+                                                    className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-500 transition-colors"
                                                 >
                                                     Save
                                                 </button>
                                             </div>
                                         </div>
                                     ) : (
-                                        <p className="mt-1">{comment.commentText}</p>
+                                        <p className="mt-1 text-white/80">{comment.commentText}</p>
                                     )}
                                 </div>
                             ))}
                         </div>
                         
                         {/* Add comment form */}
-                        <div className="mt-auto p-3 border-t border-gray-700/30">
-                            <form onSubmit={handleSubmit} className="flex">
-                                <textarea
-                                    value={newComment}
-                                    onChange={handleNewCommentChange}
-                                    placeholder="Add a comment..."
-                                    className="flex-1 bg-gray-800/50 border border-gray-700 rounded-l-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[40px] max-h-[80px] resize-none"
-                                />
-                                <button
-                                    type="submit"
-                                    className="bg-blue-500/90 hover:bg-blue-500 px-3 text-white rounded-r-md"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                                    </svg>
-                                </button>
+                        <div className="mt-auto pt-3 border-t border-gray-700/30">
+                            <form onSubmit={handleSubmit} className="flex flex-col space-y-2">
+                                <div className="relative rounded-lg shadow-sm">
+                                    <textarea
+                                        value={newComment}
+                                        onChange={handleNewCommentChange}
+                                        placeholder="Add a comment..."
+                                        className="w-full bg-gray-800/80 border border-gray-700/70 rounded-lg p-3 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/70 focus:border-purple-500/70 min-h-[60px] max-h-[100px] resize-none pr-14"
+                                    />
+                                    <button
+                                        type="submit"
+                                        className={`absolute bottom-2.5 right-2.5 p-2.5 text-white rounded-full transition-all duration-300 ease-out flex items-center justify-center shadow-md ${
+                                            newComment.trim() 
+                                            ? 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 hover:scale-110 hover:rotate-12 hover:shadow-lg' 
+                                            : 'bg-gray-600/70 cursor-not-allowed'
+                                        }`}
+                                        disabled={!newComment.trim()}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                        </svg>
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
