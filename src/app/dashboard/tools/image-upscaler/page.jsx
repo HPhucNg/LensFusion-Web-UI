@@ -110,6 +110,19 @@ export default function ImageUpscaler() {
     setError(null);
     setSuccess(null);
     
+    // Locked token for unsubscribed users
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+
+      if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
+        setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
+        setIsProcessing(false);
+        return;
+      }
+    }
+
     try {
       const response = await fetch(inputImage);
       const blob = await response.blob();

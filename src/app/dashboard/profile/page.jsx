@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition, useCallback } from 'react';
 import Image from "next/image";
 import { useRouter } from 'next/navigation';
 import { Settings, User2, Share2, Moon, Sun, Check, Lock, Bell, Shield, X, Camera, Smartphone, AlertTriangle } from 'lucide-react';
@@ -30,14 +30,15 @@ import {
   getDoc, 
   deleteDoc, 
   updateDoc,
-  serverTimestamp 
+  serverTimestamp ,
+  onSnapshot
 } from 'firebase/firestore';
 import { 
   deleteUser, 
   updateProfile
 } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { applyInterfaceSettings, getAccentColorValue, getFontSizeValue, getGridViewClasses } from '@/lib/interfaceUtils';
 
 // Account Management Dialog Component
@@ -911,6 +912,9 @@ export default function UserProfile() {
   const [userImages, setUserImages] = useState([]); 
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isPending, startTransition] = useTransition();
+  const [prefetchedImages, setPrefetchedImages] = useState({});
+  const [hoveredPage, setHoveredPage] = useState(null);
   //const [showCommunityModal, setShowCommunityModal] = useState(false);
   
   // Use the theme hook instead of inline theme logic
@@ -937,10 +941,21 @@ export default function UserProfile() {
 
   const imagesPerPage = 8;
 
+  // Reset to page 1 when active category changes
+  useEffect(() => {
+    // Reset to first page when category changes
+    setCurrentPage(1);
+    // Clear prefetched images state since we're changing categories
+    setPrefetchedImages({});
+  }, [activeCategory]);
+
   // Get selected category images in user gallery
   const getSelectedCategoryImages = () => {
     if (activeCategory === -1) {
       return userImages;
+    } else if (activeCategory === -2) { // Special case for Community category
+      // Return only images that have a communityPostId set
+      return userImages.filter(image => image.communityPostId || image.communityPost);
     } else {
       const selectedCategory = categoryData[activeCategory]?.name;
       
@@ -953,16 +968,80 @@ export default function UserProfile() {
   };
 
   const categoryImages = getSelectedCategoryImages();
-  const totalPages = Math.ceil(categoryImages.length / imagesPerPage);
+  const totalPages = Math.max(1, Math.ceil(categoryImages.length / imagesPerPage));
+  
+  // Adjust current page if it exceeds the total pages after category change
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+  
   // Paginate the images
   const startIndex = (currentPage - 1) * imagesPerPage;
   const endIndex = startIndex + imagesPerPage;
   const paginatedImages = categoryImages.slice(startIndex, endIndex);
 
-  // Handle page click
-  const handlePageClick = (page) => {
-  setCurrentPage(page);
-  };
+  // Handle page click with transition
+  const handlePageClick = useCallback((page) => {
+    if (page === currentPage) return;
+    
+    // Use transition to mark pagination state updates as non-urgent
+    startTransition(() => {
+      setCurrentPage(page);
+    });
+  }, [currentPage]);
+
+  // Prefetch images for a specific page
+  const prefetchImagesForPage = useCallback((page) => {
+    if (prefetchedImages[page] || !categoryImages.length) return;
+    
+    const pageStartIndex = (page - 1) * imagesPerPage;
+    const pageEndIndex = pageStartIndex + imagesPerPage;
+    const pageImages = categoryImages.slice(pageStartIndex, pageEndIndex);
+    
+    // Instead of using new Image(), which conflicts with Next.js's Image component,
+    // we'll just mark these pages as prefetched without creating actual image elements
+    if (typeof window !== 'undefined') {
+      // Only run this on the client side
+      pageImages.forEach(image => {
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = image.img_data;
+        link.as = 'image';
+        document.head.appendChild(link);
+      });
+    }
+    
+    // Store prefetched status
+    setPrefetchedImages(prev => ({
+      ...prev,
+      [page]: true
+    }));
+  }, [categoryImages, imagesPerPage, prefetchedImages]);
+
+  // Handle mouse enter on pagination button
+  const handlePaginationHover = useCallback((page) => {
+    setHoveredPage(page);
+    prefetchImagesForPage(page);
+  }, [prefetchImagesForPage]);
+
+  // Prefetch adjacent pages when current page changes
+  useEffect(() => {
+    if (currentPage > 1) {
+      prefetchImagesForPage(currentPage - 1);
+    }
+    if (currentPage < totalPages) {
+      prefetchImagesForPage(currentPage + 1);
+    }
+  }, [currentPage, prefetchImagesForPage, totalPages]);
+
+  // Prefetch first page images on initial load
+  useEffect(() => {
+    if (categoryImages.length > 0) {
+      prefetchImagesForPage(1);
+    }
+  }, [categoryImages, prefetchImagesForPage]);
 
   // Handle delete image in child component and show in parent
   const handleImageDelete = (imageId) => {
@@ -988,6 +1067,19 @@ export default function UserProfile() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        setUserSettings(docSnapshot.data());
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [user]);
+
   // Helper functions
   const fetchUserSettings = async () => {
     if (!user) return;
@@ -999,7 +1091,37 @@ export default function UserProfile() {
       if (userDoc.exists()) {
         const userData = userDoc.data();
         setUserSettings(userData);
-        
+         // lock tokens for 60 days
+        if (userData.lockedTokens && userData.lockedTokensExpirationDate) {
+          const expirationDate = userData.lockedTokensExpirationDate.toDate 
+            ? userData.lockedTokensExpirationDate.toDate() 
+            : new Date(userData.lockedTokensExpirationDate);
+          
+          if (userData.subscriptionStatus === 'active' || userData.subscriptionStatus === 'canceling') {
+            // Clear locked tokens after user subscribes back to plan
+            await updateDoc(userDocRef, {
+                lockedTokens: null,
+                lockedTokensExpirationDate: null
+            });
+            const updatedDoc = await getDoc(userDocRef);
+            setUserSettings(updatedDoc.data());
+          } else if (new Date() > expirationDate && userData.tokens > 0) {
+            // Delete users tokens after 60 days and inactive
+            await updateDoc(userDocRef, {
+              tokens: 0,
+              lockedTokens: null,
+              lockedTokensExpirationDate: null
+            });
+              
+            // Refresh the data after update
+            const updatedDoc = await getDoc(userDocRef);
+            setUserSettings(updatedDoc.data());
+          } else {
+            setUserSettings(userData);
+          }
+        } else {
+          setUserSettings(userData);
+      }
         if (userData.interfaceSettings) {
           applyInterfaceSettings(userData.interfaceSettings);
         }
@@ -1012,6 +1134,7 @@ export default function UserProfile() {
   const fetchUserImages = async (user) => {
     setIsLoadingImages(true);
     try {
+      // Fetch without orderBy to avoid requiring composite index
       const userImagesRef = collection(db, 'user_images');
       const q = query(userImagesRef, where('userID', '==', user.uid));
       const querySnapshot = await getDocs(q);
@@ -1019,7 +1142,22 @@ export default function UserProfile() {
         ...doc.data(),
         uid: doc.id
       }));
-      setUserImages(images);
+      
+      // Sort images by createdAt on the client side
+      const sortedImages = images.sort((a, b) => {
+        // Handle different timestamp formats
+        const getTimestamp = (item) => {
+          if (!item.createdAt) return 0;
+          if (item.createdAt.toDate) return item.createdAt.toDate().getTime();
+          if (item.createdAt.seconds) return item.createdAt.seconds * 1000;
+          if (typeof item.createdAt === 'string') return new Date(item.createdAt).getTime();
+          return 0;
+        };
+        
+        return getTimestamp(b) - getTimestamp(a); // Descending order (newest first)
+      });
+      
+      setUserImages(sortedImages);
     } catch (error) {
       console.error('Error fetching user images:', error);
     } finally {
@@ -1080,21 +1218,37 @@ export default function UserProfile() {
 
   // Handle image click to open gallery modal
   const handleImageClick = (image) => {
-    setSelectedImage(image);
-    setShowModal(true);
-    setImageStatus(image?.communityPost || false);  // Update the imageStatus when an image is clicked
-    //console.log(image?.communityPost);
+    // Debounce the click to prevent multiple rapid clicks
+    if (window.imageClickTimeout) {
+      return;
+    }
+    
+    window.imageClickTimeout = setTimeout(() => {
+      setSelectedImage(image);
+      setShowModal(true);
+      setImageStatus(image?.communityPost || false);
+      window.imageClickTimeout = null;
+    }, 100);
   };
 
   const closeModal = () => {
     setShowModal(false);
-}
+    // Allow time for modal to properly unmount
+    setTimeout(() => {
+      setSelectedImage(null);
+    }, 300);
+  }
 
   {/*const handleImageDeleted = (deletedImageId) => {
     setUserImages(prevImages => prevImages.filter(image => 
       (image.uid !== deletedImageId && image.id !== deletedImageId)
     ));
   };*/}
+
+  // Add community posts count
+  const communityPostsCount = userImages.filter(image => 
+    image.communityPostId || image.communityPost
+  ).length;
 
   // Loading states
   if (isLoading || subscriptionLoading || isLoadingImages) {
@@ -1116,11 +1270,10 @@ export default function UserProfile() {
   return (
     <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white font-sans relative overflow-hidden">
       <Navbar /> 
-      <main className="container mx-auto px-4 py-1">
-        <div className="flex flex-col lg:flex-row gap-12">
+      <main className="container mx-auto">
           {/* Left Column - Profile */}
-          <div className="flex-shrink-0 w-full lg:w-1/4">
-            <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl  border border-[var(--border-gray)]">
+        <div className="flex flex-col md:flex-row lg:flex-row gap-4  w-full">
+          <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl  border border-[var(--border-gray)]">
               {user?.photoURL ? (
                 <img
                   src={user.photoURL}
@@ -1138,11 +1291,30 @@ export default function UserProfile() {
               <p className="text-gray-400 text-lg mb-4">
                 {user?.email || "No email provided"}
               </p>
-              <div className="w-full justify-start text-center py-3 border-2 border-purple-400 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full hover:scale-105 transition-all hover:border-purple-500 px-8 mb-6">
-                <h3 className="text- font-semibold truncate">
-                  Credits: {tokens}
-                </h3>
+              <div className="w-full justify-start text-center py-3 border-2 border-purple-400 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full px-4 sm:px-8 mb-6">
+                <div className="flex items-center justify-center gap-2 w-full overflow-visible">
+                  <span className="text-lg font-semibold whitespace-nowrap">Credits: {tokens}</span>
+                  {userSettings?.subscriptionStatus === 'inactive' && userSettings?.lockedTokens > 0 && (
+                    <Lock className="flex-shrink-0 w-4 h-4 text-yellow-500" />
+                  )}
+                </div>
               </div>
+              {/* Display 60 day countdown before resetting credits */}
+              {userSettings?.lockedTokens > 0 && (
+                <div className=" text-sm">
+                  <span className="text-gray-400">
+                    {Math.ceil((new Date(userSettings.lockedTokensExpirationDate.toDate()) - new Date()) / (1000 * 60 * 60 * 24))} days remaining
+                  </span>
+                </div>
+              )}
+              {/* Message to user to subscribe */}
+              {userSettings?.subscriptionStatus === 'inactive' && tokens > 0 && (
+                <div className="mb-4 text-sm">
+                  <span className="text-gray-400">
+                    Subscribe to enable credits
+                  </span>
+                </div>
+              )}
               <div className="w-full space-y-3">
                 <Button variant="outline" onClick={() => setIsManageAccountOpen(true)} className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700 overflow-hidden transition-all duration-300">
                   <Settings className="mr-3 h-5 w-5 " />
@@ -1163,7 +1335,7 @@ export default function UserProfile() {
 
               </div>
             </div>
-          </div>
+          
 
           {/* Right Column - Content */}
           <div className="flex-grow">
@@ -1199,66 +1371,169 @@ export default function UserProfile() {
 
             {/* Gallery Section */}
             <div className="bg-[var(--card-background)] p-6 rounded-2xl border border-[var(--border-gray)]">
-              <h3 className="text-2xl font-bold mb-6">Your Gallery</h3>
-             {/* <div className={`grid ${getGridViewClasses(userSettings?.interfaceSettings?.gridViewType || 'compact')}`}>
-                {userImages.length > 0 ? (
-                  userImages.map((image, index) => (*/}
-             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {paginatedImages.length > 0 ? (
-                  paginatedImages.map((image, index) => (
-              
-                <HoverCard key={index}>
-                  <HoverCardTrigger asChild>
-                    <div
-                      className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-all duration-300 hover:scale-105"
-                      onClick={() => handleImageClick(image)} // Pass the image URL to the modal
-                    >
-                      <Image
-                        src={image.img_data}  // Directly use the img_data (image URL)
-                        alt={`Gallery item ${index}`}
-                        width={400}
-                        height={400}
-                        className="object-cover w-full h-full"
-                        placeholder="blur"
-                        blurDataURL={`data:image/svg+xml;base64,...`}  // Optional for blur effect
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        <div className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                        <Check className="w-5 h-5 text-white" />
+              <h3 className="text-xl font-bold mb-4">Your Gallery</h3>
+
+              {/* Gallery with loading state */}
+              <div className="relative min-h-[300px]">
+                {/* Pending state indicator */}
+                {isPending && (
+                  <div className="absolute inset-0 bg-black/20 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+                    <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+
+                {/* Gallery grid with fade transition */}
+                <div className={`grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6 transition-opacity duration-300 ${isPending ? 'opacity-50' : 'opacity-100'}`}>
+                  {paginatedImages.length > 0 ? (
+                    paginatedImages.map((image, index) => (
+                      <div 
+                        key={image.uid || index} 
+                        className="relative aspect-square rounded-xl overflow-hidden shadow-2xl group cursor-pointer transform transition-transform hover:scale-105"
+                        onClick={() => handleImageClick(image)}
+                      >
+                        <Image
+                          src={image.img_data}
+                          alt={`Gallery item ${index}`}
+                          width={400}
+                          height={400}
+                          className="object-cover w-full h-full"
+                          placeholder="blur"
+                          blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzFjMWMxYyIvPjwvc3ZnPg=="
+                          loading={index < 4 ? "eager" : "lazy"}
+                          priority={index < 4}
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                            <Check className="w-5 h-5 text-white" />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </HoverCardTrigger>
-                <HoverCardContent className="w-80 bg-[var(--card-background)] border-[var(--border-gray)]">
-                  <div className="space-y-2">
-                    <h4 className="text-lg font-semibold">Image Details</h4>
-                    <p className="text-gray-400">Gallery item {index + 1}</p>
-                  </div>
-                </HoverCardContent>
-              </HoverCard>
-      ))
-    ) : (
-      <p className="text-gray-400">No images available.</p>
-    )}
-  </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-400">No images available.</p>
+                  )}
+                </div>
+              </div>
 
-              {/* Pagination */}
-              {categoryImages.length > 0 ? (
-              <div className="flex justify-center items-center gap-3 mt-8">
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant="outline"
-                    className={`w-10 h-10 text-lg font-medium ${
-                    page === currentPage
-                    ? 'bg-white text-black hover:bg-gray-200 hover:text-[#c792ff]'
-                        : 'border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700'
-                    } shadow-lg transition-all duration-300`}
-                  onClick={() => handlePageClick(page)}
+              {/* Pagination with theme-aware styling */}
+              {categoryImages.length > 0 && totalPages > 1 ? (
+              <div className="flex justify-center mt-8">
+                <div className="inline-flex items-center gap-2">
+                  {/* Previous button */}
+                  <button
+                    onClick={currentPage > 1 ? () => handlePageClick(currentPage - 1) : undefined}
+                    disabled={currentPage === 1 || isPending}
+                    className={`h-10 px-3 text-sm font-medium flex items-center rounded-lg transition-colors ${
+                      currentPage === 1 || isPending
+                        ? 'text-gray-400 cursor-default' 
+                        : theme === 'dark' 
+                          ? 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200' 
+                          : 'bg-gray-200/80 hover:bg-gray-300/80 text-gray-700 border border-gray-300/50'
+                    }`}
+                    onMouseEnter={currentPage > 1 ? () => handlePaginationHover(currentPage - 1) : undefined}
                   >
-                    {page}
-                  </Button>
-                ))}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                      <path d="m15 18-6-6 6-6"/>
+                    </svg>
+                    Prev
+                  </button>
+                  
+                  {/* First page */}
+                  {totalPages > 3 && currentPage > 2 && (
+                    <>
+                      <button 
+                        onClick={() => handlePageClick(1)}
+                        disabled={isPending}
+                        className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                          isPending 
+                            ? 'opacity-50 cursor-default' 
+                            : theme === 'dark'
+                              ? 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                              : 'bg-gray-200/80 hover:bg-gray-300/80 text-gray-700 border border-gray-300/50'
+                        }`}
+                        onMouseEnter={() => handlePaginationHover(1)}
+                      >
+                        1
+                      </button>
+                      {currentPage > 3 && <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>...</span>}
+                    </>
+                  )}
+                  
+                  {/* Current page and adjacent pages */}
+                  {[...Array(totalPages)].map((_, i) => {
+                    const pageNum = i + 1;
+                    // Only render pages near current page
+                    if (
+                      pageNum === currentPage || 
+                      pageNum === currentPage - 1 || 
+                      pageNum === currentPage + 1
+                    ) {
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={pageNum !== currentPage ? () => handlePageClick(pageNum) : undefined}
+                          disabled={isPending || pageNum === currentPage}
+                          className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                            pageNum === currentPage 
+                              ? theme === 'dark'
+                                ? 'bg-purple-600 text-white' 
+                                : 'bg-purple-500 text-white shadow-sm'
+                              : isPending 
+                                ? 'opacity-50 cursor-default' 
+                                : theme === 'dark'
+                                  ? 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                                  : 'bg-gray-200/80 hover:bg-gray-300/80 text-gray-700 border border-gray-300/50'
+                          } ${hoveredPage === pageNum ? theme === 'dark' ? 'ring-2 ring-purple-500/50' : 'ring-2 ring-purple-400/30' : ''}`}
+                          onMouseEnter={() => handlePaginationHover(pageNum)}
+                          onMouseLeave={() => setHoveredPage(null)}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    }
+                    return null;
+                  })}
+                  
+                  {/* Last page */}
+                  {totalPages > 3 && currentPage < totalPages - 1 && (
+                    <>
+                      {currentPage < totalPages - 2 && <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>...</span>}
+                      <button 
+                        onClick={() => handlePageClick(totalPages)}
+                        disabled={isPending}
+                        className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                          isPending 
+                            ? 'opacity-50 cursor-default' 
+                            : theme === 'dark'
+                              ? 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200'
+                              : 'bg-gray-200/80 hover:bg-gray-300/80 text-gray-700 border border-gray-300/50'
+                        }`}
+                        onMouseEnter={() => handlePaginationHover(totalPages)}
+                      >
+                        {totalPages}
+                      </button>
+                    </>
+                  )}
+                  
+                  {/* Next button */}
+                  <button
+                    onClick={currentPage < totalPages ? () => handlePageClick(currentPage + 1) : undefined}
+                    disabled={currentPage === totalPages || isPending}
+                    className={`h-10 px-3 text-sm font-medium flex items-center rounded-lg transition-colors ${
+                      currentPage === totalPages || isPending
+                        ? 'text-gray-400 cursor-default' 
+                        : theme === 'dark' 
+                          ? 'bg-gray-800/50 hover:bg-gray-700/70 text-gray-200' 
+                          : 'bg-gray-200/80 hover:bg-gray-300/80 text-gray-700 border border-gray-300/50'
+                    }`}
+                    onMouseEnter={currentPage < totalPages ? () => handlePaginationHover(currentPage + 1) : undefined}
+                  >
+                    Next
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1">
+                      <path d="m9 18 6-6-6-6"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
               ) : null}
             </div>
@@ -1274,13 +1549,15 @@ export default function UserProfile() {
       />
 
       {/* <Footer /> */}
-      {/* Gallery Modal */}
-      {showModal && (
-                <GalleryModal
-                    closeModal={closeModal}
-                    image={selectedImage}
-                    onDelete={handleImageDelete}  // Pass the delete function
-                />
+      {/* Gallery Modal*/}
+      {showModal && selectedImage && (
+        <div className="fixed inset-0 z-50">
+          <GalleryModal
+            closeModal={closeModal}
+            image={selectedImage}
+            onDelete={handleImageDelete}
+          />
+        </div>
       )}
 
       {/* subscription management */}

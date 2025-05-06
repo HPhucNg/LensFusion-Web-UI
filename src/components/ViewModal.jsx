@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { db, auth } from '@/firebase/FirebaseConfig';
 import Image from 'next/image';
 import useCommentsAndLikes from '@/hooks/useCommentsAndLikes';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+  } from "@/components/ui/dropdown-menu";
 import { FullscreenModal } from '../app/(list_page)/workspace/backgroundgeneration/_components/FullscreenModal';
 
 import { useRouter } from 'next/navigation'; // to redirect for "make same" function
@@ -213,65 +219,30 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
                             <p className='font-semibold text-md p-2 '>{comments.length} Comments</p>
                             <div className="p-3 w-[90%] flex-1 overflow-y-auto"> {/* give room for the close button */}
                                     {comments.map((comment) => (
-                                        <div key={comment.id} className="text-sm ">
+                                        <div key={comment.id} className="text-sm hover:bg-[var(--border-gray)] group">
                                             <div className='flex justify-between'>
                                                 <strong className='font-semibold'>{comment.createdBy}</strong>
                                                 {comment.createdByUID === user?.uid && state.editingCommentId !== comment.id && (
-                                                    <div>
-                                                    <button className='hover:text-blue-300' onClick={() => handleEditComment(comment.id, comment.commentText)}> 
-                                                        <svg viewBox="0 0 61 61" xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="w-[25px] h-auto">
-                                                            <defs>
-                                                                <filter id="a" width="200%" height="200%" x="-50%" y="-50%" filterUnits="objectBoundingBox">
-                                                                    <feOffset dy="1" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
-                                                                    <feGaussianBlur stdDeviation="10" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
-                                                                    <feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0" in="shadowBlurOuter1" result="shadowMatrixOuter1"></feColorMatrix>
-                                                                    <feMerge>
-                                                                        <feMergeNode in="shadowMatrixOuter1"></feMergeNode>
-                                                                        <feMergeNode in="SourceGraphic"></feMergeNode>
-                                                                    </feMerge>
-                                                                </filter>
-                                                            </defs>
-                                                            <path fillRule="evenodd" d="M36.503 19h-13.509c-1.651 0-2.994 1.341-2.994 2.994v14.012c0 1.651 1.341 2.994 2.994 2.994h14.012c1.651 0 2.994-1.341 2.994-2.994v-13.509.503l-2 3v10.006c0 .548-.447.994-.994.994h-14.012c-.548 0-.994-.447-.994-.994v-14.012c0-.548.447-.994.994-.994h10.012l2.994-2h.503zm1.398.706c.39-.39 1.02-.392 1.413.001.391.391.391 1.024.001 1.413l-8.486 8.486-2.121.707.707-2.121 8.486-8.486z" filter="url(#a)"></path>
-                                                        </svg>
-                                                    </button>
-                                                    <button className='hover:text-red-300' onClick={() => handleDeleteComment(comment.id)}> 
-                                                        <svg
-                                                            viewBox="-2.5 0 61 61"
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="currentColor"
-                                                            width="30"
-                                                            height="30"
-                                                            className="w-[25px] h-auto"
-                                                        >
-                                                            <defs>
-                                                            <filter
-                                                                id="a"
-                                                                width="200%"
-                                                                height="200%"
-                                                                x="-50%"
-                                                                y="-50%"
-                                                                filterUnits="objectBoundingBox"
-                                                            >
-                                                                <feOffset dy="1" in="SourceAlpha" result="shadowOffsetOuter1" />
-                                                                <feGaussianBlur stdDeviation="10" in="shadowOffsetOuter1" result="shadowBlurOuter1" />
-                                                                <feColorMatrix
-                                                                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0"
-                                                                in="shadowBlurOuter1"
-                                                                result="shadowMatrixOuter1"
-                                                                />
-                                                                <feMerge>
-                                                                <feMergeNode in="shadowMatrixOuter1" />
-                                                                <feMergeNode in="SourceGraphic" />
-                                                                </feMerge>
-                                                            </filter>
-                                                            </defs>
-                                                            <path
-                                                            fillRule="evenodd"
-                                                            d="M36 26v10.997c0 1.659-1.337 3.003-3.009 3.003h-9.981c-1.662 0-3.009-1.342-3.009-3.003v-10.997h16zm-2 0v10.998c0 .554-.456 1.002-1.002 1.002h-9.995c-.554 0-1.002-.456-1.002-1.002v-10.998h12zm-9-5c0-.552.451-1 .991-1h4.018c.547 0 .991.444.991 1 0 .552-.451 1-.991 1h-4.018c-.547 0-.991-.444-.991-1zm0 6.997c0-.551.444-.997 1-.997.552 0 1 .453 1 .997v6.006c0 .551-.444.997-1 .997-.552 0-1-.453-1-.997v-6.006zm4 0c0-.551.444-.997 1-.997.552 0 1 .453 1 .997v6.006c0 .551-.444.997-1 .997-.552 0-1-.453-1-.997v-6.006zm-6-5.997h-4.008c-.536 0-.992.448-.992 1 0 .556.444 1 .992 1h18.016c.536 0 .992-.448.992-1 0-.556-.444-1-.992-1h-4.008v-1c0-1.653-1.343-3-3-3h-3.999c-1.652 0-3 1.343-3 3v1z"
-                                                            filter="url(#a)"
-                                                            />
-                                                        </svg>
-                                                    </button>
+                                                <div className='invisible group-hover:visible'>  
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                        <button className="w-8 transform hover:scale-90">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-6 h-6">
+                                                                <circle cx="5" cy="12" r="2" />
+                                                                <circle cx="12" cy="12" r="2" />
+                                                                <circle cx="19" cy="12" r="2" />
+                                                            </svg>
+                                                        </button>
+                                                        </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="w-30  bg-[var(--card-background)] border-[var(--border-gray)]">
+                                                                <DropdownMenuItem onClick={() => handleEditComment(comment.id, comment.commentText)} className="text-slate-400 hover:text-white cursor-pointer">
+                                                                    Edit Comment
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleDeleteComment(comment.id)} className="text-slate-400 hover:text-white cursor-pointer">
+                                                                    Delete Comment 
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
                                                 </div>
                                                 )}
                                             </div>
@@ -286,7 +257,7 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
                                                     <button onClick={(e) => handleSaveEdit(e, comment.id)}>✔️</button>
                                                 </div>
                                             ) : (
-                                                <div className='text-gray-300 p-2'>{comment.commentText}</div>
+                                                <div className='text-gray-500 p-2'>{comment.commentText}</div>
                                             )}
                                     </div>
                                     ))}
@@ -294,7 +265,7 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
                             
 
                             {/* add comment */}
-                            <form className='pt-6 pb-6 pl-2 w-full flex-2 ' onSubmit={handleSubmit}>
+                            <form className='pt-4 pb-6 pl-2 w-full flex-2 ' onSubmit={handleSubmit}>
                                     <div className="relative w-[90%]">
                                         <textarea 
                                         className="w-full pr-10 border p-2 rounded-[20px] border-[#ccc] bg-transparent placeholder-gray-600 resize-y"
@@ -305,7 +276,7 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
                                         />
                                         <button 
                                         type="submit" 
-                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
+                                        className="absolute right-3 top-[45%] transform -translate-y-1/2 cursor-pointer"
                                         >
                                         <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" className="w-6 h-6 text-blue-500">
                                             <g fill="currentColor" fillRule="nonzero">

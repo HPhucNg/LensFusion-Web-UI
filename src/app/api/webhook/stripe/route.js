@@ -4,19 +4,6 @@ import { db } from '../../../../firebase/FirebaseConfig';
 import { limit, collection, addDoc, updateDoc, getDocs, serverTimestamp, query, where, getDoc, doc } from 'firebase/firestore';
 import { PricingPlans } from '@/app/(list_page)/pricing/plans';
 
-//time conversion
-const getPSTTime = (utcTimestamp) => {
-    return new Date(utcTimestamp).toLocaleString('en-US', {
-      timeZone: 'America/Los_Angeles',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false, 
-    });
-  };
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -115,15 +102,6 @@ async function handleCheckoutSessionCompleted(session) {
                     }
                 }
                 
-                try {
-                    await updateDoc(doc(db, 'subscriptions', subscriptionDoc.id), {
-                        hasAccess: false,
-                        cancelationReason: 'plan_change',
-                        updatedAt: serverTimestamp()
-                    });
-                } catch (err) {
-                    console.error(`Error updating subscription document: ${err.message}`);
-                }
             }
         }
         
@@ -142,12 +120,46 @@ async function handleCheckoutSessionCompleted(session) {
             throw new Error("No subscription found in session");
         }
         const subscriptionId = subscription.id;
+        
+        const verifySubscriptionStatus = async (subscriptionId) => {
+            try {
+                if (!subscriptionId) {
+                    throw new Error("No matching subscription ID");
+                }
+            
+                const subscriptionDetails = await stripe.subscriptions.retrieve(subscriptionId);
+                return subscriptionDetails.status === 'active';
+            } catch (error) {
+              console.error(`Error verifying subscription status: ${error.message}`);
+              return false;
+            }
+        };
+        
+        const isSubscriptionActive = await verifySubscriptionStatus(subscriptionId);
+        if (!isSubscriptionActive) {
+            throw new Error("Subscription is not active");
+        }
 
         //update the user document on firebase
         if (userDoc.exists()) {
             const userData = userDoc.data();
             let newTokenCount;
-            
+            let tokensToRestore = 0;
+
+            // Check if locked token is valid
+            if (userData.lockedTokens && userData.lockedTokensExpirationDate) {
+                const expirationDate = userData.lockedTokensExpirationDate.toDate 
+                    ? userData.lockedTokensExpirationDate.toDate() 
+                    : new Date(userData.lockedTokensExpirationDate);
+                
+                if (new Date() < expirationDate) {
+                    tokensToRestore = userData.lockedTokens;
+                    console.log(`Restoring ${tokensToRestore} locked tokens `);
+                } else {
+                    console.log(`Locked tokens have expired for user ${userId}`);
+                }
+            }
+
             if (userData.subscriptionStatus === 'active' || userData.subscriptionStatus === 'canceling') {
                 const currentPlanTokens = includedTokensInSubscriptions[userData.currentPlanPriceId] || 0;
                 const nonSubscriptionTokens = Math.max(0, userData.tokens - currentPlanTokens);
@@ -167,7 +179,9 @@ async function handleCheckoutSessionCompleted(session) {
                 subscriptionEndDate,
                 planCycle,
                 cancel_at_period_end: false,
-                cancelationDate: null
+                cancelationDate: null,
+                lockedTokens: null,
+                lockedTokensExpirationDate: null
             });
         } else {
             console.error("User document not found!");
@@ -182,8 +196,8 @@ async function handleCheckoutSessionCompleted(session) {
             hasAccess: true,
             subscriptionPlan: planTitle,
             subscriptionId: subscriptionId,
-            subscriptionStartDate: getPSTTime(subscriptionStartDate),
-            subscriptionEndDate: getPSTTime(subscriptionEndDate),
+            subscriptionStartDate,
+            subscriptionEndDate,
             includedTokensInSubscription: tokensToAdd,
             createdAt: serverTimestamp(),
         });
@@ -239,6 +253,23 @@ export async function POST(req) {
                     const userId = userData.userId;
                     
                     if (userId) {
+                        const userRef = doc(db, 'users', userId);
+                        const userDoc = await getDoc(userRef);
+                        if (userDoc.exists()) {
+                            const currentUserData = userDoc.data();
+                            if (currentUserData.subscriptionId === subscriptionId) {                                
+                                const currentTokens = currentUserData.tokens || 0;
+
+                                await updateDoc(userRef, {
+                                    subscriptionStatus: 'inactive',
+                                    cancel_at_period_end: false,
+                                    cancelationDate: null,
+                                    lockedTokens: currentTokens,
+                                    lockedTokensExpirationDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+                                    tokens: currentTokens
+                                });
+                            }
+                        }  
                         const activeSubscriptionsQuery = query(
                             collection(db, 'subscriptions'),
                             where('userId', '==', userId),
@@ -250,18 +281,32 @@ export async function POST(req) {
                         );
                         
                         if (otherActiveSubscriptions.length === 0) {
-                            const userRef = doc(db, 'users', userId);
-                            await updateDoc(userRef, {
-                                subscriptionStatus: 'inactive',
-                                cancel_at_period_end: false,
-                                cancelationDate: null
-                            });
+                            const pendingSubscriptionQuery = query(
+                                collection(db, 'subscriptions'),
+                                where('userId', '==', userId),
+                                limit(1)
+                            );
+                            const pendingDocs = await getDocs(pendingSubscriptionQuery);
+                            const isPlanChange = !pendingDocs.empty;
+                            
+                            if (!isPlanChange) {
+                                const currentTokens = userDoc.data().tokens;
+
+                                await updateDoc(userRef, {
+                                    subscriptionStatus: 'inactive',
+                                    cancel_at_period_end: false,
+                                    cancelationDate: null,
+                                    lockedTokens: currentTokens,
+                                    // After 60 days credits willl set to 0
+                                    lockedTokensExpirationDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+                                    tokens: currentTokens
+                                });
+                            }
                         }
                         
                         // Update subscription document
                         await updateDoc(doc(db, 'subscriptions', subscriptionDoc.id), {
                             hasAccess: false,
-                            updatedAt: serverTimestamp()
                         });
                     }
                 }             

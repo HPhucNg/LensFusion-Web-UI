@@ -451,6 +451,19 @@ export default function ImageProcessor() {
       return;
     }
     
+    // Locked token for unsubscribed users
+    if (currentUser) {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+      
+      if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
+        setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
+        setIsProcessing(false);
+        return;
+      }
+    }
+
     // Token checking with fallbacks
     try {
       // Try to deduct tokens but don't block generation if it fails
