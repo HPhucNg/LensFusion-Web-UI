@@ -6,7 +6,7 @@ import Image from "next/image";
 
 function Footer() {
   return (
-    <footer className="bg-[#0a0a0a] text-white py-12 border-t border-gray-800">
+    <footer className="bg-[var(--card-background)] py-12 border-t border-[var(--border-gray)]">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand Logo and Social Media Section */}
