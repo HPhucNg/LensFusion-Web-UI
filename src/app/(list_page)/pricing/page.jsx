@@ -111,7 +111,7 @@ function PricingPage() {
           className={`px-6 py-2 rounded-md transition-all border ${
             pricingType === 'monthly'
               ? 'selected' 
-              : 'bg-gray-800  hover:bg-gray-700 hover:text-white'
+              : 'bg-gray-800  hover:bg-gray-400 hover:text-white'
           }`} 
           onClick={() => togglePricing('monthly')}
         >
@@ -121,7 +121,7 @@ function PricingPage() {
           className={`px-6 py-2 rounded-md transition-all border ${
             pricingType === 'yearly'
               ? 'selected' 
-              : 'bg-gray-800 hover:bg-gray-700 hover:text-white'
+              : 'bg-gray-800 hover:bg-gray-400 hover:text-white'
           }`}
           onClick={() => togglePricing('yearly')}
         >
@@ -177,7 +177,7 @@ function PricingPage() {
                 ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
                   : index === 1
                   ? 'bg-black text-white hover:bg-gray-600'
-                  : 'bg-white text-black hover:bg-gray-500'
+                  : 'bg-white text-black hover:bg-gray-300'
               }`}
               onClick={() => {
                 const priceId = pricingType === 'monthly' 
