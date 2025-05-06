@@ -353,7 +353,10 @@ export default function Page() {
       
       {/* View Modal */}
       {showModal && filteredPosts.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => closeModal()} // Close modal when clicking on backdrop
+        >
           <ViewModal 
             closeModal={closeModal} 
             image={filteredPosts[currentIndex]} 

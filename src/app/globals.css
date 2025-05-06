@@ -318,7 +318,7 @@ html.light .gradient-plan-text {
   }
 }
 
-/* Thin scrollbar for category filters */
+/* Thin scrollbar for category filters and modal content */
 .scrollbar-thin {
   scrollbar-width: thin;
   -ms-overflow-style: none;
