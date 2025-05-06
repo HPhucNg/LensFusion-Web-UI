@@ -98,7 +98,9 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
     const router = useRouter();
     const handleMakeSame = () => { {/* reroute to tool and preset settings */}
       const query = new URLSearchParams({
-        id: selectedPost.id,
+        prompt: selectedPost.prompt,
+        n_prompt: selectedPost.negativePrompt || "",
+        category: selectedPost.category || ""
       }).toString();
     
       router.push(`/workspace/backgroundgeneration?${query}`);
@@ -247,7 +249,7 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
                         className='px-3 py-1.5 rounded-md text-sm border-none bg-gray-700/70 hover:bg-gray-600/90 text-white cursor-pointer transition-all duration-200 ease-in-out hover:scale-105 shadow-sm' 
                         onClick={handleMakeSame}
                     >
-                        Make Same
+                        Use Prompt
                     </button>
                     
                     <div className='flex gap-2'>

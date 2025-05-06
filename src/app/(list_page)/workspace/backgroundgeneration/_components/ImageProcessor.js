@@ -27,31 +27,72 @@ import { useSearchParams } from 'next/navigation'; // to pull id from URL
 function SearchParamsHandler({ onParamChange }) {
   const searchParams = useSearchParams();
   
+  // Use a ref to track if we've already processed the parameters
+  const processedParams = useRef(false);
+  
   useEffect(() => {
-    const fetchPrompt = async () => {
-      const id = searchParams.get('id');
-      if (!id) return;
+    // Only process parameters once to prevent infinite loops
+    if (processedParams.current) return;
+    
+    // Check for direct prompt parameters
+    const promptParam = searchParams.get('prompt');
+    const negativePromptParam = searchParams.get('n_prompt');
+    const categoryParam = searchParams.get('category');
+    const id = searchParams.get('id');
+    
+    // If there are no parameters to process, exit early
+    if (!promptParam && !negativePromptParam && !categoryParam && !id) {
+      processedParams.current = true;
+      return;
+    }
+    
+    // Process the parameters
+    if (promptParam) {
+      onParamChange('prompt', promptParam);
+    }
+    
+    if (negativePromptParam) {
+      onParamChange('n_prompt', negativePromptParam);
+    }
+    
+    if (categoryParam) {
+      // If you have category-specific settings, apply them here
+      console.log("Category:", categoryParam);
+    }
+    
+    // If we've processed direct parameters, mark as done
+    if (promptParam || negativePromptParam || categoryParam) {
+      processedParams.current = true;
+      return;
+    }
+    
+    // Only fetch from database if we have an ID and no direct parameters
+    if (id) {
+      const fetchPrompt = async () => {
+        try {
+          const communityRef = doc(db, 'community', id);
+          const communityDoc = await getDoc(communityRef);
 
-      try {
-        const communityRef = doc(db, 'community', id);
-        const communityDoc = await getDoc(communityRef);
+          if (communityDoc.exists()) {
+            const communityData = communityDoc.data();
+            const newPrompt = communityData.prompt || '';
+            const newNegative = communityData.negativePrompt || '';
 
-        if (communityDoc.exists()) {
-          const communityData = communityDoc.data();
-          const newPrompt = communityData.prompt || '';
-          const newNegative = communityData.negativePrompt || '';
-
-          onParamChange('prompt', newPrompt);
-          onParamChange('n_prompt', newNegative);
-        } else {
-          console.log("Prompts not found.");
+            onParamChange('prompt', newPrompt);
+            onParamChange('n_prompt', newNegative);
+          } else {
+            console.log("Prompts not found.");
+          }
+          // Mark as processed after fetching
+          processedParams.current = true;
+        } catch (error) {
+          console.error("Error fetching user data: ", error);
+          processedParams.current = true;
         }
-      } catch (error) {
-        console.error("Error fetching user data: ", error);
-      }
-    };
+      };
 
-    fetchPrompt();
+      fetchPrompt();
+    }
   }, [searchParams, onParamChange]);
   
   return null;
@@ -375,12 +416,12 @@ export default function ImageProcessor() {
   };
 
   // Handles changes to any parameter
-  const handleParamChange = (id, value) => {
+  const handleParamChange = useCallback((id, value) => {
     setParams(prev => ({
       ...prev,
       [id]: value
     }));
-  };
+  }, []); // Empty dependency array to ensure function remains stable
 
   // Main function to process the image with current parameters
   const processImageWithParams = async (file) => {
