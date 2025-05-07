@@ -1311,7 +1311,7 @@ export default function UserProfile() {
       <main className="container mx-auto">
           {/* Left Column - Profile */}
         <div className="flex flex-col md:flex-row lg:flex-row gap-4  w-full">
-          <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl  border border-[var(--border-gray)]">
+          <div className="flex flex-col items-center bg-[var(--card-background)] p-8 rounded-2xl  border border-[var(--border-gray)] md:w-80 w-full flex-shrink-0">
               {user?.photoURL ? (
                 <img
                   src={user.photoURL}
@@ -1341,8 +1341,8 @@ export default function UserProfile() {
               {/* Only show free trial message if freeTrialTokens exist AND trial hasn't expired */}
               {(userSettings?.freeTrialTokens > 0) && (
               <div className="w-full justify-start text-center py-2">
-                <div className="text-xs text-gray-400">
-                  Free trial credits of  {userSettings.freeTrialTokens} / 50 {daysLeft > 0 ? `will expire in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}` : 'available'}
+                <div className="text-xs text-yellow-600">
+                  Free trial credits {daysLeft > 0 ? `will expire in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}` : 'available'}
                 </div>
               </div>
             )}
@@ -1436,7 +1436,7 @@ export default function UserProfile() {
                 )}
 
                 {/* Gallery grid with fade transition */}
-                <div className={`grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6 transition-opacity duration-300 ${isPending ? 'opacity-50' : 'opacity-100'}`}>
+                <div className={`grid grid-cols-3 md:grid-cols-2 lg:grid-cols-4 gap-6 transition-opacity duration-300 ${isPending ? 'opacity-50' : 'opacity-100'}`}>
                   {paginatedImages.length > 0 ? (
                     paginatedImages.map((image, index) => (
                       <div 
