@@ -13,6 +13,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import DownloadOptions from '@/components/DownloadOptions';
 import { removeBackgroundClient } from '@/lib/removeBackground';
 import WorkspaceNavbar from '@/components/WorkspaceNavbar';
+import { updateUserTokens } from "@/firebase/firebaseUtils";
 
 // Add function to save image to user gallery
 const saveToUserGallery = async (imageUrl, userId) => {
@@ -47,6 +48,7 @@ export default function BackgroundRemover() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [tokens, setTokens] = useState(0);
+  const [freeTrialTokens, setFreeTrialTokens] = useState(0);
   const [inputImage, setInputImage] = useState(null);
   const [outputImage, setOutputImage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -62,6 +64,7 @@ export default function BackgroundRemover() {
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
           setTokens(userDoc.data().tokens || 0);
+          setFreeTrialTokens(userDoc.data().freeTrialTokens || 0);
         }
       }
     });
@@ -117,7 +120,13 @@ export default function BackgroundRemover() {
       const userRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userRef);
       const userData = userDoc.data();
-      
+      // Handle token to not go below 0
+      if (userData.subscriptionStatus === 'inactive' && userData.tokens < 1) {
+        setError("You don't have enough credits. Please subscribe to continue");
+        setIsProcessing(false);
+        return;
+      }
+
       if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
         setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
         setIsProcessing(false);
@@ -134,10 +143,7 @@ export default function BackgroundRemover() {
       setOutputImage(resultUrl);
       
       const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        tokens: tokens - 1
-      });
-      setTokens(prev => prev - 1);
+      await updateUserTokens(user.uid, 1);
       
       const saved = await saveToUserGallery(resultUrl, user.uid);
       if (saved) {
