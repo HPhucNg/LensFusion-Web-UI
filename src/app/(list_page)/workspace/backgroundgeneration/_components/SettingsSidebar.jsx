@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 export const SettingsSidebar = ({ 
   params, 
@@ -10,6 +10,12 @@ export const SettingsSidebar = ({
   onResize,
   inputImage
 }) => {
+  // Debug log to check if removeBackground is being passed correctly
+  useEffect(() => {
+    console.log('SettingsSidebar received params:', params);
+    console.log('removeBackground value:', params.removeBackground);
+  }, [params]);
+
   // Renders different types of parameter inputs
   const renderParameter = (param) => {
     switch (param.type) {
@@ -154,6 +160,7 @@ export const SettingsSidebar = ({
         {/* Advanced Settings */}
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-gray-300">Advanced Settings</h3>
+          
           <div className="grid grid-cols-1 gap-3">
             {parameterDefinitions.slice(2, 4).map(param => (
               param.type === 'select' && (
@@ -168,6 +175,28 @@ export const SettingsSidebar = ({
           <div className="space-y-1">
             <label className="block text-xs font-medium mb-1 text-gray-300">Seed</label>
             {renderParameter(parameterDefinitions.find(p => p.id === 'seed'))}
+          </div>
+          
+          {/* Background Removal Toggle - Moved to after seed input */}
+          <div className="flex items-center justify-between p-3 bg-gray-900/50 border border-gray-700 rounded-lg group relative mt-3">
+            <label htmlFor="bg-removal-toggle" className="text-sm font-medium text-gray-300 flex items-center cursor-pointer">
+              Auto-Remove Background
+            </label>
+            
+            {/* Replaced toggle implementation with a more direct approach */}
+            <button
+              onClick={() => {
+                const newValue = !(typeof params.removeBackground === 'boolean' ? params.removeBackground : true);
+                console.log('Toggle clicked, new value:', newValue);
+                handleParamChange('removeBackground', newValue);
+              }}
+              className={`relative w-12 h-6 rounded-full flex items-center p-0.5 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-colors duration-200 ${params.removeBackground ? 'bg-purple-600' : 'bg-gray-700'}`}
+              aria-pressed={params.removeBackground}
+              role="switch"
+            >
+              <span className={`absolute h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ease-in-out ${params.removeBackground ? 'translate-x-6' : 'translate-x-0'}`} />
+              <span className="sr-only">Toggle background removal</span>
+            </button>
           </div>
         </div>
       </div>

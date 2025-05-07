@@ -18,7 +18,7 @@ import { TabNavigation } from './TabNavigation';
 import { GenerateButton } from './GenerateButton';
 import { MobileMenuButton } from './MobileMenuButton';
 import { ImageContainer } from './ImageContainer';
-import { FullscreenModal } from './FullscreenModal';
+import ViewModal from './ViewModal';
 import ResizePreview from "./ResizePreview";
 import { updateUserTokens } from "@/firebase/firebaseUtils";
 
@@ -28,31 +28,75 @@ import { useSearchParams } from 'next/navigation'; // to pull id from URL
 function SearchParamsHandler({ onParamChange }) {
   const searchParams = useSearchParams();
   
+  // Use a ref to track if we've already processed the parameters
+  const processedParams = useRef(false);
+  
   useEffect(() => {
-    const fetchPrompt = async () => {
-      const id = searchParams.get('id');
-      if (!id) return;
+    // Only process parameters once to prevent infinite loops
+    if (processedParams.current) return;
+    
+    // Check for direct prompt parameters
+    const promptParam = searchParams.get('prompt');
+    const negativePromptParam = searchParams.get('n_prompt');
+    const categoryParam = searchParams.get('category');
+    const id = searchParams.get('id');
+    
+    // If there are no parameters to process, exit early
+    if (!promptParam && !negativePromptParam && !categoryParam && !id) {
+      processedParams.current = true;
+      return;
+    }
+    
+    // Set removeBackground to false by default
+    onParamChange('removeBackground', false);
+    
+    // Process the parameters
+    if (promptParam) {
+      onParamChange('prompt', promptParam);
+    }
+    
+    if (negativePromptParam) {
+      onParamChange('n_prompt', negativePromptParam);
+    }
+    
+    if (categoryParam) {
+      // If you have category-specific settings, apply them here
+      console.log("Category:", categoryParam);
+    }
+    
+    // If we've processed direct parameters, mark as done
+    if (promptParam || negativePromptParam || categoryParam) {
+      processedParams.current = true;
+      return;
+    }
+    
+    // Only fetch from database if we have an ID and no direct parameters
+    if (id) {
+      const fetchPrompt = async () => {
+        try {
+          const communityRef = doc(db, 'community', id);
+          const communityDoc = await getDoc(communityRef);
 
-      try {
-        const communityRef = doc(db, 'community', id);
-        const communityDoc = await getDoc(communityRef);
+          if (communityDoc.exists()) {
+            const communityData = communityDoc.data();
+            const newPrompt = communityData.prompt || '';
+            const newNegative = communityData.negativePrompt || '';
 
-        if (communityDoc.exists()) {
-          const communityData = communityDoc.data();
-          const newPrompt = communityData.prompt || '';
-          const newNegative = communityData.negativePrompt || '';
-
-          onParamChange('prompt', newPrompt);
-          onParamChange('n_prompt', newNegative);
-        } else {
-          console.log("Prompts not found.");
+            onParamChange('prompt', newPrompt);
+            onParamChange('n_prompt', newNegative);
+          } else {
+            console.log("Prompts not found.");
+          }
+          // Mark as processed after fetching
+          processedParams.current = true;
+        } catch (error) {
+          console.error("Error fetching user data: ", error);
+          processedParams.current = true;
         }
-      } catch (error) {
-        console.error("Error fetching user data: ", error);
-      }
-    };
+      };
 
-    fetchPrompt();
+      fetchPrompt();
+    }
   }, [searchParams, onParamChange]);
   
   return null;
@@ -67,7 +111,10 @@ export default function ImageProcessor() {
   const [webpImage, setWebpImage] = useState(null);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState("");
-  const [params, setParams] = useState(defaultParams);
+  const [removeBackground, setRemoveBackground] = useState(false);
+  const [params, setParams] = useState({
+    ...defaultParams,
+  });
   const [loadedTemplates, setLoadedTemplates] = useState([]);
   const [activeSidebar, setActiveSidebar] = useState('settings');
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
@@ -377,13 +424,23 @@ export default function ImageProcessor() {
     handleParamChange('seed', randomSeed.toString());
   };
 
-  // Handles changes to any parameter
-  const handleParamChange = (id, value) => {
-    setParams(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  };
+  // Update handleParamChange to handle the special removeBackground case
+  const handleParamChange = useCallback((id, value) => {
+    if (id === 'removeBackground') {
+      console.log(`Setting removeBackground to: ${value}`);
+      setRemoveBackground(value); // Update the dedicated state
+      
+      // Log the current state after updating for debugging
+      setTimeout(() => {
+        console.log('Current removeBackground state after update:', removeBackground);
+      }, 0);
+    } else {
+      setParams(prev => ({
+        ...prev,
+        [id]: value
+      }));
+    }
+  }, [removeBackground]); // Add removeBackground to the dependency array
 
   // Main function to process the image with current parameters
   const processImageWithParams = async (file) => {
@@ -447,7 +504,7 @@ export default function ImageProcessor() {
     }
   }, [createInputPreview]);
 
-  // Modified handleGenerate with better error handling
+  // Modified handleGenerate with background removal toggle
   const handleGenerate = async () => {
     if (!selectedFile) {
       setError("Please upload an image first");
@@ -496,37 +553,45 @@ export default function ImageProcessor() {
     setStatus("Starting processing...");
 
     try {
-      // First remove background from the image
-      setStatus("Removing background...");
+      // Use the fileToProcess variable for either original or background-removed image
       let fileToProcess = selectedFile;
       
-      try {
-        console.log("Starting background removal with file:", selectedFile.name, "size:", selectedFile.size);
+      // Only remove background if the toggle is enabled
+      console.log(`Background removal is: ${removeBackground ? 'ENABLED' : 'DISABLED'}`);
+      
+      if (removeBackground) {
+        setStatus("Removing background...");
         
-        // Define progress callback
-        const handleBgProgress = (percentage, key) => {
-          console.log(`Background removal progress: ${percentage}% (${key})`);
-          setStatus(`Removing background: ${percentage}%`);
-        };
-        
-        // Remove background using our imported utility
-        fileToProcess = await removeImageBackground(selectedFile, handleBgProgress);
-        
-        console.log("Background removal successful, got processed file:", fileToProcess.name, "size:", fileToProcess.size);
-        setStatus("Background removed, now generating image...");
-        
-        // Create a preview of the background-removed image (optional)
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          console.log("Preview updated with background-removed image");
-          setInputPreview(reader.result);
-        };
-        reader.readAsDataURL(fileToProcess);
-        
-      } catch (bgError) {
-        console.error("Background removal failed, continuing with original image:", bgError);
-        setStatus("Background removal failed, proceeding with original image...");
-        // Continue with original image if background removal fails
+        try {
+          console.log("Starting background removal with file:", selectedFile.name, "size:", selectedFile.size);
+          
+          // Define progress callback
+          const handleBgProgress = (percentage, key) => {
+            console.log(`Background removal progress: ${percentage}% (${key})`);
+            setStatus(`Removing background: ${percentage}%`);
+          };
+          
+          // Remove background using our imported utility
+          fileToProcess = await removeImageBackground(selectedFile, handleBgProgress);
+          
+          console.log("Background removal successful, got processed file:", fileToProcess.name, "size:", fileToProcess.size);
+          setStatus("Background removed, now generating image...");
+          
+          // Create a preview of the background-removed image (optional)
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            console.log("Preview updated with background-removed image");
+            setInputPreview(reader.result);
+          };
+          reader.readAsDataURL(fileToProcess);
+          
+        } catch (bgError) {
+          console.error("Background removal failed, continuing with original image:", bgError);
+          setStatus("Background removal failed, proceeding with original image...");
+          // Continue with original image if background removal fails
+        }
+      } else {
+        setStatus("Skipping background removal (disabled in settings)...");
       }
 
       setStatus("Processing with Hugging Face...");
@@ -625,7 +690,7 @@ export default function ImageProcessor() {
     }
   };
 
-  const openFullscreen = (imageUrl) => {
+  const openFullscreen = (imageUrl, isInputImage = false) => {
     setFullscreenImage(imageUrl);
     setIsFullscreen(true);
   };
@@ -661,7 +726,10 @@ export default function ImageProcessor() {
         <div className="flex-1 overflow-y-auto pb-4 scrollbar">
           {activeSidebar === 'settings' ? (
             <SettingsSidebar
-              params={params}
+              params={{
+                ...params,
+                removeBackground: removeBackground,
+              }}
               handleParamChange={handleParamChange}
               generateRandomSeed={generateRandomSeed}
               parameterDefinitions={parameterDefinitions}
@@ -696,7 +764,7 @@ export default function ImageProcessor() {
             imageSrc={inputPreview}
             altText="Input preview"
             onClear={clearImage}
-            onFullscreen={() => openFullscreen(inputPreview)}
+            onFullscreen={() => openFullscreen(inputPreview, true)}
             uploadHandler={handleImageUpload}
             isInput={true}
             onResize={() => handleResize(inputPreview)}
@@ -706,8 +774,16 @@ export default function ImageProcessor() {
             imageSrc={outputImage}
             altText="Generated output"
             onDownload={() => handleDownload(outputImage)}
-            onFullscreen={() => openFullscreen(outputImage)}
+            onFullscreen={() => openFullscreen(outputImage, false)}
             isInput={false}
+            onUpscale={() => console.log('Upscale')} 
+            onRetouch={() => console.log('Retouch')}
+            onInpaint={() => console.log('Inpaint')}
+            onExpand={() => console.log('Expand')}
+            onRemove={() => console.log('Remove')}
+            onRegenerate={() => handleGenerate()}
+            onReprompt={() => console.log('Reprompt')}
+            prompt={params.prompt}
           />
         </div>
       </div>
@@ -780,10 +856,19 @@ export default function ImageProcessor() {
       )}
       
       {/* Fullscreen Modal */}
-      <FullscreenModal
-        isFullscreen={isFullscreen}
-        fullscreenImage={fullscreenImage}
-        closeFullscreen={closeFullscreen}
+      <ViewModal
+        isOpen={isFullscreen}
+        onClose={closeFullscreen}
+        imageSrc={fullscreenImage}
+        prompt={params.prompt}
+        onUpscale={() => console.log('Upscale')} 
+        onRetouch={() => console.log('Retouch')}
+        onInpaint={() => console.log('Inpaint')}
+        onExpand={() => console.log('Expand')}
+        onRemove={() => console.log('Remove')}
+        onRegenerate={() => handleGenerate()}
+        onReprompt={() => console.log('Reprompt')}
+        onDownload={() => fullscreenImage && handleDownload(fullscreenImage)}
       />
 
       {/* Add the SearchParamsHandler with Suspense */}
