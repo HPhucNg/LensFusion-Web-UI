@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import {
   BookOpen,
@@ -16,7 +16,6 @@ import {
   Scissors,
   Expand,
   Trash2,
-  ZoomIn,
   History,
   Clock,
   ChevronRight,
@@ -28,7 +27,8 @@ import {
   X,
   Loader,
   Download,
-  RefreshCw
+  RefreshCw,
+  Move
 } from "lucide-react"
 import RetouchModal from './RetouchModal';
 import ObjectRemovalModal from './ObjectRemovalModal';
@@ -60,6 +60,41 @@ const ViewModal = ({
   const [upscaleError, setUpscaleError] = useState(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState(null);
+  const [showDetails, setShowDetails] = useState(true);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+
+  // Add keyboard shortcuts (keep some basic functionality)
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleKeyDown = (e) => {
+      // Escape to close
+      if (e.key === 'Escape') {
+        onClose();
+      }
+      // Toggle sidebar with S
+      if (e.key === 's' || e.key === 'S') {
+        setShowDetails(prev => !prev);
+      }
+      // D to download
+      if ((e.key === 'd' || e.key === 'D') && onDownload) {
+        onDownload();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, onDownload]);
+
+  // Add fade-in effect and prevent body scroll
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'auto';
+      };
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -81,6 +116,11 @@ const ViewModal = ({
 
   const handleExpandClick = () => {
     setShowExpansionModal(true);
+  };
+
+  // Toggle details panel on mobile
+  const toggleDetails = () => {
+    setShowDetails(!showDetails);
   };
 
   // Handler for regenerate with new seed
@@ -255,148 +295,179 @@ const ViewModal = ({
   return (
     <>
       <div 
-        className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center overflow-hidden backdrop-blur-sm"
+        className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center overflow-hidden backdrop-blur-md animate-in fade-in duration-300"
         onClick={handleBackdropClick}
       >
         {/* Close button */}
         <button 
           onClick={onClose}
-          className="absolute top-6 left-6 z-10 p-2 rounded-full bg-gray-800/80 hover:bg-gray-700 transition-colors"
+          className="absolute top-4 left-4 z-10 p-2 rounded-full bg-gray-800/80 hover:bg-gray-700/90 hover:scale-105 transition-all duration-200 text-gray-300 hover:text-white shadow-lg"
+          title="Close"
         >
-          <X className="w-6 h-6 text-white" />
+          <X className="w-5 h-5" />
         </button>
 
-        <div className="flex w-4/5 h-4/5 bg-gray-900/70 rounded-xl border border-gray-800/40 backdrop-blur-md overflow-hidden max-w-6xl">
-          <div className="flex-1 bg-gray-900/50 flex items-center justify-center relative p-4">
+        {/* Toggle details button (mobile only) */}
+        <button 
+          onClick={toggleDetails}
+          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-gray-800/80 hover:bg-gray-700/90 hover:scale-105 transition-all duration-200 text-gray-300 hover:text-white shadow-lg md:hidden"
+          title="Toggle details"
+        >
+          {showDetails ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeft className="w-5 h-5" />}
+        </button>
+
+        <div className="flex flex-col md:flex-row w-full h-full md:w-[90%] md:h-[85%] lg:w-[85%] lg:h-[85%] max-w-6xl bg-gray-900/60 rounded-xl border border-gray-800/40 backdrop-blur-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+          {/* Main image container */}
+          <div className={`relative flex-1 bg-gray-900/30 flex items-center justify-center ${showDetails ? 'h-[50%]' : 'h-full'} md:h-full bg-grid-pattern transition-all duration-300 ease-in-out`}>
+            {/* Loading state */}
+            {!isImageLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 z-5">
+                <Loader className="w-10 h-10 text-purple-400 animate-spin" />
+              </div>
+            )}
+            
             {/* Loading overlay while upscaling */}
             {isUpscaling && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
-                <div className="text-center space-y-4">
-                  <Loader className="w-10 h-10 text-purple-500 animate-spin mx-auto" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10 backdrop-blur-sm">
+                <div className="text-center space-y-4 px-6 py-8 rounded-xl bg-gray-900/80 backdrop-blur-md max-w-xs">
+                  <Loader className="w-12 h-12 text-purple-400 animate-spin mx-auto" />
                   <p className="text-white font-medium">Upscaling Image...</p>
+                  <p className="text-gray-400 text-sm">This may take a moment</p>
                 </div>
               </div>
             )}
             
             {/* Loading overlay while regenerating */}
             {isRegenerating && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
-                <div className="text-center space-y-4">
-                  <RefreshCw className="w-10 h-10 text-purple-500 animate-spin mx-auto" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10 backdrop-blur-sm">
+                <div className="text-center space-y-4 px-6 py-8 rounded-xl bg-gray-900/80 backdrop-blur-md max-w-xs">
+                  <RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto" />
                   <p className="text-white font-medium">Regenerating Image...</p>
+                  <p className="text-gray-400 text-sm">Creating a new variation</p>
                 </div>
               </div>
             )}
             
             {/* Error message */}
             {(upscaleError || regenerateError) && (
-              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500/80 text-white px-4 py-2 rounded-lg z-10">
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500/90 text-white px-4 py-2 rounded-lg z-10 max-w-[90%] text-center shadow-lg backdrop-blur-sm">
                 {upscaleError || regenerateError}
               </div>
             )}
             
-            <img 
-              src={imageSrc} 
-              alt="Image preview" 
-              className="max-w-full max-h-full object-contain"
-            />
+            {/* Image container */}
+            <div className="w-full h-full overflow-hidden relative flex items-center justify-center p-4">
+              <img 
+                src={imageSrc} 
+                alt="Image preview" 
+                className="max-w-full max-h-full object-contain rounded-lg shadow-md transition-opacity duration-300 max-h-[85vh] md:max-h-[75vh]"
+                style={{ opacity: isImageLoaded ? 1 : 0 }}
+                onLoad={() => setIsImageLoaded(true)}
+              />
+            </div>
           </div>
           
-          <div className="w-80 border-l border-gray-800/50 p-4 flex flex-col h-full bg-black/20">
-            <div className="pb-4 border-b border-gray-800/50">
-              <h2 className="text-xl font-semibold text-white">Image Details</h2>
-              <p className="text-sm text-gray-400 mt-1">View and edit your image</p>
-            </div>
-            
-            {prompt && (
-              <div className="my-4">
-                <h3 className="text-lg font-medium text-gray-300">Prompt</h3>
-                <div className="bg-gray-800/50 border border-gray-700/30 rounded-lg p-3 mt-2">
-                  <p className="text-sm text-gray-300">{prompt}</p>
-                </div>
-              </div>
-            )}
-            
-            <div className="mt-auto pt-6">
-              {/* Divider */}
-              <div className="border-t border-gray-800 pt-4 mb-6"></div>
-              
-              {/* Edit options section */}
-              <div className="space-y-3 mb-6">
-                <h3 className="text-gray-300 font-medium text-sm">Edit</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={handleUpscaleClick} 
-                    disabled={isUpscaling}
-                    className={`flex items-center justify-center space-x-2 p-2 ${
-                      isUpscaling 
-                        ? 'bg-purple-800/50 cursor-wait' 
-                        : 'bg-gray-800 hover:bg-gray-700'
-                    } rounded-lg transition-colors`}
-                  >
-                    {isUpscaling ? (
-                      <Loader className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Stars className="w-4 h-4" />
-                    )}
-                    <span className="text-xs">{isUpscaling ? 'Upscaling...' : 'Upscale'}</span>
-                  </button>
-                  
-                  <button 
-                    onClick={handleRetouchClick} 
-                    className="flex items-center justify-center space-x-2 p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <Brush className="w-4 h-4" />
-                    <span className="text-xs">Retouch</span>
-                  </button>
-                  
-                  <button 
-                    onClick={handleExpandClick} 
-                    className="flex items-center justify-center space-x-2 p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <Expand className="w-4 h-4" />
-                    <span className="text-xs">Expand</span>
-                  </button>
-                  
-                  <button 
-                    onClick={handleRemoveClick} 
-                    className="flex items-center justify-center space-x-2 p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <Eraser className="w-4 h-4" />
-                    <span className="text-xs">Remove</span>
-                  </button>
-                </div>
+          {/* Info sidebar - conditionally shown on mobile */}
+          {showDetails && (
+            <div className="w-full md:w-72 lg:w-80 border-t-0 md:border-t-0 md:border-l border-gray-800/50 flex flex-col md:h-full bg-gray-950/80 h-[50%] md:h-full overflow-y-auto transition-all duration-300 ease-in-out">
+              {/* Header */}
+              <div className="p-4 border-b border-gray-800/50 bg-gray-900/30">
+                <h2 className="text-lg md:text-xl font-semibold text-white">Image Details</h2>
+                <p className="text-xs md:text-sm text-gray-400 mt-1">View and edit your image</p>
               </div>
               
-              {/* Action buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={handleRegenerateClick}
-                  disabled={isRegenerating} 
-                  className={`flex items-center justify-center space-x-2 p-2 ${
-                    isRegenerating 
-                      ? 'bg-purple-800/50 cursor-wait' 
-                      : 'bg-gray-800 hover:bg-gray-700'
-                  } rounded-lg transition-colors`}
-                >
-                  {isRegenerating ? (
-                    <Loader className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <History className="w-4 h-4" />
-                  )}
-                  <span className="text-xs">{isRegenerating ? 'Regenerating...' : 'Regenerate'}</span>
-                </button>
+              {/* Content scroll area */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {/* Prompt section */}
+                {prompt && (
+                  <div className="mb-4">
+                    <h3 className="text-md md:text-lg font-medium text-gray-300 mb-2">Prompt</h3>
+                    <div className="bg-gray-800/50 border border-gray-700/30 rounded-lg p-3 backdrop-blur-sm">
+                      <p className="text-xs md:text-sm text-gray-300">{prompt}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Actions footer */}
+              <div className="p-4 pt-0 border-t border-gray-800/30 mt-auto">
+                {/* Edit options section */}
+                <div className="space-y-3 mb-4">
+                  <h3 className="text-gray-300 font-medium text-xs md:text-sm">Edit</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={handleUpscaleClick} 
+                      disabled={isUpscaling}
+                      className={`flex items-center justify-center space-x-1 py-2 px-2 ${
+                        isUpscaling 
+                          ? 'bg-purple-900/50 cursor-wait' 
+                          : 'bg-gray-800/90 hover:bg-gray-700/90 hover:scale-[1.02]'
+                      } rounded-lg transition-all duration-200 shadow-sm`}
+                    >
+                      {isUpscaling ? (
+                        <Loader className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
+                      ) : (
+                        <Stars className="w-3 h-3 md:w-4 md:h-4" />
+                      )}
+                      <span className="text-[10px] md:text-xs font-medium">{isUpscaling ? 'Upscaling...' : 'Upscale'}</span>
+                    </button>
+                    
+                    <button 
+                      onClick={handleRetouchClick} 
+                      className="flex items-center justify-center space-x-1 py-2 px-2 bg-gray-800/90 hover:bg-gray-700/90 hover:scale-[1.02] rounded-lg transition-all duration-200 shadow-sm"
+                    >
+                      <Brush className="w-3 h-3 md:w-4 md:h-4" />
+                      <span className="text-[10px] md:text-xs font-medium">Retouch</span>
+                    </button>
+                    
+                    <button 
+                      onClick={handleExpandClick} 
+                      className="flex items-center justify-center space-x-1 py-2 px-2 bg-gray-800/90 hover:bg-gray-700/90 hover:scale-[1.02] rounded-lg transition-all duration-200 shadow-sm"
+                    >
+                      <Expand className="w-3 h-3 md:w-4 md:h-4" />
+                      <span className="text-[10px] md:text-xs font-medium">Expand</span>
+                    </button>
+                    
+                    <button 
+                      onClick={handleRemoveClick} 
+                      className="flex items-center justify-center space-x-1 py-2 px-2 bg-gray-800/90 hover:bg-gray-700/90 hover:scale-[1.02] rounded-lg transition-all duration-200 shadow-sm"
+                    >
+                      <Eraser className="w-3 h-3 md:w-4 md:h-4" />
+                      <span className="text-[10px] md:text-xs font-medium">Remove</span>
+                    </button>
+                  </div>
+                </div>
                 
-                <button 
-                  onClick={onDownload} 
-                  className="flex items-center justify-center space-x-2 p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="text-xs">Download</span>
-                </button>
+                {/* Action buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={handleRegenerateClick}
+                    disabled={isRegenerating} 
+                    className={`flex items-center justify-center space-x-1 py-2 px-2 ${
+                      isRegenerating 
+                        ? 'bg-purple-900/50 cursor-wait' 
+                        : 'bg-gray-800/90 hover:bg-gray-700/90 hover:scale-[1.02]'
+                    } rounded-lg transition-all duration-200 shadow-sm`}
+                  >
+                    {isRegenerating ? (
+                      <Loader className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
+                    ) : (
+                      <History className="w-3 h-3 md:w-4 md:h-4" />
+                    )}
+                    <span className="text-[10px] md:text-xs font-medium">{isRegenerating ? 'Regenerating...' : 'Regenerate'}</span>
+                  </button>
+                  
+                  <button 
+                    onClick={onDownload} 
+                    className="flex items-center justify-center space-x-1 py-2 px-2 bg-gray-800/90 hover:bg-gray-700/90 hover:scale-[1.02] rounded-lg transition-all duration-200 shadow-sm"
+                  >
+                    <Download className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="text-[10px] md:text-xs font-medium">Download</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -426,5 +497,13 @@ const ViewModal = ({
     </>
   );
 };
+
+// CSS class to be added to global.css
+// .bg-grid-pattern {
+//   background-image: 
+//     linear-gradient(to right, rgba(55, 65, 81, 0.1) 1px, transparent 1px),
+//     linear-gradient(to bottom, rgba(55, 65, 81, 0.1) 1px, transparent 1px);
+//   background-size: 20px 20px;
+// }
 
 export default ViewModal; 

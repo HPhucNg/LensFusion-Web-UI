@@ -696,7 +696,7 @@ export default function ImageProcessor() {
         setIsProcessing(false);
         return;
       }
-
+      
       if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
         setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
         setIsProcessing(false);
@@ -710,7 +710,7 @@ export default function ImageProcessor() {
         // Deduct free trial tokens and tokens
         await updateUserTokens(currentUser.uid, 10);
       } else {
-        await deductTokens(10);
+      await deductTokens(10);
       }
     } catch (tokenError) {
       console.error("Token system error:", tokenError);
