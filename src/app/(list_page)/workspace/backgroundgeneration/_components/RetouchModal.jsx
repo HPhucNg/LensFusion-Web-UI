@@ -103,6 +103,16 @@ const saveToUserGallery = async (imageUrl, userId) => {
       type: 'background-generation'  // Use the same type as normal background generation
     });
 
+    // Update localStorage to store this retouched image
+    try {
+      // Only store if not too large (< 2MB)
+      if (imageUrl.length < 2000000) {
+        localStorage.setItem('bggen_outputImage', imageUrl);
+      }
+    } catch (err) {
+      console.warn('Failed to update localStorage with retouched image:', err);
+    }
+
     return downloadURL;
   } catch (error) {
     console.error('Error saving to gallery:', error);
@@ -582,7 +592,32 @@ const RetouchModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
           // Immediately update the parent image without closing modal
           if (onImageUpdate) {
             console.log('RetouchModal calling onImageUpdate with:', imageUrlToUse);
-            onImageUpdate(imageUrlToUse);
+            
+            // Create a File object from the retouched image to support generate after refresh
+            const recreateFileFromUrl = async (url) => {
+              try {
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const fileName = 'retouched-image.png';
+                const file = new File([blob], fileName, { type: blob.type });
+                
+                // Pass both the URL and File object to the parent
+                onImageUpdate(imageUrlToUse, file);
+              } catch (err) {
+                console.warn('Failed to recreate file from retouched image:', err);
+                // Still update the image URL even if file creation fails
+                onImageUpdate(imageUrlToUse);
+              }
+            };
+            
+            recreateFileFromUrl(imageUrlToUse);
+            
+            // Update localStorage with the retouched image URL for persistence
+            try {
+              localStorage.setItem('bggen_outputImage', imageUrlToUse);
+            } catch (err) {
+              console.warn('Failed to update localStorage in onImageUpdate:', err);
+            }
           }
         } else {
           throw new Error('Unexpected result format from processImage');

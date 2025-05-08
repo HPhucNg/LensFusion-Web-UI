@@ -101,6 +101,25 @@ function SearchParamsHandler({ onParamChange }) {
   return null;
 }
 
+// Helper to safely stringify and parse JSON with images
+const safeJSONStringify = (obj) => {
+  try {
+    return JSON.stringify(obj);
+  } catch (e) {
+    console.error('Failed to stringify object:', e);
+    return null;
+  }
+};
+
+const safeJSONParse = (str, defaultValue = null) => {
+  try {
+    return str ? JSON.parse(str) : defaultValue;
+  } catch (e) {
+    console.error('Failed to parse JSON:', e);
+    return defaultValue;
+  }
+};
+
 export default function ImageProcessor() {
   // State management for the component
   const [isProcessing, setIsProcessing] = useState(false);
@@ -134,6 +153,104 @@ export default function ImageProcessor() {
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   //image positioning set to  original size
   const [scalePercentage, setScalePercentage] = useState(1.0); 
+  
+  // Load state from localStorage on component mount
+  useEffect(() => {
+    try {
+      // Load basic parameters
+      const savedParams = localStorage.getItem('bggen_params');
+      if (savedParams) {
+        setParams(prev => ({ ...prev, ...safeJSONParse(savedParams, {}) }));
+      }
+      
+      // Load boolean state
+      const savedRemoveBackground = localStorage.getItem('bggen_removeBackground');
+      if (savedRemoveBackground !== null) {
+        setRemoveBackground(savedRemoveBackground === 'true');
+      }
+      
+      // Load template selection
+      const savedTemplateId = localStorage.getItem('bggen_selectedTemplateId');
+      if (savedTemplateId) {
+        setSelectedTemplateId(savedTemplateId);
+      }
+      
+      // Load images if they exist
+      const savedInputPreview = localStorage.getItem('bggen_inputPreview');
+      if (savedInputPreview) {
+        setInputPreview(savedInputPreview);
+        
+        // Convert the data URL back to a File object for the generate function
+        const recreateFileFromDataUrl = async (dataUrl) => {
+          try {
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+            const fileName = 'restored-image.png';
+            const file = new File([blob], fileName, { type: blob.type });
+            setSelectedFile(file);
+          } catch (err) {
+            console.error('Failed to recreate file from data URL:', err);
+          }
+        };
+        
+        recreateFileFromDataUrl(savedInputPreview);
+      }
+      
+      const savedOutputImage = localStorage.getItem('bggen_outputImage');
+      if (savedOutputImage) {
+        setOutputImage(savedOutputImage);
+      }
+      
+      const savedPreprocessedImage = localStorage.getItem('bggen_preprocessedImage');
+      if (savedPreprocessedImage) {
+        setPreprocessedImage(savedPreprocessedImage);
+      }
+      
+      const savedWebpImage = localStorage.getItem('bggen_webpImage');
+      if (savedWebpImage) {
+        setWebpImage(savedWebpImage);
+      }
+    } catch (error) {
+      console.error('Error loading state from localStorage:', error);
+    }
+  }, []);
+  
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      // Save parameters
+      localStorage.setItem('bggen_params', safeJSONStringify(params));
+      
+      // Save boolean state
+      localStorage.setItem('bggen_removeBackground', removeBackground.toString());
+      
+      // Save template selection if exists
+      if (selectedTemplateId) {
+        localStorage.setItem('bggen_selectedTemplateId', selectedTemplateId);
+      }
+      
+      // Only save images if they're not too large (avoid localStorage limits)
+      // Limit is around 5MB for most browsers
+      const saveImageIfNotTooLarge = (key, value) => {
+        if (!value) return;
+        
+        // Skip saving large images (> 2MB when base64 encoded)
+        if (value.length > 2000000) {
+          console.warn(`Image for ${key} is too large for localStorage. Skipping save.`);
+          return;
+        }
+        
+        localStorage.setItem(key, value);
+      };
+      
+      saveImageIfNotTooLarge('bggen_inputPreview', inputPreview);
+      saveImageIfNotTooLarge('bggen_outputImage', outputImage);
+      saveImageIfNotTooLarge('bggen_preprocessedImage', preprocessedImage);
+      saveImageIfNotTooLarge('bggen_webpImage', webpImage);
+    } catch (error) {
+      console.error('Error saving state to localStorage:', error);
+    }
+  }, [params, removeBackground, selectedTemplateId, inputPreview, outputImage, preprocessedImage, webpImage]);
 
   // Function to deduct tokens
   const deductTokens = async (tokenAmount = 10) => {
@@ -633,19 +750,45 @@ export default function ImageProcessor() {
     }
   };
 
-  // Modified clearImage
+  // Clear all state data from localStorage
+  const clearAllState = () => {
+    // Clear all image data
+    localStorage.removeItem('bggen_inputPreview');
+    localStorage.removeItem('bggen_outputImage');
+    localStorage.removeItem('bggen_preprocessedImage');
+    localStorage.removeItem('bggen_webpImage');
+    
+    // Clear parameters and settings
+    localStorage.removeItem('bggen_params');
+    localStorage.removeItem('bggen_removeBackground');
+    localStorage.removeItem('bggen_selectedTemplateId');
+    
+    console.log('All background generation state cleared from localStorage');
+  };
+  
+  // Clear images and state
   const clearImage = () => {
-    setSelectedFile(null);
     setInputPreview(null);
     setOutputImage(null);
     setPreprocessedImage(null);
     setWebpImage(null);
+    setSelectedFile(null);
     setError(null);
     setStatus("");
+    setSelectedTemplateId(null);
+    
+    // Reset file input if it exists
     const fileInput = document.querySelector('input[type="file"]');
     if (fileInput) {
       fileInput.value = '';
     }
+    
+    // Clear image-related localStorage items
+    localStorage.removeItem('bggen_inputPreview');
+    localStorage.removeItem('bggen_outputImage');
+    localStorage.removeItem('bggen_preprocessedImage');
+    localStorage.removeItem('bggen_webpImage');
+    localStorage.removeItem('bggen_selectedTemplateId');
   };
 
   // Modified template selection handler
@@ -763,10 +906,29 @@ export default function ImageProcessor() {
             onFullscreen={() => openFullscreen(outputImage, false)}
             isInput={false}
             onUpscale={() => console.log('Upscale')} 
-            onRetouch={(newImageUrl) => {
+            onRetouch={(newImageUrl, fileObject) => {
               // Save the retouched image as the new output image
               setOutputImage(newImageUrl);
-              // You could also handle other post-processing here if needed
+              
+              // If we got a file object, update selectedFile for future generate operations
+              if (fileObject) {
+                console.log('Setting selectedFile from retouched image file object');
+                setSelectedFile(fileObject);
+              } else {
+                // Try to convert the URL to a file object
+                const createFileFromUrl = async (url) => {
+                  try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'retouched-image.png', { type: blob.type });
+                    console.log('Created file object from retouched image URL');
+                    setSelectedFile(file);
+                  } catch (err) {
+                    console.error('Failed to create file from retouched URL:', err);
+                  }
+                };
+                createFileFromUrl(newImageUrl);
+              }
             }}
             onInpaint={() => console.log('Inpaint')}
             onExpand={() => console.log('Expand')}
@@ -853,9 +1015,30 @@ export default function ImageProcessor() {
         imageSrc={fullscreenImage}
         prompt={params.prompt}
         onUpscale={() => console.log('Upscale')} 
-        onRetouch={(newImageUrl) => {
+        onRetouch={(newImageUrl, fileObject) => {
           // Update the main output image when retouching from fullscreen view
           setOutputImage(newImageUrl);
+          
+          // If we received a file object, update selectedFile for generation
+          if (fileObject) {
+            console.log('Setting selectedFile from fullscreen retouched image');
+            setSelectedFile(fileObject);
+          } else {
+            // Try to create a file object from the URL
+            const createFileFromUrl = async (url) => {
+              try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const file = new File([blob], 'retouched-image.png', { type: blob.type });
+                console.log('Created file object from fullscreen retouched image URL');
+                setSelectedFile(file);
+              } catch (err) {
+                console.error('Failed to create file from retouched URL in fullscreen:', err);
+              }
+            };
+            createFileFromUrl(newImageUrl);
+          }
+          
           // Close the fullscreen view after retouching is complete
           closeFullscreen();
         }}
