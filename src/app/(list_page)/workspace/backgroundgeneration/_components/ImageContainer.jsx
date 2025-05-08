@@ -70,7 +70,11 @@ export const ImageContainer = ({
                     src={imageSrc}
                     alt={altText}
                     fill
-                    unoptimized={imageSrc && (imageSrc.includes('firebasestorage.googleapis.com') || imageSrc.startsWith('data:'))}
+                    unoptimized={imageSrc && (
+                      imageSrc.includes('firebasestorage.googleapis.com') || 
+                      imageSrc.includes('fal.ai') || 
+                      imageSrc.startsWith('data:')
+                    )}
                     className="object-contain p-4 transform transition-transform duration-300 group-hover:scale-105"
                     style={{ imageRendering: 'auto' }}
                   />

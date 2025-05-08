@@ -10,13 +10,14 @@ fal.config({
 export async function processImage(imageFile, params = {}) {
   try {
     // Upload the image file to fal.ai storage
-    const imageUrl = await fal.storage.upload(imageFile);
+    const uploadedImageUrl = await fal.storage.upload(imageFile);
+    console.log("Uploaded image to fal.ai:", uploadedImageUrl);
 
     // Merge default parameters with provided params
     const processParams = {
       prompt: params.prompt || "",
       negative_prompt: params.negativePrompt || "",
-      image_url: imageUrl,
+      image_url: uploadedImageUrl,
       image_size: {
         width: params.imageWidth || 1024,
         height: params.imageHeight || 1024
@@ -35,6 +36,8 @@ export async function processImage(imageFile, params = {}) {
       output_format: "jpeg"
     };
 
+    console.log("Sending request to fal.ai with params:", JSON.stringify(processParams));
+
     // Call the fal.ai API
     const result = await fal.subscribe("fal-ai/iclight-v2", {
       input: processParams,
@@ -46,7 +49,46 @@ export async function processImage(imageFile, params = {}) {
       },
     });
 
-    return result.data.images;
+    console.log("Raw fal.ai response:", JSON.stringify(result.data));
+    
+    if (!result.data || !result.data.images || !result.data.images.length) {
+      throw new Error("No images returned from fal.ai");
+    }
+
+    // Transform the fal.ai response to match the expected structure from Hugging Face
+    // Original expected structure:
+    // [ [{ image: { url: "main-image-url" }}, { image: { url: "preprocessed-image-url" }}], { url: "webp-url" } ]
+    
+    const generatedImageUrl = result.data.images[0].url;
+    console.log("Image URL from fal.ai:", generatedImageUrl);
+    
+    const transformedResponse = [
+      // First array with main image and preprocessed image objects
+      [
+        {
+          image: {
+            url: generatedImageUrl,
+            width: result.data.images[0].width || 1024,
+            height: result.data.images[0].height || 1024
+          }
+        },
+        {
+          image: {
+            // For the preprocessed image, just use the same image for now
+            url: generatedImageUrl,
+            width: result.data.images[0].width || 1024,
+            height: result.data.images[0].height || 1024
+          }
+        }
+      ],
+      // WebP version (also using the same image since fal.ai doesn't provide different formats)
+      {
+        url: generatedImageUrl
+      }
+    ];
+
+    console.log("Transformed response for ImageProcessor:", JSON.stringify(transformedResponse));
+    return transformedResponse;
   } catch (error) {
     console.error("Error in processImage:", error);
     throw new Error(error.message || "Failed to process image");

@@ -9,7 +9,8 @@ const nextConfig = {
         'firebasestorage.googleapis.com', 
         'api.remove.bg',
         'raynamaru-hd-painter.hf.space', 
-        'storage.googleapis.com'
+        'storage.googleapis.com',
+        'v3.fal.media'
       ], 
       remotePatterns: [
         {
@@ -28,6 +29,14 @@ const nextConfig = {
           protocol: 'https',
           hostname: 'firebasestorage.googleapis.com',
           // pathname: '/v0/b/**',
+        },
+        {
+          protocol: 'https',
+          hostname: 'storage.googleapis.com',
+        },
+        {
+          protocol: 'https',
+          hostname: 'v3.fal.media',
         },
       ],
     },
