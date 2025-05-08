@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, ChevronLeft, ChevronRight, Minus, Plus, Brush, Eraser } from "lucide-react";
 import { processImage } from '@/lib/huggingfaceInpaint/client';
 import { defaultParams } from '@/lib/huggingfaceInpaint/clientConfig';
+import { auth, db, storage } from '@/firebase/FirebaseConfig';
+import { doc, updateDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Client-side fallback for processing images if the server function fails
 async function processImageClientSide(imageFile, params = {}) {
@@ -10,12 +13,6 @@ async function processImageClientSide(imageFile, params = {}) {
     return await processImage(imageFile, params);
   } catch (error) {
     console.warn('Server-side processing failed, attempting client-side fallback:', error);
-    
-    // If server function fails, create a simulated response with a demo result
-    // In a real app, you'd implement a proper fallback using a client-side API
-    
-    // For now, we'll just simulate the result by returning the original image
-    // This at least allows users to see what regions they masked
     
     // Create a canvas to draw the mask on top of the image
     const canvas = document.createElement('canvas');
@@ -80,7 +77,40 @@ async function processImageClientSide(imageFile, params = {}) {
   }
 }
 
-const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
+// Save the image to user gallery
+const saveToUserGallery = async (imageUrl, userId) => {
+  try {
+    const timestamp = Date.now();
+    const filename = `background-retouched-${timestamp}.png`;
+    
+    // Create storage reference
+    const storageRef = ref(storage, `user_images/${userId}/${filename}`);
+    
+    // Fetch the image and convert to blob
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    
+    // Upload to Firebase storage
+    await uploadBytes(storageRef, blob);
+    const downloadURL = await getDownloadURL(storageRef);
+    
+    // Save record to Firestore
+    const userImageRef = collection(db, 'user_images');
+    await addDoc(userImageRef, {
+      userID: userId,
+      img_data: downloadURL,
+      createdAt: serverTimestamp(),
+      type: 'background-generation'  // Use the same type as normal background generation
+    });
+
+    return downloadURL;
+  } catch (error) {
+    console.error('Error saving to gallery:', error);
+    return null;
+  }
+};
+
+const RetouchModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
   // All state hooks
   const [prompt, setPrompt] = useState('');
   const [zoom, setZoom] = useState(100);
@@ -94,6 +124,9 @@ const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const [isCanvasHovered, setIsCanvasHovered] = useState(false);
   const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
+  const [tokens, setTokens] = useState(0);
+  const [convertedImageSrc, setConvertedImageSrc] = useState(null);
 
   // All ref hooks
   const containerRef = useRef(null);
@@ -102,35 +135,223 @@ const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
   const imageObjRef = useRef(null);
   const lastPositionRef = useRef({ x: 0, y: 0 });
 
+  // Firebase auth listener - get user and tokens
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        const userRef = doc(db, "users", currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          setTokens(userDoc.data().tokens || 0);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Convert any image URL to a blob URL to avoid CORS issues
+  const convertToBlobUrl = useCallback(async (src) => {
+    if (!src) return null;
+    
+    try {
+      console.log('Converting image to blob URL, source type:', 
+                  src.startsWith('data:') ? 'data URL' : 
+                  src.includes('firebasestorage') ? 'Firebase URL' : 'regular URL');
+      
+      // Special handling for Firebase storage URLs
+      if (src.includes('firebasestorage')) {
+        console.log('Using special Firebase URL handling');
+        try {
+          // For Firebase storage URLs, we need to use fetch with proper error handling
+          const response = await fetch(src);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch Firebase image: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          console.log('Created blob URL from Firebase URL');
+          return blobUrl;
+        } catch (firebaseError) {
+          console.error('Firebase URL fetch failed:', firebaseError);
+          // Fall back to the canvas method if fetch fails
+        }
+      }
+      
+      // Standard approach using Image and canvas
+      const img = new Image();
+      
+      // Create a promise that resolves when the image loads
+      const imageLoaded = new Promise((resolve, reject) => {
+        let timeoutId;
+        
+        img.onload = () => {
+          if (timeoutId) clearTimeout(timeoutId);
+          resolve(img);
+        };
+        
+        img.onerror = (err) => {
+          if (timeoutId) clearTimeout(timeoutId);
+          console.error('Image load error:', err);
+          reject(new Error('Failed to load image'));
+        };
+        
+        // Add a timeout to avoid hanging indefinitely
+        timeoutId = setTimeout(() => {
+          reject(new Error('Image load timed out'));
+        }, 10000); // 10 second timeout
+        
+        // For data URLs, no need for crossOrigin
+        if (!src.startsWith('data:')) {
+          img.crossOrigin = 'Anonymous';
+        }
+        
+        img.src = src;
+      });
+      
+      // Wait for the image to load
+      const loadedImg = await imageLoaded;
+      
+      // Create a canvas to draw the image
+      const canvas = document.createElement('canvas');
+      canvas.width = loadedImg.width;
+      canvas.height = loadedImg.height;
+      
+      // Draw the image to the canvas
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(loadedImg, 0, 0);
+      
+      // Convert to a blob
+      const blob = await new Promise(resolve => {
+        canvas.toBlob(resolve, 'image/png');
+      });
+      
+      // Create a blob URL
+      const blobUrl = URL.createObjectURL(blob);
+      console.log('Created blob URL:', blobUrl);
+      
+      return blobUrl;
+    } catch (error) {
+      console.error('Error converting to blob URL:', error);
+      
+      // As a last resort for Firebase URLs, try a direct proxy approach
+      if (src.includes('firebasestorage')) {
+        try {
+          console.log('Attempting last-resort Firebase URL handling');
+          // Create a placeholder canvas with a message
+          const canvas = document.createElement('canvas');
+          canvas.width = 800;
+          canvas.height = 600;
+          const ctx = canvas.getContext('2d');
+          
+          // Fill with a gradient background
+          const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+          gradient.addColorStop(0, '#f0f0f0');
+          gradient.addColorStop(1, '#e0e0e0');
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Add a notice message
+          ctx.fillStyle = '#666';
+          ctx.font = '20px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('Image could not be loaded. Please draw your mask anyway.', canvas.width/2, canvas.height/2);
+          ctx.fillText('Your edits will still be applied.', canvas.width/2, canvas.height/2 + 30);
+          
+          // Convert to blob URL
+          const blob = await new Promise(resolve => {
+            canvas.toBlob(resolve, 'image/png');
+          });
+          
+          const blobUrl = URL.createObjectURL(blob);
+          console.log('Created placeholder image blob URL');
+          setError('Image preview unavailable, but retouching will still work. Please draw your mask.');
+          return blobUrl;
+        } catch (placeholderError) {
+          console.error('Failed to create placeholder:', placeholderError);
+        }
+      }
+      
+      setError('Error preparing image. Please try a different image.');
+      return null;
+    }
+  }, []);
+
+  // Handle image URL conversion when modal opens
+  useEffect(() => {
+    // Clean up any previous blob URLs
+    if (convertedImageSrc) {
+      URL.revokeObjectURL(convertedImageSrc);
+      setConvertedImageSrc(null);
+    }
+    
+    // Reset states when opening/closing modal
+    if (!isOpen) {
+      setError(null);
+      setResultImage(null);
+      setMaskData(null);
+      return;
+    }
+
+    // Convert the image to a blob URL when modal opens
+    if (isOpen && imageSrc) {
+      setIsLoading(true);
+      convertToBlobUrl(imageSrc)
+        .then(blobUrl => {
+          if (blobUrl) {
+            setConvertedImageSrc(blobUrl);
+            setError(null);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to convert image:', err);
+          setError('Failed to prepare image for editing. Please try again.');
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [isOpen, imageSrc, convertToBlobUrl]);
+
   // Canvas setup functions
   const setupCanvas = useCallback((img, container) => {
-    const containerWidth = container?.clientWidth || 800;
-    const containerHeight = container?.clientHeight || 600;
+    if (!container) return { width: 0, height: 0 };
+    
+    const containerWidth = container.clientWidth - 40; // Add padding for container
+    const containerHeight = container.clientHeight - 40;
     
     const imageRatio = img.width / img.height;
     let newWidth, newHeight;
 
     if (imageRatio > 1) {
-      newWidth = Math.min(containerWidth, 1200);
+      // Landscape image
+      newWidth = Math.min(containerWidth, img.width);
       newHeight = newWidth / imageRatio;
       
       if (newHeight > containerHeight) {
-        newHeight = Math.min(containerHeight, 800);
+        newHeight = containerHeight;
         newWidth = newHeight * imageRatio;
       }
     } else {
-      newHeight = Math.min(containerHeight, 800);
+      // Portrait image
+      newHeight = Math.min(containerHeight, img.height);
       newWidth = newHeight * imageRatio;
       
       if (newWidth > containerWidth) {
-        newWidth = Math.min(containerWidth, 1200);
+        newWidth = containerWidth;
         newHeight = newWidth / imageRatio;
       }
     }
     
+    // Ensure minimum size for usability
+    newWidth = Math.max(newWidth, 300);
+    newHeight = Math.max(newHeight, 300);
+    
     return { 
-      width: Math.round(Math.min(newWidth, containerWidth)), 
-      height: Math.round(Math.min(newHeight, containerHeight))
+      width: Math.round(newWidth), 
+      height: Math.round(newHeight)
     };
   }, []);
   
@@ -252,13 +473,14 @@ const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
     // Create mask data
     if (maskCanvasRef.current) {
       try {
+        console.log('Creating mask data from canvas');
         // Only need the mask data, not the image data
         const maskData = maskCanvasRef.current.toDataURL('image/png');
+        console.log('Mask data created successfully');
         setMaskData(maskData);
       } catch (error) {
         console.error('Error creating mask data:', error);
-        // Show a user-friendly error message
-        alert('Unable to create mask data. The image might be from a different origin.');
+        setError('Unable to create mask data. The image might be from a different origin.');
       }
     }
   }, [isDrawing]);
@@ -279,57 +501,89 @@ const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
       setIsLoading(true);
       setError(null); // Clear any previous errors
       
-      // Try to get the image data directly from the original source instead of the canvas
-      let imageFile;
-      try {
-        // Try first with the canvas
-        imageFile = await fetch(imageCanvasRef.current.toDataURL('image/png'))
-          .then(res => res.blob())
-          .then(blob => new File([blob], 'image.png', { type: 'image/png' }));
-      } catch (error) {
-        console.warn('Canvas tainted, using original image source instead');
-        // If canvas is tainted, use the original image source
-        imageFile = await fetch(imageSrc)
-          .then(res => res.blob())
-          .then(blob => new File([blob], 'image.png', { type: 'image/png' }));
+      // Check if user has required tokens or subscription
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data();
+        
+        if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
+          setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
+          setIsLoading(false);
+          return;
+        }
+        
+        // Check if user has enough tokens (assuming retouch costs 15 tokens like objectRetouch)
+        if (tokens < 15 && userData.subscriptionStatus !== 'active') {
+          setError("You don't have enough credits. Please purchase more credits or subscribe.");
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        setError("Please log in to use this feature.");
+        setIsLoading(false);
+        return;
       }
+      
+      // Get image data from canvas directly to avoid CORS issues
+      const imageData = imageCanvasRef.current.toDataURL('image/png');
+      
+      // Convert data URL to File
+      const imageBlob = await fetch(imageData).then(res => res.blob());
+      const imageFile = new File([imageBlob], 'image.png', { type: 'image/png' });
       
       console.log('Processing image with params:', {
         prompt: prompt || '(empty prompt)',
         hasMask: !!maskData,
         imageFileSize: imageFile.size,
+        fileType: imageFile.type
       });
       
-      // Process the image directly using imported function from huggingfaceInpaint/client
+      // Convert maskData to a File object
+      const maskBlob = await fetch(maskData).then(res => res.blob());
+      const maskFile = new File([maskBlob], 'mask.png', { type: 'image/png' });
+      
+      // Set up the parameters correctly like in ObjectRetouch
+      const processParams = {
+        ...defaultParams,
+        prompt: prompt || '',
+        imageMask: {
+          background: imageFile,
+          layers: [maskFile],
+          composite: imageFile
+        },
+        use_rasg: true,
+        use_painta: true
+      };
+      
       try {
-        // Convert maskData to a File object
-        const maskFile = await fetch(maskData)
-          .then(res => res.blob())
-          .then(blob => new File([blob], 'mask.png', { type: 'image/png' }));
-        
-        // Set up the parameters correctly like in ObjectRetouch
-        const processParams = {
-          ...defaultParams,
-          prompt: prompt || '',
-          imageMask: {
-            background: imageFile,
-            layers: [maskFile],
-            composite: imageFile
-          },
-          use_rasg: true,
-          use_painta: true
-        };
-        
-        console.log('Processing with params:', {
-          prompt: processParams.prompt,
-          model: processParams.model_name,
-          hasMask: !!processParams.imageMask
-        });
-        
         const result = await processImage(imageFile, processParams);
         
         if (result && result[0] && result[0][0] && result[0][0].image) {
-          setResultImage(result[0][0].image.url);
+          const resultImageUrl = result[0][0].image.url;
+          
+          // Convert the result to a blob URL to avoid CORS issues
+          const resultBlobUrl = await convertToBlobUrl(resultImageUrl);
+          setResultImage(resultBlobUrl || resultImageUrl);
+          
+          // Save to user gallery
+          const savedImageUrl = await saveToUserGallery(resultImageUrl, user.uid);
+          
+          // Update user tokens
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, {
+            tokens: tokens - 15
+          });
+          setTokens(prev => prev - 15);
+          
+          // Choose the best URL to use for updating the parent component
+          const imageUrlToUse = savedImageUrl || resultImageUrl;
+          
+          // Immediately update the parent image without closing modal
+          if (onImageUpdate) {
+            console.log('RetouchModal calling onImageUpdate with:', imageUrlToUse);
+            onImageUpdate(imageUrlToUse);
+          }
         } else {
           throw new Error('Unexpected result format from processImage');
         }
@@ -346,7 +600,10 @@ const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
           });
           
           if (fallbackResult && fallbackResult[0] && fallbackResult[0][0] && fallbackResult[0][0].image) {
-            setResultImage(fallbackResult[0][0].image.url);
+            // Convert fallback result to blob URL
+            const fallbackBlobUrl = await convertToBlobUrl(fallbackResult[0][0].image.url);
+            setResultImage(fallbackBlobUrl || fallbackResult[0][0].image.url);
+            
             setError('Error: ' + (apiError.message || 'Unknown error') + 
                      ' - Using client-side fallback mode with simulated results.');
           } else {
@@ -362,34 +619,41 @@ const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [imageSrc, maskData, prompt]);
+  }, [convertToBlobUrl, imageSrc, maskData, prompt, tokens, user, onImageUpdate]);
   
   // Handle image loading
   useEffect(() => {
-    if (!isOpen || !imageSrc || !containerRef.current) return;
+    if (!isOpen || !convertedImageSrc || !containerRef.current) return;
     
     const loadImage = () => {
+      console.log('Loading image from blob URL:', convertedImageSrc);
+      
       const img = new Image();
-      img.crossOrigin = "anonymous";  // Add crossOrigin attribute
       
       img.onload = () => {
+        console.log('Image loaded successfully from blob URL');
         imageObjRef.current = img;
-        const dimensions = setupCanvas(img, containerRef.current);
         
-        if (renderImage(img, dimensions)) {
-          setCanvasSize(dimensions);
-        }
+        // Wait for next frame to ensure container is properly sized
+        requestAnimationFrame(() => {
+          const dimensions = setupCanvas(img, containerRef.current);
+          
+          if (renderImage(img, dimensions)) {
+            setCanvasSize(dimensions);
+          }
+        });
       };
       
-      img.onerror = () => {
-        console.error("Failed to load image");
+      img.onerror = (err) => {
+        console.error("Failed to load image from blob URL", err);
+        setError("Failed to load image. Please try again with a different image.");
       };
       
-      img.src = imageSrc;
+      img.src = convertedImageSrc;
     };
     
     loadImage();
-  }, [isOpen, imageSrc, setupCanvas, renderImage]);
+  }, [isOpen, convertedImageSrc, setupCanvas, renderImage]);
   
   // Handle mouse move and up events
   useEffect(() => {
@@ -442,6 +706,18 @@ const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
       window.removeEventListener('resize', handleResize);
     };
   }, [setupCanvas, renderImage]);
+  
+  // Clean up blob URLs on unmount or when modal closes
+  useEffect(() => {
+    return () => {
+      if (convertedImageSrc) {
+        URL.revokeObjectURL(convertedImageSrc);
+      }
+      if (resultImage && resultImage.startsWith('blob:')) {
+        URL.revokeObjectURL(resultImage);
+      }
+    };
+  }, [convertedImageSrc, resultImage]);
 
   // Early return if modal is not open
   if (!isOpen) return null;
@@ -478,7 +754,7 @@ const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
         {/* Main content */}
         <div className="flex-grow flex flex-col p-4 overflow-hidden">
           {/* Image editor area */}
-          <div ref={containerRef} className="relative flex-grow border border-gray-800 rounded-xl mb-4 overflow-hidden flex items-center justify-center">
+          <div ref={containerRef} className="relative flex-grow border border-gray-800 rounded-xl mb-4 overflow-hidden flex items-center justify-center bg-gray-950">
             {resultImage ? (
               <div className="absolute inset-0 flex items-center justify-center">
                 <img 
@@ -496,35 +772,46 @@ const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
                 </button>
               </div>
             ) : (
-              <div className="relative" style={{ 
-                transform: `scale(${zoom / 100})`,
-                transformOrigin: 'center'
-              }}>
-                <canvas
-                  ref={imageCanvasRef}
-                  className="absolute top-0 left-0"
-                />
-                <canvas
-                  ref={maskCanvasRef}
-                  className="absolute top-0 left-0"
-                  onMouseDown={startDrawing}
-                  onTouchStart={startDrawing}
-                  onTouchMove={draw}
-                  onMouseUp={stopDrawing}
-                  onTouchEnd={stopDrawing}
-                  onMouseEnter={() => setIsCanvasHovered(true)}
-                  onMouseLeave={() => {
-                    if (!isDrawing) {
-                      setIsCanvasHovered(false);
-                    }
-                  }}
-                  onMouseMove={(e) => {
-                    if (maskCanvasRef.current) {
-                      const coords = getCanvasCoordinates(e, maskCanvasRef.current);
-                      setCursorPosition(coords);
-                    }
-                  }}
-                />
+              <div 
+                className="relative flex items-center justify-center" 
+                style={{ 
+                  transform: `scale(${zoom / 100})`,
+                  transformOrigin: 'center',
+                  width: canvasSize.width > 0 ? `${canvasSize.width}px` : 'auto',
+                  height: canvasSize.height > 0 ? `${canvasSize.height}px` : 'auto',
+                  transition: 'transform 0.2s ease-out'
+                }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <canvas
+                    ref={imageCanvasRef}
+                    className="absolute top-0 left-0"
+                    style={{
+                      boxShadow: '0 0 10px rgba(0, 0, 0, 0.3)'
+                    }}
+                  />
+                  <canvas
+                    ref={maskCanvasRef}
+                    className="absolute top-0 left-0"
+                    onMouseDown={startDrawing}
+                    onTouchStart={startDrawing}
+                    onTouchMove={draw}
+                    onMouseUp={stopDrawing}
+                    onTouchEnd={stopDrawing}
+                    onMouseEnter={() => setIsCanvasHovered(true)}
+                    onMouseLeave={() => {
+                      if (!isDrawing) {
+                        setIsCanvasHovered(false);
+                      }
+                    }}
+                    onMouseMove={(e) => {
+                      if (maskCanvasRef.current) {
+                        const coords = getCanvasCoordinates(e, maskCanvasRef.current);
+                        setCursorPosition(coords);
+                      }
+                    }}
+                  />
+                </div>
                 
                 {/* Custom cursor */}
                 {(isCanvasHovered || isDrawing) && (
@@ -553,6 +840,13 @@ const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mx-auto mb-4"></div>
                   <p className="text-white">Processing...</p>
                 </div>
+              </div>
+            )}
+
+            {/* Error message */}
+            {error && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-red-500/80 text-white px-4 py-2 rounded-lg text-sm">
+                {error}
               </div>
             )}
 
@@ -603,13 +897,6 @@ const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
 
           {/* Prompt input and generate button */}
           <div className="flex flex-col gap-4">
-            {/* Error message display */}
-            {error && (
-              <div className="p-3 bg-red-500/20 border border-red-600 rounded-lg text-red-200 text-sm">
-                <strong>Error:</strong> {error}
-              </div>
-            )}
-            
             <div className="flex gap-4">
               <div className="flex-grow relative">
                 <input
@@ -640,9 +927,25 @@ const RetouchModal = ({ isOpen, onClose, imageSrc }) => {
             </div>
           </div>
         </div>
+
+        {resultImage && (
+          <div className="absolute bottom-4 right-4 z-10 flex gap-2">
+            <button
+              onClick={() => {
+                if (onImageUpdate) {
+                  onImageUpdate(resultImage);
+                  onClose();
+                }
+              }}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 text-white font-medium rounded-lg transition-colors"
+            >
+              Continue with this image
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default RetouchModal; 
+export default RetouchModal;

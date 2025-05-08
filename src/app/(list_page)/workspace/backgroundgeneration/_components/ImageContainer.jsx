@@ -19,7 +19,8 @@ export const ImageContainer = ({
   onRemove,
   onRegenerate,
   onReprompt,
-  prompt
+  prompt,
+  setImageSrc
 }) => {
   const [showViewModal, setShowViewModal] = useState(false);
   
@@ -32,6 +33,23 @@ export const ImageContainer = ({
       onFullscreen();
     } else {
       toggleViewModal();
+    }
+  };
+
+  // Handle retouched images coming back from retouch modal
+  const handleRetouchedImage = (newImageUrl) => {
+    console.log('ImageContainer.handleRetouchedImage called with URL:', newImageUrl);
+    
+    // Update the image in the parent component if setImageSrc is provided
+    if (setImageSrc) {
+      console.log('ImageContainer calling setImageSrc with:', newImageUrl);
+      setImageSrc(newImageUrl);
+    }
+    
+    // Also call the original onRetouch handler if provided
+    if (onRetouch) {
+      console.log('ImageContainer calling onRetouch with:', newImageUrl);
+      onRetouch(newImageUrl);
     }
   };
 
@@ -201,7 +219,7 @@ export const ImageContainer = ({
           imageSrc={imageSrc}
           prompt={prompt}
           onUpscale={onUpscale}
-          onRetouch={onRetouch}
+          onRetouch={handleRetouchedImage}
           onInpaint={onInpaint}
           onExpand={onExpand}
           onRemove={onRemove}

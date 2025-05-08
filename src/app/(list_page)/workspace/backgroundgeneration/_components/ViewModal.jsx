@@ -59,6 +59,17 @@ const ViewModal = ({
     setShowRetouchModal(true);
   };
 
+  // Handler for retouched image update
+  const handleRetouchedImage = (newImageUrl) => {
+    console.log('ViewModal.handleRetouchedImage called with URL:', newImageUrl);
+    
+    // Update the image in the parent component
+    if (onRetouch) {
+      console.log('ViewModal calling onRetouch with:', newImageUrl);
+      onRetouch(newImageUrl);
+    }
+  };
+
   return (
     <>
       <div 
@@ -201,6 +212,7 @@ const ViewModal = ({
         isOpen={showRetouchModal} 
         onClose={() => setShowRetouchModal(false)} 
         imageSrc={imageSrc}
+        onImageUpdate={handleRetouchedImage}
       />
     </>
   );

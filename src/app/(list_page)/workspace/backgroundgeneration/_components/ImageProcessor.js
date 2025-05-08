@@ -763,13 +763,18 @@ export default function ImageProcessor() {
             onFullscreen={() => openFullscreen(outputImage, false)}
             isInput={false}
             onUpscale={() => console.log('Upscale')} 
-            onRetouch={() => console.log('Retouch')}
+            onRetouch={(newImageUrl) => {
+              // Save the retouched image as the new output image
+              setOutputImage(newImageUrl);
+              // You could also handle other post-processing here if needed
+            }}
             onInpaint={() => console.log('Inpaint')}
             onExpand={() => console.log('Expand')}
             onRemove={() => console.log('Remove')}
             onRegenerate={() => handleGenerate()}
             onReprompt={() => console.log('Reprompt')}
             prompt={params.prompt}
+            setImageSrc={setOutputImage}
           />
         </div>
       </div>
@@ -848,7 +853,12 @@ export default function ImageProcessor() {
         imageSrc={fullscreenImage}
         prompt={params.prompt}
         onUpscale={() => console.log('Upscale')} 
-        onRetouch={() => console.log('Retouch')}
+        onRetouch={(newImageUrl) => {
+          // Update the main output image when retouching from fullscreen view
+          setOutputImage(newImageUrl);
+          // Close the fullscreen view after retouching is complete
+          closeFullscreen();
+        }}
         onInpaint={() => console.log('Inpaint')}
         onExpand={() => console.log('Expand')}
         onRemove={() => console.log('Remove')}
