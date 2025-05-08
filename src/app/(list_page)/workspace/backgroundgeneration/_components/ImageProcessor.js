@@ -138,6 +138,7 @@ export default function ImageProcessor() {
   const [activeSidebar, setActiveSidebar] = useState('settings');
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [originalUploadedFile, setOriginalUploadedFile] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -190,6 +191,7 @@ export default function ImageProcessor() {
             const fileName = 'restored-image.png';
             const file = new File([blob], fileName, { type: blob.type });
             setSelectedFile(file);
+            setOriginalUploadedFile(file); // Also set as original file
           } catch (err) {
             console.error('Failed to recreate file from data URL:', err);
           }
@@ -616,10 +618,64 @@ export default function ImageProcessor() {
     if (file) {
       setStatus("Processing image...");
       setSelectedFile(file);
+      setOriginalUploadedFile(file); // Store the original uploaded file
       createInputPreview(file);
       setStatus("Image uploaded successfully");
     }
   }, [createInputPreview]);
+
+  // Modified handleRegenerate to handle case when original file is not available
+  const handleRegenerate = () => {
+    // Generate a new random seed
+    generateRandomSeed();
+    
+    // Reset selectedFile to the original uploaded file
+    if (originalUploadedFile) {
+      setSelectedFile(originalUploadedFile);
+      
+      // If background removal is enabled, reset the input preview to the original
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // Update input preview with original image
+        setInputPreview(reader.result);
+        
+        // Then call handleGenerate with the original file
+        handleGenerate();
+      };
+      reader.readAsDataURL(originalUploadedFile);
+    } else if (inputPreview) {
+      // Fallback - recreate file from input preview if original file is not available
+      try {
+        console.log("Original file not found, recreating from input preview");
+        const recreateFileFromDataUrl = async (dataUrl) => {
+          try {
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+            const fileName = 'regenerated-image.png';
+            const file = new File([blob], fileName, { type: 'image/png' });
+            
+            // Use this file for generation
+            setSelectedFile(file);
+            setOriginalUploadedFile(file);
+            
+            // Then generate
+            handleGenerate();
+          } catch (err) {
+            console.error('Failed to recreate file from input preview:', err);
+            setError("Failed to recreate original image for regeneration");
+          }
+        };
+        
+        recreateFileFromDataUrl(inputPreview);
+      } catch (error) {
+        console.error("Error recreating file:", error);
+        setError("Failed to recreate original image for regeneration");
+      }
+    } else {
+      // No original file or input preview available
+      setError("Original image not available for regeneration - please upload a new image");
+    }
+  };
 
   // Modified handleGenerate with background removal toggle
   const handleGenerate = async () => {
@@ -947,7 +1003,33 @@ export default function ImageProcessor() {
                 setError('Please log in to save to gallery');
               }
             }}
-            onUpscale={() => console.log('Upscale')}
+            onUpscale={(newImageUrl, fileObject) => {
+              // Update the main output image when upscaling from fullscreen view
+              setOutputImage(newImageUrl);
+              
+              // If we received a file object, update selectedFile for generation
+              if (fileObject) {
+                console.log('Setting selectedFile from fullscreen upscaled image');
+                setSelectedFile(fileObject);
+              } else {
+                // Try to create a file object from the URL
+                const createFileFromUrl = async (url) => {
+                  try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'upscaled-image.png', { type: blob.type });
+                    console.log('Created file object from fullscreen upscaled image URL');
+                    setSelectedFile(file);
+                  } catch (err) {
+                    console.error('Failed to create file from upscaled URL in fullscreen:', err);
+                  }
+                };
+                createFileFromUrl(newImageUrl);
+              }
+              
+              // Close the fullscreen view after upscaling is complete
+              closeFullscreen();
+            }}
             onRetouch={(newImageUrl, fileObject) => {
               // Save the retouched image as the new output image
               setOutputImage(newImageUrl);
@@ -995,6 +1077,9 @@ export default function ImageProcessor() {
                 };
                 createFileFromUrl(newImageUrl);
               }
+              
+              // Close the fullscreen view after object removal is complete
+              closeFullscreen();
             }}
             onInpaint={() => console.log('Inpaint')}
             onExpand={(newImageUrl, fileObject) => {
@@ -1020,8 +1105,11 @@ export default function ImageProcessor() {
                 };
                 createFileFromUrl(newImageUrl);
               }
+              
+              // Close the fullscreen view after expansion is complete
+              closeFullscreen();
             }}
-            onRegenerate={() => handleGenerate()}
+            onRegenerate={handleRegenerate}
             onReprompt={() => console.log('Reprompt')}
             prompt={params.prompt}
             setImageSrc={setOutputImage}
@@ -1102,14 +1190,13 @@ export default function ImageProcessor() {
         onClose={closeFullscreen}
         imageSrc={fullscreenImage}
         prompt={params.prompt}
-        onUpscale={() => console.log('Upscale')} 
-        onRetouch={(newImageUrl, fileObject) => {
-          // Update the main output image when retouching from fullscreen view
+        onUpscale={(newImageUrl, fileObject) => {
+          // Update the main output image when upscaling from fullscreen view
           setOutputImage(newImageUrl);
           
           // If we received a file object, update selectedFile for generation
           if (fileObject) {
-            console.log('Setting selectedFile from fullscreen retouched image');
+            console.log('Setting selectedFile from fullscreen upscaled image');
             setSelectedFile(fileObject);
           } else {
             // Try to create a file object from the URL
@@ -1117,38 +1204,62 @@ export default function ImageProcessor() {
               try {
                 const response = await fetch(url);
                 const blob = await response.blob();
-                const file = new File([blob], 'retouched-image.png', { type: blob.type });
-                console.log('Created file object from fullscreen retouched image URL');
+                const file = new File([blob], 'upscaled-image.png', { type: blob.type });
+                console.log('Created file object from fullscreen upscaled image URL');
                 setSelectedFile(file);
               } catch (err) {
-                console.error('Failed to create file from retouched URL in fullscreen:', err);
+                console.error('Failed to create file from upscaled URL in fullscreen:', err);
               }
             };
             createFileFromUrl(newImageUrl);
           }
           
-          // Close the fullscreen view after retouching is complete
+          // Close the fullscreen view after upscaling is complete
           closeFullscreen();
         }}
-        onRemove={(newImageUrl, fileObject) => {
-          // Update the main output image when removing objects from fullscreen view
+        onRetouch={(newImageUrl, fileObject) => {
+          // Save the retouched image as the new output image
           setOutputImage(newImageUrl);
           
-          // If we received a file object, update selectedFile for generation
+          // If we got a file object, update selectedFile for future generate operations
           if (fileObject) {
-            console.log('Setting selectedFile from fullscreen object-removed image');
+            console.log('Setting selectedFile from retouched image file object');
             setSelectedFile(fileObject);
           } else {
-            // Try to create a file object from the URL
+            // Try to convert the URL to a file object
+            const createFileFromUrl = async (url) => {
+              try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const file = new File([blob], 'retouched-image.png', { type: blob.type });
+                console.log('Created file object from retouched image URL');
+                setSelectedFile(file);
+              } catch (err) {
+                console.error('Failed to create file from retouched URL:', err);
+              }
+            };
+            createFileFromUrl(newImageUrl);
+          }
+        }}
+        onRemove={(newImageUrl, fileObject) => {
+          // Save the object-removed image as the new output image
+          setOutputImage(newImageUrl);
+          
+          // If we got a file object, update selectedFile for future generate operations
+          if (fileObject) {
+            console.log('Setting selectedFile from object-removed image file object');
+            setSelectedFile(fileObject);
+          } else {
+            // Try to convert the URL to a file object
             const createFileFromUrl = async (url) => {
               try {
                 const response = await fetch(url);
                 const blob = await response.blob();
                 const file = new File([blob], 'object-removed-image.png', { type: blob.type });
-                console.log('Created file object from fullscreen object-removed image URL');
+                console.log('Created file object from object-removed image URL');
                 setSelectedFile(file);
               } catch (err) {
-                console.error('Failed to create file from object-removed URL in fullscreen:', err);
+                console.error('Failed to create file from object-removed URL:', err);
               }
             };
             createFileFromUrl(newImageUrl);
@@ -1159,24 +1270,24 @@ export default function ImageProcessor() {
         }}
         onInpaint={() => console.log('Inpaint')}
         onExpand={(newImageUrl, fileObject) => {
-          // Update the main output image when expanding from fullscreen view
+          // Save the expanded image as the new output image
           setOutputImage(newImageUrl);
           
-          // If we received a file object, update selectedFile for generation
+          // If we got a file object, update selectedFile for future generate operations
           if (fileObject) {
-            console.log('Setting selectedFile from fullscreen expanded image');
+            console.log('Setting selectedFile from expanded image file object');
             setSelectedFile(fileObject);
           } else {
-            // Try to create a file object from the URL
+            // Try to convert the URL to a file object
             const createFileFromUrl = async (url) => {
               try {
                 const response = await fetch(url);
                 const blob = await response.blob();
                 const file = new File([blob], 'expanded-image.png', { type: blob.type });
-                console.log('Created file object from fullscreen expanded image URL');
+                console.log('Created file object from expanded image URL');
                 setSelectedFile(file);
               } catch (err) {
-                console.error('Failed to create file from expanded URL in fullscreen:', err);
+                console.error('Failed to create file from expanded URL:', err);
               }
             };
             createFileFromUrl(newImageUrl);
@@ -1185,7 +1296,7 @@ export default function ImageProcessor() {
           // Close the fullscreen view after expansion is complete
           closeFullscreen();
         }}
-        onRegenerate={() => handleGenerate()}
+        onRegenerate={handleRegenerate}
         onReprompt={() => console.log('Reprompt')}
         onDownload={() => fullscreenImage && handleDownload(fullscreenImage)}
       />
