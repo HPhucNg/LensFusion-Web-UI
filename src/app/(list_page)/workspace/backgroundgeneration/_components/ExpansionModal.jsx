@@ -626,15 +626,6 @@ const ExpansionModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
               Configure the expansion settings and generate an expanded version of your image
             </p>
           </div>
-          
-          {/* Add close button in header */}
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
-            title="Close"
-          >
-            <X className="w-5 h-5 text-gray-400" />
-          </button>
         </div>
 
         {/* Main content */}
@@ -745,23 +736,21 @@ const ExpansionModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
             {/* Expansion Settings */}
             <div className="space-y-3">
               <h3 className="text-lg font-medium text-white">Expansion Settings</h3>
-              
-              {/* Overlap percentage */}
+
+              {/* Alignment */}
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Overlap (%)</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="50"
-                  value={params.overlap_percentage}
-                  onChange={(e) => handleParamChange('overlap_percentage', Number(e.target.value))}
-                  className="w-full accent-purple-500"
-                />
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>0%</span>
-                  <span>{params.overlap_percentage}%</span>
-                  <span>50%</span>
-                </div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Alignment</label>
+                <select
+                  value={params.alignment}
+                  onChange={(e) => handleParamChange('alignment', e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                >
+                  <option value="Middle">Middle</option>
+                  <option value="Top">Top</option>
+                  <option value="Bottom">Bottom</option>
+                  <option value="Left">Left</option>
+                  <option value="Right">Right</option>
+                </select>
               </div>
               
               {/* Inference steps */}
@@ -784,76 +773,60 @@ const ExpansionModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
               
               {/* Resize Option */}
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Resize Option</label>
-                <select
-                  value={params.resize_option}
-                  onChange={(e) => handleParamChange('resize_option', e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
-                >
-                  <option value="Full">Full</option>
-                  <option value="Crop">Crop</option>
-                  <option value="Custom">Custom</option>
-                </select>
-              </div>
-              
-              {/* Alignment */}
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Alignment</label>
-                <select
-                  value={params.alignment}
-                  onChange={(e) => handleParamChange('alignment', e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
-                >
-                  <option value="Middle">Middle</option>
-                  <option value="Top">Top</option>
-                  <option value="Bottom">Bottom</option>
-                  <option value="Left">Left</option>
-                  <option value="Right">Right</option>
-                </select>
-              </div>
-              
-              {/* Overlap toggles */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-400 mb-1">Overlap Edges</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="flex items-center space-x-2 text-sm text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={params.overlap_left}
-                      onChange={(e) => handleParamChange('overlap_left', e.target.checked)}
-                      className="rounded text-purple-500 focus:ring-purple-500"
-                    />
-                    <span>Left</span>
-                  </label>
-                  <label className="flex items-center space-x-2 text-sm text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={params.overlap_right}
-                      onChange={(e) => handleParamChange('overlap_right', e.target.checked)}
-                      className="rounded text-purple-500 focus:ring-purple-500"
-                    />
-                    <span>Right</span>
-                  </label>
-                  <label className="flex items-center space-x-2 text-sm text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={params.overlap_top}
-                      onChange={(e) => handleParamChange('overlap_top', e.target.checked)}
-                      className="rounded text-purple-500 focus:ring-purple-500"
-                    />
-                    <span>Top</span>
-                  </label>
-                  <label className="flex items-center space-x-2 text-sm text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={params.overlap_bottom}
-                      onChange={(e) => handleParamChange('overlap_bottom', e.target.checked)}
-                      className="rounded text-purple-500 focus:ring-purple-500"
-                    />
-                    <span>Bottom</span>
-                  </label>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Resize Input Image</label>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleParamChange('resize_option', "Full")}
+                    className={`px-3 py-2 rounded ${params.resize_option === "Full" ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                  >
+                    Full
+                  </button>
+                  <button
+                    onClick={() => handleParamChange('resize_option', "50%")}
+                    className={`px-3 py-2 rounded ${params.resize_option === "50%" ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                  >
+                    50%
+                  </button>
+                  <button
+                    onClick={() => handleParamChange('resize_option', "33%")}
+                    className={`px-3 py-2 rounded ${params.resize_option === "33%" ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                  >
+                    33%
+                  </button>
+                  <button
+                    onClick={() => handleParamChange('resize_option', "25%")}
+                    className={`px-3 py-2 rounded ${params.resize_option === "25%" ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                  >
+                    25%
+                  </button>
+                  <button
+                    onClick={() => handleParamChange('resize_option', "Custom")}
+                    className={`px-3 py-2 rounded ${params.resize_option === "Custom" ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                  >
+                    Custom
+                  </button>
                 </div>
               </div>
+              
+              {/* Custom resize percentage - only show if Custom is selected */}
+              {params.resize_option === "Custom" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Custom Resize (%)</label>
+                  <input
+                    type="range"
+                    min="10"
+                    max="100"
+                    value={params.custom_resize_percentage}
+                    onChange={(e) => handleParamChange('custom_resize_percentage', Number(e.target.value))}
+                    className="w-full accent-purple-500"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>10%</span>
+                    <span>{params.custom_resize_percentage}%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Generate button */}
