@@ -29,6 +29,7 @@ import {
 } from "lucide-react"
 import RetouchModal from './RetouchModal';
 import ObjectRemovalModal from './ObjectRemovalModal';
+import ExpansionModal from './ExpansionModal';
 
 const ViewModal = ({ 
   isOpen, 
@@ -46,6 +47,7 @@ const ViewModal = ({
 }) => {
   const [showRetouchModal, setShowRetouchModal] = useState(false);
   const [showObjectRemovalModal, setShowObjectRemovalModal] = useState(false);
+  const [showExpansionModal, setShowExpansionModal] = useState(false);
 
   if (!isOpen) return null;
 
@@ -63,6 +65,10 @@ const ViewModal = ({
 
   const handleRemoveClick = () => {
     setShowObjectRemovalModal(true);
+  };
+
+  const handleExpandClick = () => {
+    setShowExpansionModal(true);
   };
 
   // Handler for retouched image update
@@ -84,6 +90,17 @@ const ViewModal = ({
     if (onRemove) {
       console.log('ViewModal calling onRemove with:', newImageUrl);
       onRemove(newImageUrl, fileObject);
+    }
+  };
+
+  // Handler for expanded image update
+  const handleExpandedImage = (newImageUrl, fileObject) => {
+    console.log('ViewModal.handleExpandedImage called with URL:', newImageUrl);
+    
+    // Update the image in the parent component
+    if (onExpand) {
+      console.log('ViewModal calling onExpand with:', newImageUrl);
+      onExpand(newImageUrl, fileObject);
     }
   };
 
@@ -177,7 +194,7 @@ const ViewModal = ({
                     </button>
                     
                     <button 
-                      onClick={onExpand} 
+                      onClick={handleExpandClick} 
                       className="flex items-center justify-center space-x-2 p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
                     >
                       <Expand className="w-4 h-4" />
@@ -239,6 +256,14 @@ const ViewModal = ({
         onClose={() => setShowObjectRemovalModal(false)} 
         imageSrc={imageSrc}
         onImageUpdate={handleObjectRemovedImage}
+      />
+
+      {/* Expansion Modal */}
+      <ExpansionModal 
+        isOpen={showExpansionModal} 
+        onClose={() => setShowExpansionModal(false)} 
+        imageSrc={imageSrc}
+        onImageUpdate={handleExpandedImage}
       />
     </>
   );

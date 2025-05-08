@@ -37,7 +37,6 @@ function ViewModal({ closeModal, image, posts, currentIndex, setCurrentIndex }) 
         setShowCommentsOverlay(false);
     };
 
-
     const openFullscreen = (imageUrl) => {
         setFullscreenImage(imageUrl);
         setIsFullscreen(true);
