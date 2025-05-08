@@ -12,8 +12,10 @@ import ImageUploader from './ImageUploader';
 import DrawingTools from './DrawingTools';
 import ResultViewer from './ResultViewer';
 import ActionButtons from './ActionButtons';
-import { auth } from '@/firebase/FirebaseConfig';
+import { auth, db } from '@/firebase/FirebaseConfig';
 import { saveToGallery } from '@/lib/saveToGallery';
+import { updateUserTokens } from "@/firebase/firebaseUtils";
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function ObjectRemovalUI() {
   const [uploadLoading, setUploadLoading] = useState(false);
@@ -37,6 +39,11 @@ export default function ObjectRemovalUI() {
   
   const [isCanvasHovered, setIsCanvasHovered] = useState(false);
   
+  // Token management
+  const [tokens, setTokens] = useState(0);
+  const [freeTrialTokens, setFreeTrialTokens] = useState(0);
+  const [error, setError] = useState('');
+
   const originalFileInputRef = useRef(null);
   const imageContainerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -45,6 +52,25 @@ export default function ObjectRemovalUI() {
   const imageRef = useRef(null);
   const resultImageRef = useRef(null);
 
+  const requiredTokens = 3;
+
+  // get user tokens count
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        const userRef = doc(db, "users", currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          setTokens(userDoc.data().tokens || 0);
+          setFreeTrialTokens(userDoc.data().freeTrialTokens || 0);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+  
   // Set up the canvas when original image is loaded
   useEffect(() => {
     if (originalImage && canvasRef.current && maskCanvasRef.current && imageContainerRef.current) {
@@ -281,12 +307,36 @@ export default function ObjectRemovalUI() {
     
     console.log("Starting remove object process");
     console.log("Current padding metadata:", paddingMetadata);
-    
+    // Error handling for tokens
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+      
+      if (userData.subscriptionStatus === 'inactive' && userData.tokens < requiredTokens) {
+        setError("You don't have enough credits. Please subscribe to continue.");
+        setProcessing(false);
+        return;
+      }
+      
+      if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
+        setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
+        setProcessing(false);
+        return;
+      }
+    }
     // Get padded mask with transparency
     const paddedMask = await padMaskToSquare(paddingMetadata, maskCanvasRef, originalDimensions);
     if (!paddedMask) {
       alert('Please draw the areas you want to remove');
       return;
+    }
+
+    // Update user token
+    const updatedTokens = await updateUserTokens(user.uid, requiredTokens);
+    if (updatedTokens) {
+      setTokens(updatedTokens.newTotalTokens);
+      setFreeTrialTokens(updatedTokens.newFreeTrialTokens);
     }
 
     setProcessing(true);
@@ -567,7 +617,11 @@ export default function ObjectRemovalUI() {
           isSaving={saving}
         />
       </div>
-      
+      {error && (
+        <div className="text-xs text-red-400 border border-gray-600 p-2 rounded-md mt-3 inline-block ">
+          {error}
+        </div>
+      )}
       {/* Tips Section */}
       <div className="mt-10 pt-4 px-4 pb-2 rounded-xl backdrop-blur-sm bg-gray-800/50 border border-gray-700">
         <h3 className="text-sm font-semibold mb-2 text-purple-400">Tips for best results:</h3>
