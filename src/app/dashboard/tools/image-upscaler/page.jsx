@@ -54,6 +54,8 @@ export default function ImageUpscaler() {
   const [success, setSuccess] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
 
+  const tokenCost = 3;
+
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       if (currentUser) {
@@ -107,20 +109,16 @@ export default function ImageUpscaler() {
   };
 
   const handleUpscaleImage = async () => {
-    if (!inputImage || isProcessing || tokens < 1) return;
+    if (!inputImage || isProcessing ) return;
     
-    setIsProcessing(true);
-    setError(null);
-    setSuccess(null);
-    
-    // Locked token for unsubscribed users
+    // Error handling for tokens
     if (user) {
       const userRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userRef);
       const userData = userDoc.data();
 
       // Handle token to not go below 0
-      if (userData.subscriptionStatus === 'inactive' && userData.tokens < 1) {
+      if (userData.subscriptionStatus === 'inactive' && userData.tokens < tokenCost) {
         setError("You don't have enough credits. Please subscribe to continue");
         setIsProcessing(false);
         return;
@@ -133,6 +131,17 @@ export default function ImageUpscaler() {
       }
     }
 
+    // Update tokens
+    const updatedTokens = await updateUserTokens(user.uid, tokenCost);
+      if (updatedTokens) {
+        setTokens(updatedTokens.newTotalTokens);
+        setFreeTrialTokens(updatedTokens.newFreeTrialTokens);
+      }      
+
+    setIsProcessing(true);
+    setError(null);
+    setSuccess(null);
+    
     try {
       const response = await fetch(inputImage);
       const blob = await response.blob();
@@ -140,9 +149,6 @@ export default function ImageUpscaler() {
       
       const resultUrl = await upscaleImageClient(file);
       setOutputImage(resultUrl);
-      
-      const userRef = doc(db, 'users', user.uid);
-      await updateUserTokens(user.uid, 1);
       
       const saved = await saveToUserGallery(resultUrl, user.uid);
       if (saved) {
@@ -281,7 +287,7 @@ export default function ImageUpscaler() {
                 <>
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-600/0 via-purple-600/20 to-purple-600/0 group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                   <Upload className="w-5 h-5 mr-2 relative z-10" />
-                  <span className="relative z-10">Upscale & Restore (1 Token)</span>
+                  <span className="relative z-10">Upscale & Restore ({tokenCost} Token)</span>
                 </>
               )}
             </Button>

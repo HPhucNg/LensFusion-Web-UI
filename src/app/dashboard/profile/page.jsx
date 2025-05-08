@@ -23,6 +23,7 @@ import DoughnutChart from './DoughnutChart';
 import { Category, categoriesData, categoryMapping } from './Category'
 import { useTheme } from '@/hooks/useTheme';
 import SubscriptionManagement from './SubscriptionManagement'
+import { useSearchParams } from 'next/navigation';
 
 import { 
   doc, 
@@ -917,6 +918,10 @@ export default function UserProfile() {
   const [hoveredPage, setHoveredPage] = useState(null);
   //const [showCommunityModal, setShowCommunityModal] = useState(false);
   
+  // Checks if manage subscription tab is open or not
+  const [showSubscription, setShowSubscription] = useState(false);
+  const searchParams = useSearchParams();
+
   // Use the theme hook instead of inline theme logic
   const { theme, toggleTheme } = useTheme();
   
@@ -976,7 +981,19 @@ export default function UserProfile() {
       setCurrentPage(1);
     }
   }, [currentPage, totalPages]);
-  
+
+  // Check if the URL parameter exists to open subscription
+  useEffect(() => {
+    if (searchParams.get('openSubscription') === 'true') {
+      setShowSubscription(true);
+    }
+  }, [searchParams]);
+
+  // Close subscription management modal
+  const handleCloseSubscription = () => {
+    setShowSubscription(false);
+  };
+
   // Paginate the images
   const startIndex = (currentPage - 1) * imagesPerPage;
   const endIndex = startIndex + imagesPerPage;
@@ -1618,6 +1635,11 @@ export default function UserProfile() {
         <SubscriptionManagement 
           onClose={() => setIsSubscriptionManagementOpen(false)}
         />
+      )}
+      
+      {/* Nav user routes to manage subscription page */}
+      {showSubscription && (
+        <SubscriptionManagement onClose={handleCloseSubscription} />
       )}
             
     </div>

@@ -199,32 +199,40 @@ export default function Inpaint() {
 
   //handle generate image
   const handleGenerate = async () => {
-    const requiredTokens = 15;
+    const requiredTokens = 3;
 
+    // Error handling for tokens
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+      
+      if (userData.subscriptionStatus === 'inactive' && userData.tokens < requiredTokens) {
+        setError("You don't have enough credits. Please subscribe to continue.");
+        setIsProcessing(false);
+        return;
+      }
+      
+      if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
+        setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
+        setIsProcessing(false);
+        return;
+      }
+    }
+
+    // Update tokens
+    const updatedTokens = await updateUserTokens(user.uid, requiredTokens);
+    if (updatedTokens) {
+      setTokens(updatedTokens.newTotalTokens);
+      setFreeTrialTokens(updatedTokens.newFreeTrialTokens);
+    }
+    
     // Reset states
     setIsProcessing(true);
     setError(null);
     setOutputImage(null);
   
     try {
-      // Locked token for unsubscribed users
-      if (user) {
-        const userRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userRef);
-        const userData = userDoc.data();
-        
-        if (userData.subscriptionStatus === 'inactive' && userData.tokens < requiredTokens) {
-          setError("You don't have enough credits. Please subscribe to continue");
-          setIsProcessing(false);
-          return;
-        }
-        
-        if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
-          setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
-          setIsProcessing(false);
-          return;
-        }
-      }
       const processParams = { ...params, responseType: 'base64' };
 
       // create URL for both mask and image
@@ -249,13 +257,6 @@ export default function Inpaint() {
         setStatus("Image generated successfully");
       } else {
         setError("Could not extract image URL from response");
-      }
-      
-      // Update tokens
-      const updatedTokens = await updateUserTokens(user.uid, requiredTokens);
-      if (updatedTokens) {
-        setTokens(updatedTokens.newTotalTokens);
-        setFreeTrialTokens(updatedTokens.newFreeTrialTokens);
       }
       
       const saved = await saveToUserGallery(imageUrl, user.uid);

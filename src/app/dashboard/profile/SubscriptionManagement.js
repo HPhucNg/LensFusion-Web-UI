@@ -123,7 +123,7 @@ export default function SubscriptionManagement({ onClose }) {
                                             </div>
                                         </div>
                                         <h4 className="text-sm px-2 sm:px-4 text-gray-400 mt-2">
-                                            Your free trial includes 50 credits and you have used {freeTrialTokens} credits.
+                                            Your free trial includes 50 credits and you have {freeTrialTokens} credits left.
                                         </h4>
                                     </div>
                                 </div>

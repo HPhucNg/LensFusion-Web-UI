@@ -110,7 +110,7 @@ export function NavUser({
                 <BadgeCheck />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/dashboard/profile?openSubscription=true')}>
                 <CreditCard />
                 Billing
               </DropdownMenuItem>
