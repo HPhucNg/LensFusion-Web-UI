@@ -48,17 +48,13 @@ export default function Navbar() {
 
   const authenticatedLinks = [
     { href: '/dashboard', label: 'Dashboard' },
-    { href: '/resources', label: 'Resources' },
     { href: '/community', label: 'Community' },
     { href: '/contact', label: 'Contact' },
-    { href: '/solutions', label: 'Solutions' },
     { href: '/pricing', label: 'Pricing' },
     { href: '/about', label: 'About' }
   ];
   
   const unauthenticatedLinks = [
-    { href: '/solutions', label: 'Solutions' },
-    { href: '/resources', label: 'Resources' },
     { href: '/community', label: 'Community' },
     { href: '/pricing', label: 'Pricing' },
     { href: '/contact', label: 'Contact' },
