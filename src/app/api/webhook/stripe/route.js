@@ -145,6 +145,7 @@ async function handleCheckoutSessionCompleted(session) {
             const userData = userDoc.data();
             let newTokenCount;
             let tokensToRestore = 0;
+            const freeTrialTokens = userData.freeTrialTokens || 0;
 
             // Check if locked token is valid
             if (userData.lockedTokens && userData.lockedTokensExpirationDate) {
@@ -181,7 +182,8 @@ async function handleCheckoutSessionCompleted(session) {
                 cancel_at_period_end: false,
                 cancelationDate: null,
                 lockedTokens: null,
-                lockedTokensExpirationDate: null
+                lockedTokensExpirationDate: null,
+                freeTrialTokens: freeTrialTokens
             });
         } else {
             console.error("User document not found!");
@@ -259,6 +261,7 @@ export async function POST(req) {
                             const currentUserData = userDoc.data();
                             if (currentUserData.subscriptionId === subscriptionId) {                                
                                 const currentTokens = currentUserData.tokens || 0;
+                                const freeTrialTokens = currentUserData.freeTrialTokens || 0;
 
                                 await updateDoc(userRef, {
                                     subscriptionStatus: 'inactive',
@@ -266,7 +269,10 @@ export async function POST(req) {
                                     cancelationDate: null,
                                     lockedTokens: currentTokens,
                                     lockedTokensExpirationDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-                                    tokens: currentTokens
+                                    tokens: currentTokens,
+                                    currentPlan: null,
+                                    planCycle: null,
+                                    freeTrialTokens: freeTrialTokens
                                 });
                             }
                         }  
@@ -290,7 +296,9 @@ export async function POST(req) {
                             const isPlanChange = !pendingDocs.empty;
                             
                             if (!isPlanChange) {
-                                const currentTokens = userDoc.data().tokens;
+                                const currentUserData = userDoc.data();
+                                const currentTokens = currentUserData.tokens || 0;
+                                const freeTrialTokens = currentUserData.freeTrialTokens || 0;
 
                                 await updateDoc(userRef, {
                                     subscriptionStatus: 'inactive',
@@ -299,7 +307,8 @@ export async function POST(req) {
                                     lockedTokens: currentTokens,
                                     // After 60 days credits willl set to 0
                                     lockedTokensExpirationDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-                                    tokens: currentTokens
+                                    tokens: currentTokens,
+                                    freeTrialTokens: freeTrialTokens,
                                 });
                             }
                         }

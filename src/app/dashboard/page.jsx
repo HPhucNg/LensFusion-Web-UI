@@ -13,7 +13,7 @@ import {
 import ScrollToTop from "@/components/ScrollToTop";
 import Image from "next/image";
 import { auth, db } from "@/firebase/FirebaseConfig";
-import { doc, getDoc, onSnapshot, collection, query, orderBy, getDocs } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, collection, query, orderBy, getDocs, where } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import ViewModal from "@/components/ViewModal";
@@ -34,14 +34,39 @@ function MobileTrigger() {
   );
 }
 
+// Define the categories for filtering
+const categories = [
+  { id: 'all', label: 'All', color: '#B9EF9B' },
+  { id: 'skincare', label: 'Skincare', color: '#E6CCB1' },
+  { id: 'candles', label: 'Candle', color: '#E6E0B1' },
+  { id: 'furniture', label: 'Furniture', color: '#B1DBE6' },
+  { id: 'cars', label: 'Car', color: '#C7B1E6' },
+  { id: 'bags', label: 'Bag', color: '#B8B1E6' },
+  { id: 'jewelry', label: 'Jewelry', color: '#E6B1D8' },
+  { id: 'shoes', label: 'Shoes', color: '#B1E6C2' },
+  { id: 'watches', label: 'Watch', color: '#E6D8B1' },
+  { id: 'toys', label: 'Toy', color: '#E6B1B1' },
+  { id: 'electronics', label: 'Electronic', color: '#B1C7E6' },
+  { id: 'others', label: 'Others', color: '#D9B1E6' },
+];
+
+// Sort options
+const sortOptions = [
+  { id: 'latest', label: 'Latest' },
+  { id: 'popular', label: 'Popular' },
+];
+
 export default function Page() {
   const [user, setUser] = useState(null);
   const [tokens, setTokens] = useState(0);
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState([]);
+  const [filteredPosts, setFilteredPosts] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [columns, setColumns] = useState(4); // default to 4 columns
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sortBy, setSortBy] = useState('latest');
 
   // Handle responsive columns
   useEffect(() => {
@@ -65,7 +90,26 @@ export default function Page() {
     };
   }, []);
 
-  // Fetch posts from Firestore - only community posts
+  // Filter and sort posts
+  useEffect(() => {
+    // First filter by category
+    let filtered = [...posts];
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(post => post.category === selectedCategory);
+    }
+    
+    // Then sort based on sortBy option
+    if (sortBy === 'popular') {
+      filtered.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
+    } else {
+      // Sort by latest (default)
+      filtered.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+    }
+    
+    setFilteredPosts(filtered);
+  }, [selectedCategory, sortBy, posts]);
+
+  // Fetch posts from Firestore with likes count
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -75,12 +119,25 @@ export default function Page() {
         const q = query(communityRef, orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
         
-        const fetchedPosts = querySnapshot.docs.map(doc => ({
+        const postsWithoutLikes = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
+          likesCount: 0 // Initialize with 0
         }));
         
-        setPosts(fetchedPosts);
+        // Get likes count for each post
+        const postsWithLikes = await Promise.all(
+          postsWithoutLikes.map(async (post) => {
+            const likesRef = collection(db, "community", post.id, "likes");
+            const likesSnapshot = await getDocs(likesRef);
+            return {
+              ...post,
+              likesCount: likesSnapshot.size
+            };
+          })
+        );
+        
+        setPosts(postsWithLikes);
       } catch (error) {
         console.error("Error fetching community posts:", error);
       } finally {
@@ -127,6 +184,16 @@ export default function Page() {
 
   const closeModal = () => {
     setShowModal(false);
+  };
+
+  // Handle category selection
+  const handleCategoryClick = (categoryId) => {
+    setSelectedCategory(categoryId);
+  };
+
+  // Handle sort option change
+  const handleSortChange = (sortId) => {
+    setSortBy(sortId);
   };
 
   return (
@@ -198,7 +265,58 @@ export default function Page() {
                   </div>
                 </div>
                 
-                <h1 className="text-2xl font-bold mb-8">Discover Creations</h1>
+                <div className="flex justify-between items-center mb-4">
+                  <h1 className="text-2xl font-bold">Discover Creations</h1>
+                  
+                  {/* Sort Options */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-400">Sort by:</span>
+                    <div className="flex rounded-lg overflow-hidden border border-gray-700">
+                      {sortOptions.map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => handleSortChange(option.id)}
+                          className={`px-3 py-1.5 text-sm transition-colors ${
+                            sortBy === option.id 
+                              ? 'bg-gray-700 text-white' 
+                              : 'bg-transparent text-gray-400 hover:bg-gray-800'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Category Filter Buttons */}
+                <div className="mb-8">
+                  <div className="mb-3">
+                    <h2 className="text-sm font-medium text-gray-400">Filter by category:</h2>
+                  </div>
+                  <div className="flex flex-wrap gap-2 sm:gap-3 overflow-x-auto pb-3 -mx-2 px-2 scrollbar-thin">
+                    {categories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => handleCategoryClick(category.id)}
+                        className={`px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center whitespace-nowrap shadow-sm ${
+                          selectedCategory === category.id 
+                            ? 'font-medium ring-2 ring-white/20 ring-offset-1 ring-offset-transparent' 
+                            : 'font-normal hover:shadow-md'
+                        }`}
+                        style={{
+                          backgroundColor: selectedCategory === category.id ? category.color : 'rgba(255, 255, 255, 0.07)',
+                          color: selectedCategory === category.id ? '#141823' : 'white',
+                          backdropFilter: 'blur(8px)',
+                          minWidth: category.id === 'all' ? '60px' : '80px',
+                          animation: selectedCategory === category.id ? 'tagPulse 2s infinite' : 'none'
+                        }}
+                      >
+                        {category.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 
                 {/* Masonry Grid Layout for Images */}
                 <div className="flex justify-center px-4 w-full">
@@ -208,9 +326,9 @@ export default function Page() {
                         <div className="spinner"></div>
                         <p className="text-xl text-gray-400 mt-4">Loading community creations...</p>
                       </div>
-                    ) : posts.length > 0 ? (
+                    ) : filteredPosts.length > 0 ? (
                       <Masonry columnsCount={columns} gutter="10px">
-                        {posts.map((post, index) => (
+                        {filteredPosts.map((post, index) => (
                           <div key={post.id} onClick={() => openModal(index)} className="cursor-pointer">
                             <Pin image={post} />
                           </div>
@@ -218,7 +336,11 @@ export default function Page() {
                       </Masonry>
                     ) : (
                       <div className="text-center py-20">
-                        <p className="text-xl text-gray-400">No images found in the community.</p>
+                        <p className="text-xl text-gray-400">
+                          {selectedCategory === 'all' 
+                            ? "No images found in the community." 
+                            : `No ${selectedCategory} images found in the community.`}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -230,12 +352,15 @@ export default function Page() {
       </SidebarProvider>
       
       {/* View Modal */}
-      {showModal && posts.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
+      {showModal && filteredPosts.length > 0 && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => closeModal()} // Close modal when clicking on backdrop
+        >
           <ViewModal 
             closeModal={closeModal} 
-            image={posts[currentIndex]} 
-            posts={posts} 
+            image={filteredPosts[currentIndex]} 
+            posts={filteredPosts} 
             currentIndex={currentIndex} 
             setCurrentIndex={setCurrentIndex} 
           />

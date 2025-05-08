@@ -15,7 +15,7 @@ export default function SubscriptionManagement({ onClose }) {
     const [isResubscribe, setIsResubscribe] = useState(false);
     
     // Get updated data from Context
-    const { status: subscriptionStatus, currentPlan, subscriptionId, cancelationDate, loading, subscriptionEndDate, updateTokenCount, refreshSubscription } = useSubscription();
+    const { status: subscriptionStatus, currentPlan, subscriptionId, cancelationDate, loading, subscriptionEndDate, freeTrialTokens, updateTokenCount, refreshSubscription } = useSubscription();
 
     useEffect(() => {
         if (success) {
@@ -112,7 +112,22 @@ export default function SubscriptionManagement({ onClose }) {
                         ) : (
                         <>
                             {activeTab === 'current' && (
-                                <div className="space-y-6">
+                                <div className="space-y-6">     
+                                {/* Free Trial Section */}
+                                {freeTrialTokens > 0 && (
+                                 <div className="border border-gray-400 p-2 rounded-lg shadow-xl">
+                                    <div className="p-3 sm:p-4 rounded-lg">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                            <div>
+                                                <h4 className="text-xl sm:text-2xl font-semibold gradient-plan-text select-none">Free Trial Activated</h4>
+                                            </div>
+                                        </div>
+                                        <h4 className="text-sm px-2 sm:px-4 text-gray-400 mt-2">
+                                            Your free trial includes 50 credits and you have {freeTrialTokens} credits left.
+                                        </h4>
+                                    </div>
+                                </div>
+                            )}
 
                                     {/* Active Subscription */}
                                     {subscriptionStatus === 'active' ? (

@@ -12,6 +12,10 @@ const nextConfig = {
           protocol: 'https',
           hostname: 'raynamaru-hd-painter.hf.space',
         },
+        // {
+        //   protocol: 'https',
+        //   hostname: 'firebasestorage.googleapis.com',
+        // },
       ],
     },
     experimental: {
