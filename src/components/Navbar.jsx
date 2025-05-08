@@ -48,17 +48,13 @@ export default function Navbar() {
 
   const authenticatedLinks = [
     { href: '/dashboard', label: 'Dashboard' },
-    { href: '/resources', label: 'Resources' },
     { href: '/community', label: 'Community' },
     { href: '/contact', label: 'Contact' },
-    { href: '/solutions', label: 'Solutions' },
     { href: '/pricing', label: 'Pricing' },
     { href: '/about', label: 'About' }
   ];
   
   const unauthenticatedLinks = [
-    { href: '/solutions', label: 'Solutions' },
-    { href: '/resources', label: 'Resources' },
     { href: '/community', label: 'Community' },
     { href: '/pricing', label: 'Pricing' },
     { href: '/contact', label: 'Contact' },
@@ -119,7 +115,7 @@ export default function Navbar() {
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-[#0D161F] border-gray-800">
+              <DropdownMenuContent align="end" className="w-56 bg-[var(--card-background)] border-[var(--border-gray)]">
                 <DropdownMenuItem onClick={() => router.push('/dashboard')} className="text-slate-400 hover:text-white cursor-pointer">
                   Dashboard
                 </DropdownMenuItem>

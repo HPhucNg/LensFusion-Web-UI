@@ -14,7 +14,7 @@
     "@fal-ai/client": "^1.4.0",
     "@hookform/resolvers": "^3.9.1",
     "@imgly/background-removal": "^1.6.0",
-    "@lottiefiles/dotlottie-react": "^0.13.4",
+    "@lottiefiles/dotlottie-react": "^0.13.5",
     "@lottiefiles/react-lottie-player": "^3.6.0",
     "@okta/okta-auth-js": "^7.12.1",
     "@okta/okta-react": "^6.9.0",

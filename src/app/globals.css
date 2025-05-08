@@ -167,6 +167,7 @@ html.light .bg-gradient-to-r {
   --modal-background: rgba(255, 255, 255, 0.404);
   --modal-backdrop: blur(10px); /* Equivalent to backdrop-blur-lg */
   --border-gray:#e0e0e0; 
+
 }
 
 html.light .hover\:from-gray-800:hover {
@@ -298,4 +299,58 @@ html.light .gradient-plan-text {
 .dark .gradient-plan-text {
   background-image: linear-gradient(to right, #a78bfa, #60a5fa);
   text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Spinner Animation */
+.spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #8D5AEA;
+  animation: spinner 0.8s ease-in-out infinite;
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Thin scrollbar for category filters and modal content */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 3px;
+  width: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Animation for category tags */
+@keyframes tagPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
 }

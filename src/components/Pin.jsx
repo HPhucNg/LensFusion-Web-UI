@@ -7,6 +7,8 @@ function Pin({ image }) {
     const { state } = useCommentsAndLikes(image);
     const { likesData, userProfileImage, userName } = state;
 
+    const likesCount = image.likesCount !== undefined ? image.likesCount : likesData.likes.length;
+
     return (
         <div className="relative w-full group"> {/* group class added for hover */}
             {/* image container */}
@@ -29,7 +31,7 @@ function Pin({ image }) {
                         )}
                         <span className="text-white text-sm">{userName}</span>
                     </div>
-                    <span className="text-white text-sm">♡ {likesData.likes.length}</span>
+                    <span className="text-white text-sm">♡ {likesCount}</span>
                 </div>
             </div>
         </div>

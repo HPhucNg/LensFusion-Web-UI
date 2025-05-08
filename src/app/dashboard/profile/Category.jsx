@@ -7,9 +7,9 @@ export const categoryMapping = {
   'background-generated': 'Background Generation',
   'background-removed': 'Background Removal',
   'object-retouched': 'Object Retouch',
-  'object-removed': 'Object Removal',
+  'objectremoval': 'Object Removal',
   'upscaled': 'Upscale',
-  'background-expanded': 'Background Expansion'
+  'background-expansion': 'Background Expansion'
 };
 
 export const categoriesData = [
@@ -30,6 +30,7 @@ export function Category({ hoveredIndex, setHoveredIndex, activeCategory, setAct
   
   const [categories, setCategories] = useState(categoriesData);
   const [totalCount, setTotalCount] = useState(0);
+  const [communityCount, setCommunityCount] = useState(0);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -56,15 +57,24 @@ export function Category({ hoveredIndex, setHoveredIndex, activeCategory, setAct
           'Background Expansion': 0
         };
         
+        let communityCategoryCount = 0;
+        
         querySnapshot.forEach((doc) => {
           const imageData = doc.data();
           const type = imageData.type;
+          
+          // Count images shared to community
+          if (imageData.communityPostId || imageData.communityPost) {
+            communityCategoryCount++;
+          }
           
           if (type && categoryMapping[type]) {
             const categoryName = categoryMapping[type];
             categoryCounts[categoryName]++;
           }
         });
+        
+        setCommunityCount(communityCategoryCount);
         
         const updatedCategories = categoriesData.map(category => ({
           ...category,
@@ -81,6 +91,8 @@ export function Category({ hoveredIndex, setHoveredIndex, activeCategory, setAct
         setTotalCount(total);
       } catch (error) {
         console.error("Error fetching image categories:", error);
+      } finally {
+        setLoading(false);
       }
     };
     
@@ -140,6 +152,11 @@ export function Category({ hoveredIndex, setHoveredIndex, activeCategory, setAct
       hoverColor: '#B9EF9B',
       background: isDarkMode ? 'transparent' : '#E5E5E5',
       text: isDarkMode ? 'white' : 'black',
+    },
+    community: {
+      hoverColor: '#72efdd',
+      background: isDarkMode ? 'transparent' : '#E5E5E5',
+      text: isDarkMode ? 'white' : 'black',
     }
   };
   
@@ -158,6 +175,17 @@ export function Category({ hoveredIndex, setHoveredIndex, activeCategory, setAct
 
   const getAllImagesTextColor = () => {
     if (currentActiveCategory === -1 || hoveredIndex === -1) return theme.hover.text;
+    return isDarkMode ? theme.dark.button.text : theme.light.button.text;
+  };
+
+  const getCommunityBackgroundColor = () => {
+    if (currentActiveCategory === -2) return theme.community.hoverColor;
+    if (hoveredIndex === -2) return theme.community.hoverColor;
+    return isDarkMode ? theme.dark.button.background : theme.light.button.background;
+  };
+
+  const getCommunityTextColor = () => {
+    if (currentActiveCategory === -2 || hoveredIndex === -2) return theme.hover.text;
     return isDarkMode ? theme.dark.button.text : theme.light.button.text;
   };
 
@@ -232,6 +260,30 @@ export function Category({ hoveredIndex, setHoveredIndex, activeCategory, setAct
             </span>
           </div>
         ))}
+        
+        {/* Community Category - Special case that doesn't affect chart */}
+        <div
+          key="community"
+          className="flex items-center gap-1 px-2 py-1.5 rounded-lg cursor-pointer transition-all text-sm"
+          style={{
+            backgroundColor: getCommunityBackgroundColor(),
+            color: getCommunityTextColor(),
+            transition: 'all 0.2s ease',
+            border: currentActiveCategory === -2 ? 'none' : (isDarkMode ? theme.dark.button.border : theme.light.button.border),
+            fontWeight: currentActiveCategory === -2 ? 'bold' : 'normal'
+          }}
+          onMouseEnter={() => setHoveredIndex(-2)}
+          onMouseLeave={() => setHoveredIndex(null)}
+          onClick={() => handleCategoryClick(-2)}
+        >
+          <span className="font-medium">Community</span>
+          <span
+            className="text-xs px-1.5 py-0.5 rounded-full"
+            style={getCounterStyles(-2)}
+          >
+            {communityCount}
+          </span>
+        </div>
       </div>
     </div>
   );

@@ -18,8 +18,9 @@ import { TabNavigation } from './TabNavigation';
 import { GenerateButton } from './GenerateButton';
 import { MobileMenuButton } from './MobileMenuButton';
 import { ImageContainer } from './ImageContainer';
-import { FullscreenModal } from './FullscreenModal';
+import ViewModal from './ViewModal';
 import ResizePreview from "./ResizePreview";
+import { updateUserTokens } from "@/firebase/firebaseUtils";
 
 import { useSearchParams } from 'next/navigation'; // to pull id from URL
 
@@ -27,35 +28,98 @@ import { useSearchParams } from 'next/navigation'; // to pull id from URL
 function SearchParamsHandler({ onParamChange }) {
   const searchParams = useSearchParams();
   
+  // Use a ref to track if we've already processed the parameters
+  const processedParams = useRef(false);
+  
   useEffect(() => {
-    const fetchPrompt = async () => {
-      const id = searchParams.get('id');
-      if (!id) return;
+    // Only process parameters once to prevent infinite loops
+    if (processedParams.current) return;
+    
+    // Check for direct prompt parameters
+    const promptParam = searchParams.get('prompt');
+    const negativePromptParam = searchParams.get('n_prompt');
+    const categoryParam = searchParams.get('category');
+    const id = searchParams.get('id');
+    
+    // If there are no parameters to process, exit early
+    if (!promptParam && !negativePromptParam && !categoryParam && !id) {
+      processedParams.current = true;
+      return;
+    }
+    
+    // Set removeBackground to false by default
+    onParamChange('removeBackground', false);
+    
+    // Process the parameters
+    if (promptParam) {
+      onParamChange('prompt', promptParam);
+    }
+    
+    if (negativePromptParam) {
+      onParamChange('n_prompt', negativePromptParam);
+    }
+    
+    if (categoryParam) {
+      // If you have category-specific settings, apply them here
+      console.log("Category:", categoryParam);
+    }
+    
+    // If we've processed direct parameters, mark as done
+    if (promptParam || negativePromptParam || categoryParam) {
+      processedParams.current = true;
+      return;
+    }
+    
+    // Only fetch from database if we have an ID and no direct parameters
+    if (id) {
+      const fetchPrompt = async () => {
+        try {
+          const communityRef = doc(db, 'community', id);
+          const communityDoc = await getDoc(communityRef);
 
-      try {
-        const communityRef = doc(db, 'community', id);
-        const communityDoc = await getDoc(communityRef);
+          if (communityDoc.exists()) {
+            const communityData = communityDoc.data();
+            const newPrompt = communityData.prompt || '';
+            const newNegative = communityData.negativePrompt || '';
 
-        if (communityDoc.exists()) {
-          const communityData = communityDoc.data();
-          const newPrompt = communityData.prompt || '';
-          const newNegative = communityData.negativePrompt || '';
-
-          onParamChange('prompt', newPrompt);
-          onParamChange('n_prompt', newNegative);
-        } else {
-          console.log("Prompts not found.");
+            onParamChange('prompt', newPrompt);
+            onParamChange('n_prompt', newNegative);
+          } else {
+            console.log("Prompts not found.");
+          }
+          // Mark as processed after fetching
+          processedParams.current = true;
+        } catch (error) {
+          console.error("Error fetching user data: ", error);
+          processedParams.current = true;
         }
-      } catch (error) {
-        console.error("Error fetching user data: ", error);
-      }
-    };
+      };
 
-    fetchPrompt();
+      fetchPrompt();
+    }
   }, [searchParams, onParamChange]);
   
   return null;
 }
+
+// Helper to safely stringify and parse JSON with images
+const safeJSONStringify = (obj) => {
+  try {
+    return JSON.stringify(obj);
+  } catch (e) {
+    console.error('Failed to stringify object:', e);
+    return null;
+  }
+};
+
+const safeJSONParse = (str, defaultValue = null) => {
+  try {
+    return str ? JSON.parse(str) : defaultValue;
+  } catch (e) {
+    console.error('Failed to parse JSON:', e);
+    return defaultValue;
+  }
+};
 
 export default function ImageProcessor() {
   // State management for the component
@@ -66,11 +130,15 @@ export default function ImageProcessor() {
   const [webpImage, setWebpImage] = useState(null);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState("");
-  const [params, setParams] = useState(defaultParams);
+  const [removeBackground, setRemoveBackground] = useState(false);
+  const [params, setParams] = useState({
+    ...defaultParams,
+  });
   const [loadedTemplates, setLoadedTemplates] = useState([]);
   const [activeSidebar, setActiveSidebar] = useState('settings');
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [originalUploadedFile, setOriginalUploadedFile] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -78,6 +146,7 @@ export default function ImageProcessor() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userTokens, setUserTokens] = useState(0);
   const [insufficientTokens, setInsufficientTokens] = useState(false);
+  const [freeTrialTokens, setFreeTrialTokens] = useState(0);
   
   //resizing state managements
   const [isResizing, setIsResizing] = useState(false);
@@ -87,6 +156,105 @@ export default function ImageProcessor() {
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   //image positioning set to  original size
   const [scalePercentage, setScalePercentage] = useState(1.0); 
+  
+  // Load state from localStorage on component mount
+  useEffect(() => {
+    try {
+      // Load basic parameters
+      const savedParams = localStorage.getItem('bggen_params');
+      if (savedParams) {
+        setParams(prev => ({ ...prev, ...safeJSONParse(savedParams, {}) }));
+      }
+      
+      // Load boolean state
+      const savedRemoveBackground = localStorage.getItem('bggen_removeBackground');
+      if (savedRemoveBackground !== null) {
+        setRemoveBackground(savedRemoveBackground === 'true');
+      }
+      
+      // Load template selection
+      const savedTemplateId = localStorage.getItem('bggen_selectedTemplateId');
+      if (savedTemplateId) {
+        setSelectedTemplateId(savedTemplateId);
+      }
+      
+      // Load images if they exist
+      const savedInputPreview = localStorage.getItem('bggen_inputPreview');
+      if (savedInputPreview) {
+        setInputPreview(savedInputPreview);
+        
+        // Convert the data URL back to a File object for the generate function
+        const recreateFileFromDataUrl = async (dataUrl) => {
+          try {
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+            const fileName = 'restored-image.png';
+            const file = new File([blob], fileName, { type: blob.type });
+            setSelectedFile(file);
+            setOriginalUploadedFile(file); // Also set as original file
+          } catch (err) {
+            console.error('Failed to recreate file from data URL:', err);
+          }
+        };
+        
+        recreateFileFromDataUrl(savedInputPreview);
+      }
+      
+      const savedOutputImage = localStorage.getItem('bggen_outputImage');
+      if (savedOutputImage) {
+        setOutputImage(savedOutputImage);
+      }
+      
+      const savedPreprocessedImage = localStorage.getItem('bggen_preprocessedImage');
+      if (savedPreprocessedImage) {
+        setPreprocessedImage(savedPreprocessedImage);
+      }
+      
+      const savedWebpImage = localStorage.getItem('bggen_webpImage');
+      if (savedWebpImage) {
+        setWebpImage(savedWebpImage);
+      }
+    } catch (error) {
+      console.error('Error loading state from localStorage:', error);
+    }
+  }, []);
+  
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      // Save parameters
+      localStorage.setItem('bggen_params', safeJSONStringify(params));
+      
+      // Save boolean state
+      localStorage.setItem('bggen_removeBackground', removeBackground.toString());
+      
+      // Save template selection if exists
+      if (selectedTemplateId) {
+        localStorage.setItem('bggen_selectedTemplateId', selectedTemplateId);
+      }
+      
+      // Only save images if they're not too large (avoid localStorage limits)
+      // Limit is around 5MB for most browsers
+      const saveImageIfNotTooLarge = (key, value) => {
+        if (!value) return;
+        
+        // Skip saving large images (> 2MB when base64 encoded)
+        if (value.length > 2000000) {
+          console.warn(`Image for ${key} is too large for localStorage. Skipping save.`);
+          return;
+        }
+        
+        localStorage.setItem(key, value);
+      };
+      
+      saveImageIfNotTooLarge('bggen_inputPreview', inputPreview);
+      saveImageIfNotTooLarge('bggen_outputImage', outputImage);
+      saveImageIfNotTooLarge('bggen_preprocessedImage', preprocessedImage);
+      saveImageIfNotTooLarge('bggen_webpImage', webpImage);
+    } catch (error) {
+      console.error('Error saving state to localStorage:', error);
+    }
+  }, [params, removeBackground, selectedTemplateId, inputPreview, outputImage, preprocessedImage, webpImage]);
 
   // Function to deduct tokens
   const deductTokens = async (tokenAmount = 10) => {
@@ -153,6 +321,7 @@ export default function ImageProcessor() {
       if (userSnap.exists()) {
         const userData = userSnap.data();
         setUserTokens(userData.tokens || 0);
+        setFreeTrialTokens(userDoc.data().freeTrialTokens || 0);
         setInsufficientTokens(userData.tokens < 10);
       } else {
         // If user document doesn't exist, set default tokens
@@ -374,13 +543,23 @@ export default function ImageProcessor() {
     handleParamChange('seed', randomSeed.toString());
   };
 
-  // Handles changes to any parameter
-  const handleParamChange = (id, value) => {
-    setParams(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  };
+  // Update handleParamChange to handle the special removeBackground case
+  const handleParamChange = useCallback((id, value) => {
+    if (id === 'removeBackground') {
+      console.log(`Setting removeBackground to: ${value}`);
+      setRemoveBackground(value); // Update the dedicated state
+      
+      // Log the current state after updating for debugging
+      setTimeout(() => {
+        console.log('Current removeBackground state after update:', removeBackground);
+      }, 0);
+    } else {
+      setParams(prev => ({
+        ...prev,
+        [id]: value
+      }));
+    }
+  }, [removeBackground]); // Add removeBackground to the dependency array
 
   // Main function to process the image with current parameters
   const processImageWithParams = async (file) => {
@@ -439,22 +618,100 @@ export default function ImageProcessor() {
     if (file) {
       setStatus("Processing image...");
       setSelectedFile(file);
+      setOriginalUploadedFile(file); // Store the original uploaded file
       createInputPreview(file);
       setStatus("Image uploaded successfully");
     }
   }, [createInputPreview]);
 
-  // Modified handleGenerate with better error handling
+  // Modified handleRegenerate to handle case when original file is not available
+  const handleRegenerate = () => {
+    // Generate a new random seed
+    generateRandomSeed();
+    
+    // Reset selectedFile to the original uploaded file
+    if (originalUploadedFile) {
+      setSelectedFile(originalUploadedFile);
+      
+      // If background removal is enabled, reset the input preview to the original
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // Update input preview with original image
+        setInputPreview(reader.result);
+        
+        // Then call handleGenerate with the original file
+        handleGenerate();
+      };
+      reader.readAsDataURL(originalUploadedFile);
+    } else if (inputPreview) {
+      // Fallback - recreate file from input preview if original file is not available
+      try {
+        console.log("Original file not found, recreating from input preview");
+        const recreateFileFromDataUrl = async (dataUrl) => {
+          try {
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+            const fileName = 'regenerated-image.png';
+            const file = new File([blob], fileName, { type: 'image/png' });
+            
+            // Use this file for generation
+            setSelectedFile(file);
+            setOriginalUploadedFile(file);
+            
+            // Then generate
+            handleGenerate();
+          } catch (err) {
+            console.error('Failed to recreate file from input preview:', err);
+            setError("Failed to recreate original image for regeneration");
+          }
+        };
+        
+        recreateFileFromDataUrl(inputPreview);
+      } catch (error) {
+        console.error("Error recreating file:", error);
+        setError("Failed to recreate original image for regeneration");
+      }
+    } else {
+      // No original file or input preview available
+      setError("Original image not available for regeneration - please upload a new image");
+    }
+  };
+
+  // Modified handleGenerate with background removal toggle
   const handleGenerate = async () => {
     if (!selectedFile) {
       setError("Please upload an image first");
       return;
     }
     
+    // Locked token for unsubscribed users
+    if (currentUser) {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+
+      // Handle token to not go below 0
+      if (userData.subscriptionStatus === 'inactive' && userData.tokens < 10) {
+        setError("You don't have enough credits. Please subscribe to continue.");
+        setIsProcessing(false);
+        return;
+      }
+      
+      if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
+        setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
+        setIsProcessing(false);
+        return;
+      }
+    }
+
     // Token checking with fallbacks
     try {
-      // Try to deduct tokens but don't block generation if it fails
+      if (currentUser) {
+        // Deduct free trial tokens and tokens
+        await updateUserTokens(currentUser.uid, 10);
+      } else {
       await deductTokens(10);
+      }
     } catch (tokenError) {
       console.error("Token system error:", tokenError);
       // Continue anyway - don't block core functionality
@@ -469,37 +726,45 @@ export default function ImageProcessor() {
     setStatus("Starting processing...");
 
     try {
-      // First remove background from the image
-      setStatus("Removing background...");
+      // Use the fileToProcess variable for either original or background-removed image
       let fileToProcess = selectedFile;
       
-      try {
-        console.log("Starting background removal with file:", selectedFile.name, "size:", selectedFile.size);
+      // Only remove background if the toggle is enabled
+      console.log(`Background removal is: ${removeBackground ? 'ENABLED' : 'DISABLED'}`);
+      
+      if (removeBackground) {
+        setStatus("Removing background...");
         
-        // Define progress callback
-        const handleBgProgress = (percentage, key) => {
-          console.log(`Background removal progress: ${percentage}% (${key})`);
-          setStatus(`Removing background: ${percentage}%`);
-        };
-        
-        // Remove background using our imported utility
-        fileToProcess = await removeImageBackground(selectedFile, handleBgProgress);
-        
-        console.log("Background removal successful, got processed file:", fileToProcess.name, "size:", fileToProcess.size);
-        setStatus("Background removed, now generating image...");
-        
-        // Create a preview of the background-removed image (optional)
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          console.log("Preview updated with background-removed image");
-          setInputPreview(reader.result);
-        };
-        reader.readAsDataURL(fileToProcess);
-        
-      } catch (bgError) {
-        console.error("Background removal failed, continuing with original image:", bgError);
-        setStatus("Background removal failed, proceeding with original image...");
-        // Continue with original image if background removal fails
+        try {
+          console.log("Starting background removal with file:", selectedFile.name, "size:", selectedFile.size);
+          
+          // Define progress callback
+          const handleBgProgress = (percentage, key) => {
+            console.log(`Background removal progress: ${percentage}% (${key})`);
+            setStatus(`Removing background: ${percentage}%`);
+          };
+          
+          // Remove background using our imported utility
+          fileToProcess = await removeImageBackground(selectedFile, handleBgProgress);
+          
+          console.log("Background removal successful, got processed file:", fileToProcess.name, "size:", fileToProcess.size);
+          setStatus("Background removed, now generating image...");
+          
+          // Create a preview of the background-removed image (optional)
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            console.log("Preview updated with background-removed image");
+            setInputPreview(reader.result);
+          };
+          reader.readAsDataURL(fileToProcess);
+          
+        } catch (bgError) {
+          console.error("Background removal failed, continuing with original image:", bgError);
+          setStatus("Background removal failed, proceeding with original image...");
+          // Continue with original image if background removal fails
+        }
+      } else {
+        setStatus("Skipping background removal (disabled in settings)...");
       }
 
       setStatus("Processing with Hugging Face...");
@@ -555,19 +820,45 @@ export default function ImageProcessor() {
     }
   };
 
-  // Modified clearImage
+  // Clear all state data from localStorage
+  const clearAllState = () => {
+    // Clear all image data
+    localStorage.removeItem('bggen_inputPreview');
+    localStorage.removeItem('bggen_outputImage');
+    localStorage.removeItem('bggen_preprocessedImage');
+    localStorage.removeItem('bggen_webpImage');
+    
+    // Clear parameters and settings
+    localStorage.removeItem('bggen_params');
+    localStorage.removeItem('bggen_removeBackground');
+    localStorage.removeItem('bggen_selectedTemplateId');
+    
+    console.log('All background generation state cleared from localStorage');
+  };
+  
+  // Clear images and state
   const clearImage = () => {
-    setSelectedFile(null);
     setInputPreview(null);
     setOutputImage(null);
     setPreprocessedImage(null);
     setWebpImage(null);
+    setSelectedFile(null);
     setError(null);
     setStatus("");
+    setSelectedTemplateId(null);
+    
+    // Reset file input if it exists
     const fileInput = document.querySelector('input[type="file"]');
     if (fileInput) {
       fileInput.value = '';
     }
+    
+    // Clear image-related localStorage items
+    localStorage.removeItem('bggen_inputPreview');
+    localStorage.removeItem('bggen_outputImage');
+    localStorage.removeItem('bggen_preprocessedImage');
+    localStorage.removeItem('bggen_webpImage');
+    localStorage.removeItem('bggen_selectedTemplateId');
   };
 
   // Modified template selection handler
@@ -598,7 +889,7 @@ export default function ImageProcessor() {
     }
   };
 
-  const openFullscreen = (imageUrl) => {
+  const openFullscreen = (imageUrl, isInputImage = false) => {
     setFullscreenImage(imageUrl);
     setIsFullscreen(true);
   };
@@ -634,7 +925,10 @@ export default function ImageProcessor() {
         <div className="flex-1 overflow-y-auto pb-4 scrollbar">
           {activeSidebar === 'settings' ? (
             <SettingsSidebar
-              params={params}
+              params={{
+                ...params,
+                removeBackground: removeBackground,
+              }}
               handleParamChange={handleParamChange}
               generateRandomSeed={generateRandomSeed}
               parameterDefinitions={parameterDefinitions}
@@ -669,18 +963,156 @@ export default function ImageProcessor() {
             imageSrc={inputPreview}
             altText="Input preview"
             onClear={clearImage}
-            onFullscreen={() => openFullscreen(inputPreview)}
+            onFullscreen={() => openFullscreen(inputPreview, true)}
             uploadHandler={handleImageUpload}
             isInput={true}
             onResize={() => handleResize(inputPreview)}
           />
 
+          {/* Output preview */}
           <ImageContainer
             imageSrc={outputImage}
-            altText="Generated output"
-            onDownload={() => handleDownload(outputImage)}
-            onFullscreen={() => openFullscreen(outputImage)}
+            altText="Output preview"
+            onClear={() => setOutputImage(null)}
+            onDownload={() => outputImage && handleDownload(outputImage)}
+            onFullscreen={() => outputImage && openFullscreen(outputImage)}
             isInput={false}
+            onResize={() => outputImage && handleResize(outputImage)}
+            onSaveToGallery={async () => {
+              if (outputImage && currentUser) {
+                try {
+                  setIsSaving(true);
+                  await saveToGallery(
+                    outputImage, 
+                    currentUser.uid,
+                    'background-generated',
+                    {
+                      positivePrompt: params.prompt || '',
+                      negativePrompt: params.negativePrompt || ''
+                    }
+                  );
+                  setSaveSuccess(true);
+                  setTimeout(() => setSaveSuccess(false), 3000);
+                } catch (error) {
+                  console.error('Error saving to gallery:', error);
+                  setError('Failed to save to gallery');
+                } finally {
+                  setIsSaving(false);
+                }
+              } else if (!currentUser) {
+                setError('Please log in to save to gallery');
+              }
+            }}
+            onUpscale={(newImageUrl, fileObject) => {
+              // Update the main output image when upscaling from fullscreen view
+              setOutputImage(newImageUrl);
+              
+              // If we received a file object, update selectedFile for generation
+              if (fileObject) {
+                console.log('Setting selectedFile from fullscreen upscaled image');
+                setSelectedFile(fileObject);
+              } else {
+                // Try to create a file object from the URL
+                const createFileFromUrl = async (url) => {
+                  try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'upscaled-image.png', { type: blob.type });
+                    console.log('Created file object from fullscreen upscaled image URL');
+                    setSelectedFile(file);
+                  } catch (err) {
+                    console.error('Failed to create file from upscaled URL in fullscreen:', err);
+                  }
+                };
+                createFileFromUrl(newImageUrl);
+              }
+              
+              // Close the fullscreen view after upscaling is complete
+              closeFullscreen();
+            }}
+            onRetouch={(newImageUrl, fileObject) => {
+              // Save the retouched image as the new output image
+              setOutputImage(newImageUrl);
+              
+              // If we got a file object, update selectedFile for future generate operations
+              if (fileObject) {
+                console.log('Setting selectedFile from retouched image file object');
+                setSelectedFile(fileObject);
+              } else {
+                // Try to convert the URL to a file object
+                const createFileFromUrl = async (url) => {
+                  try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'retouched-image.png', { type: blob.type });
+                    console.log('Created file object from retouched image URL');
+                    setSelectedFile(file);
+                  } catch (err) {
+                    console.error('Failed to create file from retouched URL:', err);
+                  }
+                };
+                createFileFromUrl(newImageUrl);
+              }
+            }}
+            onRemove={(newImageUrl, fileObject) => {
+              // Save the object-removed image as the new output image
+              setOutputImage(newImageUrl);
+              
+              // If we got a file object, update selectedFile for future generate operations
+              if (fileObject) {
+                console.log('Setting selectedFile from object-removed image file object');
+                setSelectedFile(fileObject);
+              } else {
+                // Try to convert the URL to a file object
+                const createFileFromUrl = async (url) => {
+                  try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'object-removed-image.png', { type: blob.type });
+                    console.log('Created file object from object-removed image URL');
+                    setSelectedFile(file);
+                  } catch (err) {
+                    console.error('Failed to create file from object-removed URL:', err);
+                  }
+                };
+                createFileFromUrl(newImageUrl);
+              }
+              
+              // Close the fullscreen view after object removal is complete
+              closeFullscreen();
+            }}
+            onInpaint={() => console.log('Inpaint')}
+            onExpand={(newImageUrl, fileObject) => {
+              // Save the expanded image as the new output image
+              setOutputImage(newImageUrl);
+              
+              // If we got a file object, update selectedFile for future generate operations
+              if (fileObject) {
+                console.log('Setting selectedFile from expanded image file object');
+                setSelectedFile(fileObject);
+              } else {
+                // Try to convert the URL to a file object
+                const createFileFromUrl = async (url) => {
+                  try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'expanded-image.png', { type: blob.type });
+                    console.log('Created file object from expanded image URL');
+                    setSelectedFile(file);
+                  } catch (err) {
+                    console.error('Failed to create file from expanded URL:', err);
+                  }
+                };
+                createFileFromUrl(newImageUrl);
+              }
+              
+              // Close the fullscreen view after expansion is complete
+              closeFullscreen();
+            }}
+            onRegenerate={handleRegenerate}
+            onReprompt={() => console.log('Reprompt')}
+            prompt={params.prompt}
+            setImageSrc={setOutputImage}
           />
         </div>
       </div>
@@ -753,10 +1185,120 @@ export default function ImageProcessor() {
       )}
       
       {/* Fullscreen Modal */}
-      <FullscreenModal
-        isFullscreen={isFullscreen}
-        fullscreenImage={fullscreenImage}
-        closeFullscreen={closeFullscreen}
+      <ViewModal
+        isOpen={isFullscreen}
+        onClose={closeFullscreen}
+        imageSrc={fullscreenImage}
+        prompt={params.prompt}
+        onUpscale={(newImageUrl, fileObject) => {
+          // Update the main output image when upscaling from fullscreen view
+          setOutputImage(newImageUrl);
+          
+          // If we received a file object, update selectedFile for generation
+          if (fileObject) {
+            console.log('Setting selectedFile from fullscreen upscaled image');
+            setSelectedFile(fileObject);
+          } else {
+            // Try to create a file object from the URL
+            const createFileFromUrl = async (url) => {
+              try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const file = new File([blob], 'upscaled-image.png', { type: blob.type });
+                console.log('Created file object from fullscreen upscaled image URL');
+                setSelectedFile(file);
+              } catch (err) {
+                console.error('Failed to create file from upscaled URL in fullscreen:', err);
+              }
+            };
+            createFileFromUrl(newImageUrl);
+          }
+          
+          // Close the fullscreen view after upscaling is complete
+          closeFullscreen();
+        }}
+        onRetouch={(newImageUrl, fileObject) => {
+          // Save the retouched image as the new output image
+          setOutputImage(newImageUrl);
+          
+          // If we got a file object, update selectedFile for future generate operations
+          if (fileObject) {
+            console.log('Setting selectedFile from retouched image file object');
+            setSelectedFile(fileObject);
+          } else {
+            // Try to convert the URL to a file object
+            const createFileFromUrl = async (url) => {
+              try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const file = new File([blob], 'retouched-image.png', { type: blob.type });
+                console.log('Created file object from retouched image URL');
+                setSelectedFile(file);
+              } catch (err) {
+                console.error('Failed to create file from retouched URL:', err);
+              }
+            };
+            createFileFromUrl(newImageUrl);
+          }
+        }}
+        onRemove={(newImageUrl, fileObject) => {
+          // Save the object-removed image as the new output image
+          setOutputImage(newImageUrl);
+          
+          // If we got a file object, update selectedFile for future generate operations
+          if (fileObject) {
+            console.log('Setting selectedFile from object-removed image file object');
+            setSelectedFile(fileObject);
+          } else {
+            // Try to convert the URL to a file object
+            const createFileFromUrl = async (url) => {
+              try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const file = new File([blob], 'object-removed-image.png', { type: blob.type });
+                console.log('Created file object from object-removed image URL');
+                setSelectedFile(file);
+              } catch (err) {
+                console.error('Failed to create file from object-removed URL:', err);
+              }
+            };
+            createFileFromUrl(newImageUrl);
+          }
+          
+          // Close the fullscreen view after object removal is complete
+          closeFullscreen();
+        }}
+        onInpaint={() => console.log('Inpaint')}
+        onExpand={(newImageUrl, fileObject) => {
+          // Save the expanded image as the new output image
+          setOutputImage(newImageUrl);
+          
+          // If we got a file object, update selectedFile for future generate operations
+          if (fileObject) {
+            console.log('Setting selectedFile from expanded image file object');
+            setSelectedFile(fileObject);
+          } else {
+            // Try to convert the URL to a file object
+            const createFileFromUrl = async (url) => {
+              try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const file = new File([blob], 'expanded-image.png', { type: blob.type });
+                console.log('Created file object from expanded image URL');
+                setSelectedFile(file);
+              } catch (err) {
+                console.error('Failed to create file from expanded URL:', err);
+              }
+            };
+            createFileFromUrl(newImageUrl);
+          }
+          
+          // Close the fullscreen view after expansion is complete
+          closeFullscreen();
+        }}
+        onRegenerate={handleRegenerate}
+        onReprompt={() => console.log('Reprompt')}
+        onDownload={() => fullscreenImage && handleDownload(fullscreenImage)}
       />
 
       {/* Add the SearchParamsHandler with Suspense */}
