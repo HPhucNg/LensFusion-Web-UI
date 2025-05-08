@@ -110,6 +110,7 @@ const ViewModal = ({
                   src={imageSrc}
                   alt="Generated image"
                   fill
+                  unoptimized={imageSrc && (imageSrc.includes('firebasestorage.googleapis.com') || imageSrc.startsWith('data:'))}
                   className="object-contain"
                   priority
                 />

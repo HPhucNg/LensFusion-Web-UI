@@ -797,14 +797,6 @@ const RetouchModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
                   alt="Retouched image" 
                   className="max-h-full max-w-full object-contain"
                 />
-                
-                {/* Reset button */}
-                <button
-                  onClick={() => setResultImage(null)}
-                  className="absolute top-4 right-4 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 text-white text-sm rounded-md transition-colors"
-                >
-                  Reset
-                </button>
               </div>
             ) : (
               <div 
@@ -962,22 +954,6 @@ const RetouchModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
             </div>
           </div>
         </div>
-
-        {resultImage && (
-          <div className="absolute bottom-4 right-4 z-10 flex gap-2">
-            <button
-              onClick={() => {
-                if (onImageUpdate) {
-                  onImageUpdate(resultImage);
-                  onClose();
-                }
-              }}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 text-white font-medium rounded-lg transition-colors"
-            >
-              Continue with this image
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

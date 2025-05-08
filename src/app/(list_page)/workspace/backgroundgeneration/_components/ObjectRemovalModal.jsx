@@ -5,6 +5,252 @@ import { doc, updateDoc, getDoc, collection, addDoc, serverTimestamp } from 'fir
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { removeObjectFromImage } from '@/lib/huggingface/objectRemovalClient';
 
+// Utility functions for padding and cropping
+const calculatePaddingMetadata = (width, height) => {
+  // Ensure we're working with integers
+  width = Math.round(width);
+  height = Math.round(height);
+  
+  const maxDimension = Math.max(width, height);
+  let paddingLeft = 0;
+  let paddingTop = 0;
+  let paddingRight = 0;
+  let paddingBottom = 0;
+  
+  if (width < height) {
+    // For portrait images (taller than wide), add padding to sides
+    const totalWidthPadding = height - width;
+    paddingLeft = Math.floor(totalWidthPadding / 2);
+    paddingRight = totalWidthPadding - paddingLeft; // Ensure exact padding
+  } else if (width > height) {
+    // For landscape images (wider than tall), add padding to top/bottom
+    const totalHeightPadding = width - height;
+    paddingTop = Math.floor(totalHeightPadding / 2);
+    paddingBottom = totalHeightPadding - paddingTop; // Ensure exact padding
+  }
+  // For square images, no padding needed
+  
+  // Double-check the final dimensions match a perfect square
+  const squareSize = maxDimension;
+  const paddedWidth = width + paddingLeft + paddingRight;
+  const paddedHeight = height + paddingTop + paddingBottom;
+  
+  // Sanity check to ensure we have a perfect square
+  if (paddedWidth !== squareSize || paddedHeight !== squareSize) {
+    console.warn(`Padding calculation error! Expected square size ${squareSize}, got ${paddedWidth}x${paddedHeight}`);
+    // Correct if there's any rounding error
+    if (paddedWidth !== squareSize) {
+      const diff = squareSize - paddedWidth;
+      paddingRight += diff;
+    }
+    if (paddedHeight !== squareSize) {
+      const diff = squareSize - paddedHeight;
+      paddingBottom += diff;
+    }
+  }
+  
+  const metadata = {
+    originalWidth: width,
+    originalHeight: height,
+    paddingLeft,
+    paddingTop,
+    paddingRight,
+    paddingBottom,
+    paddingLeftPercent: paddingLeft / maxDimension * 100,
+    paddingTopPercent: paddingTop / maxDimension * 100,
+    paddingRightPercent: paddingRight / maxDimension * 100,
+    paddingBottomPercent: paddingBottom / maxDimension * 100,
+    squareSize: maxDimension
+  };
+  
+  console.log(`Original: ${width}x${height}, Padded to: ${squareSize}x${squareSize}`);
+  console.log(`Padding: L${paddingLeft}, T${paddingTop}, R${paddingRight}, B${paddingBottom}`);
+  
+  return metadata;
+};
+
+const padImageToSquare = (imageDataUrl, metadata) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const { originalWidth, originalHeight, paddingLeft, paddingTop, squareSize } = metadata;
+        
+        // Create canvas with square dimensions
+        const canvas = document.createElement('canvas');
+        canvas.width = squareSize;
+        canvas.height = squareSize;
+        const ctx = canvas.getContext('2d');
+        
+        // Fill with black background (will be visible in padding area)
+        ctx.fillStyle = 'rgb(0, 0, 0)';
+        ctx.fillRect(0, 0, squareSize, squareSize);
+        
+        // Verify image dimensions match what we expect
+        if (img.width !== originalWidth || img.height !== originalHeight) {
+          console.warn(`Image dimensions mismatch! Expected ${originalWidth}x${originalHeight}, got ${img.width}x${img.height}`);
+        }
+        
+        // Draw the original image centered with padding
+        ctx.drawImage(
+          img, 
+          0, 0, img.width, img.height,  // Use actual image dimensions for source
+          paddingLeft, paddingTop, originalWidth, originalHeight  // Place at calculated padding position
+        );
+        
+        // Debug outline to visualize the padding (uncomment for testing)
+        // ctx.strokeStyle = 'red';
+        // ctx.lineWidth = 2;
+        // ctx.strokeRect(paddingLeft, paddingTop, originalWidth, originalHeight);
+        
+        const paddedImageDataUrl = canvas.toDataURL('image/png');
+        console.log(`Padded image: ${originalWidth}x${originalHeight} → ${squareSize}x${squareSize} complete`);
+        resolve(paddedImageDataUrl);
+      } catch (error) {
+        console.error('Error padding image to square:', error);
+        reject(error);
+      }
+    };
+    img.onerror = (error) => reject(new Error('Failed to load image for padding'));
+    img.src = imageDataUrl;
+  });
+};
+
+const padMaskToSquare = (maskCanvas, metadata, canvasSize) => {
+  return new Promise((resolve, reject) => {
+    try {
+      // Get mask data from canvas
+      if (!maskCanvas) {
+        reject(new Error('Mask canvas is not available'));
+        return;
+      }
+      
+      const maskCtx = maskCanvas.getContext('2d');
+      
+      // Check if mask has any content (any non-transparent pixels)
+      const imageData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+      let hasContent = false;
+      for (let i = 3; i < imageData.data.length; i += 4) {
+        if (imageData.data[i] > 0) {
+          hasContent = true;
+          break;
+        }
+      }
+      
+      if (!hasContent) {
+        reject(new Error('Mask has no content. Please draw on the areas you want to remove.'));
+        return;
+      }
+      
+      const { originalWidth, originalHeight, paddingLeft, paddingTop, squareSize } = metadata;
+      
+      // Create mask image from canvas
+      const maskImage = maskCanvas.toDataURL('image/png');
+      
+      // Create a new image to load the mask data
+      const img = new Image();
+      img.onload = () => {
+        // Create a square canvas for the padded mask
+        const canvas = document.createElement('canvas');
+        canvas.width = squareSize;
+        canvas.height = squareSize;
+        const ctx = canvas.getContext('2d', { alpha: true });
+        
+        // Clear the canvas (transparent background)
+        ctx.clearRect(0, 0, squareSize, squareSize);
+        
+        // Calculate scaling factors between displayed canvas and original dimensions
+        const displayToOriginalScaleX = originalWidth / canvasSize.width;
+        const displayToOriginalScaleY = originalHeight / canvasSize.height;
+        
+        console.log(`Mask scaling: display ${canvasSize.width}x${canvasSize.height} to original ${originalWidth}x${originalHeight}`);
+        console.log(`Scale factors: X=${displayToOriginalScaleX.toFixed(4)}, Y=${displayToOriginalScaleY.toFixed(4)}`);
+        
+        // Draw the mask onto the padded canvas
+        ctx.drawImage(
+          img, 
+          0, 0, img.width, img.height,  // Source dimensions (from display canvas)
+          paddingLeft, paddingTop, originalWidth, originalHeight  // Destination with padding
+        );
+        
+        // Debug outline to visualize the mask area (uncomment for testing)
+        // ctx.strokeStyle = 'green';
+        // ctx.lineWidth = 2;
+        // ctx.strokeRect(paddingLeft, paddingTop, originalWidth, originalHeight);
+        
+        const paddedMaskDataUrl = canvas.toDataURL('image/png');
+        console.log(`Padded mask: ${originalWidth}x${originalHeight} → ${squareSize}x${squareSize} complete`);
+        resolve(paddedMaskDataUrl);
+      };
+      
+      img.onerror = (err) => {
+        console.error('Error loading mask image:', err);
+        reject(new Error('Failed to load mask image'));
+      };
+      
+      img.src = maskImage;
+    } catch (error) {
+      console.error('Error padding mask to square:', error);
+      reject(error);
+    }
+  });
+};
+
+const cropResultImage = (resultImageUrl, metadata) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const { originalWidth, originalHeight, paddingLeft, paddingTop, squareSize } = metadata;
+        
+        // Create canvas with original dimensions
+        const canvas = document.createElement('canvas');
+        canvas.width = originalWidth;
+        canvas.height = originalHeight;
+        const ctx = canvas.getContext('2d');
+        
+        // Calculate scale between the result image and the original square size
+        // This is critical to ensure we locate the correct region in the padded result
+        const scale = img.width / squareSize;
+        
+        // Calculate the padded areas in the result image
+        const scaledPaddingLeft = paddingLeft * scale;
+        const scaledPaddingTop = paddingTop * scale;
+        const scaledOriginalWidth = originalWidth * scale;
+        const scaledOriginalHeight = originalHeight * scale;
+        
+        console.log(`Cropping result image: ${img.width}x${img.height} back to ${originalWidth}x${originalHeight}`);
+        console.log(`Scale: ${scale.toFixed(4)}, paddings: left=${scaledPaddingLeft.toFixed(2)}, top=${scaledPaddingTop.toFixed(2)}`);
+        console.log(`Original content area: x=${scaledPaddingLeft.toFixed(2)}, y=${scaledPaddingTop.toFixed(2)}, w=${scaledOriginalWidth.toFixed(2)}, h=${scaledOriginalHeight.toFixed(2)}`);
+        
+        // First clear the canvas with a transparent background
+        ctx.clearRect(0, 0, originalWidth, originalHeight);
+        
+        // Draw only the relevant portion of the image (without padding)
+        // This extracts just the original content area from the padded result
+        ctx.drawImage(
+          img,
+          scaledPaddingLeft, scaledPaddingTop, scaledOriginalWidth, scaledOriginalHeight, // Source rectangle (the original content within the padded image)
+          0, 0, originalWidth, originalHeight // Destination rectangle (the entire original-sized canvas)
+        );
+        
+        const croppedDataUrl = canvas.toDataURL('image/png');
+        resolve(croppedDataUrl);
+      } catch (error) {
+        console.error('Error cropping result image:', error);
+        // If cropping fails, return the original image
+        resolve(resultImageUrl);
+      }
+    };
+    img.onerror = (err) => {
+      console.error('Failed to load result image for cropping:', err);
+      // If loading fails, return the original image
+      resolve(resultImageUrl);
+    };
+    img.src = resultImageUrl;
+  });
+};
+
 // Client-side fallback for object removal if the server function fails
 async function removeObjectClientSide(imageData) {
   try {
@@ -129,6 +375,8 @@ const ObjectRemovalModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
   const [user, setUser] = useState(null);
   const [tokens, setTokens] = useState(0);
   const [convertedImageSrc, setConvertedImageSrc] = useState(null);
+  const [paddingMetadata, setPaddingMetadata] = useState(null);
+  const [originalDimensions, setOriginalDimensions] = useState({ width: 0, height: 0 });
 
   // Ref hooks
   const containerRef = useRef(null);
@@ -497,7 +745,17 @@ const ObjectRemovalModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
   
   // Handle generate
   const handleRemoveObject = useCallback(async () => {
-    if (!imageCanvasRef.current || !maskData) return;
+    if (!imageCanvasRef.current || !maskData || !paddingMetadata) {
+      if (!maskData) {
+        setError("Please draw on the areas you want to remove");
+        return;
+      }
+      if (!paddingMetadata) {
+        setError("Image dimensions could not be calculated");
+        return;
+      }
+      return;
+    }
     
     try {
       setIsLoading(true);
@@ -527,25 +785,62 @@ const ObjectRemovalModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
         return;
       }
       
+      console.log("Using padding metadata:", paddingMetadata);
+      
       // Get image data from canvas directly to avoid CORS issues
       const imageData = imageCanvasRef.current.toDataURL('image/png');
       
-      // Prepare image data for the API
-      const imageDataForAPI = {
-        background: imageData,
-        layers: [maskData],
-        composite: imageData
-      };
-      
-      console.log('Processing image for object removal:', {
-        hasMask: !!maskData,
-      });
-      
       try {
-        // Call the object removal function
-        const resultImageData = await removeObjectFromImage(imageDataForAPI);
+        // Validate if image needs padding (check aspect ratio)
+        const aspectRatio = paddingMetadata.originalWidth / paddingMetadata.originalHeight;
+        const needsPadding = Math.abs(aspectRatio - 1.0) > 0.01; // Allow small tolerance
         
-        if (resultImageData) {
+        console.log(`Image aspect ratio: ${aspectRatio.toFixed(2)}, needs padding: ${needsPadding}`);
+        
+        // Create padded images
+        let paddedImage, paddedMask;
+        
+        if (needsPadding) {
+          // Apply padding to make 1:1 ratio
+          paddedImage = await padImageToSquare(imageData, paddingMetadata);
+          paddedMask = await padMaskToSquare(maskCanvasRef.current, paddingMetadata, canvasSize);
+          console.log("Successfully padded images to 1:1 ratio");
+        } else {
+          // Already square, no padding needed
+          paddedImage = imageData;
+          paddedMask = maskData;
+          console.log("Image already has 1:1 ratio, no padding needed");
+        }
+        
+        // Prepare padded image data for the API
+        const imageDataForAPI = {
+          background: paddedImage,
+          layers: [paddedMask],
+          composite: paddedImage
+        };
+        
+        console.log('Processing image for object removal:', {
+          hasMask: !!paddedMask,
+          originalDimensions,
+          squareSize: paddingMetadata.squareSize,
+          needsPadding
+        });
+        
+        // Call the object removal function with padded images
+        const paddedResultImageData = await removeObjectFromImage(imageDataForAPI);
+        
+        if (paddedResultImageData) {
+          let resultImageData;
+          
+          if (needsPadding) {
+            // Crop the result image back to original dimensions if padding was applied
+            resultImageData = await cropResultImage(paddedResultImageData, paddingMetadata);
+            console.log("Successfully cropped result back to original dimensions");
+          } else {
+            // No cropping needed if original was square
+            resultImageData = paddedResultImageData;
+          }
+          
           // Convert the result to a blob URL to avoid CORS issues
           const resultBlobUrl = await convertToBlobUrl(resultImageData);
           setResultImage(resultBlobUrl || resultImageData);
@@ -602,12 +897,43 @@ const ObjectRemovalModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
         // Try fallback if direct processing fails
         try {
           console.warn('Direct processing failed, using client-side fallback');
-          const fallbackResult = await removeObjectClientSide(imageDataForAPI);
           
-          if (fallbackResult) {
+          // Validate if image needs padding
+          const aspectRatio = paddingMetadata.originalWidth / paddingMetadata.originalHeight;
+          const needsPadding = Math.abs(aspectRatio - 1.0) > 0.01;
+          
+          // Create padded images for fallback
+          let paddedImage, paddedMask;
+          
+          if (needsPadding) {
+            paddedImage = await padImageToSquare(imageData, paddingMetadata);
+            paddedMask = await padMaskToSquare(maskCanvasRef.current, paddingMetadata, canvasSize);
+          } else {
+            paddedImage = imageData;
+            paddedMask = maskData;
+          }
+          
+          const imageDataForFallback = {
+            background: paddedImage,
+            layers: [paddedMask],
+            composite: paddedImage
+          };
+          
+          const paddedFallbackResult = await removeObjectClientSide(imageDataForFallback);
+          
+          if (paddedFallbackResult) {
+            let finalResult;
+            
+            if (needsPadding) {
+              // Crop fallback result back to original dimensions
+              finalResult = await cropResultImage(paddedFallbackResult, paddingMetadata);
+            } else {
+              finalResult = paddedFallbackResult;
+            }
+            
             // Convert fallback result to blob URL
-            const fallbackBlobUrl = await convertToBlobUrl(fallbackResult);
-            setResultImage(fallbackBlobUrl || fallbackResult);
+            const fallbackBlobUrl = await convertToBlobUrl(finalResult);
+            setResultImage(fallbackBlobUrl || finalResult);
             
             setError('Error: ' + (apiError.message || 'Unknown error') + 
                      ' - Using client-side fallback mode with simulated results.');
@@ -615,6 +941,7 @@ const ObjectRemovalModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
             setError('Error: ' + (apiError.message || 'Unknown error'));
           }
         } catch (fallbackError) {
+          console.error('Fallback processing error:', fallbackError);
           setError('Failed on both direct processing and fallback: ' + (apiError.message || 'Unknown error'));
         }
       }
@@ -624,7 +951,7 @@ const ObjectRemovalModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [convertToBlobUrl, imageCanvasRef, maskData, tokens, user, onImageUpdate]);
+  }, [convertToBlobUrl, imageCanvasRef, maskData, tokens, user, onImageUpdate, paddingMetadata, canvasSize, originalDimensions]);
   
   // Handle image loading
   useEffect(() => {
@@ -638,6 +965,12 @@ const ObjectRemovalModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
       img.onload = () => {
         console.log('Image loaded successfully from blob URL');
         imageObjRef.current = img;
+        
+        // Calculate padding metadata for 1:1 ratio
+        const metadata = calculatePaddingMetadata(img.width, img.height);
+        setPaddingMetadata(metadata);
+        setOriginalDimensions({ width: img.width, height: img.height });
+        console.log("Calculated padding metadata:", metadata);
         
         // Wait for next frame to ensure container is properly sized
         requestAnimationFrame(() => {
@@ -767,14 +1100,6 @@ const ObjectRemovalModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
                   alt="Object removed image" 
                   className="max-h-full max-w-full object-contain"
                 />
-                
-                {/* Reset button */}
-                <button
-                  onClick={() => setResultImage(null)}
-                  className="absolute top-4 right-4 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 text-white text-sm rounded-md transition-colors"
-                >
-                  Reset
-                </button>
               </div>
             ) : (
               <div 
@@ -921,22 +1246,6 @@ const ObjectRemovalModal = ({ isOpen, onClose, imageSrc, onImageUpdate }) => {
             </button>
           </div>
         </div>
-
-        {resultImage && (
-          <div className="absolute bottom-4 right-4 z-10 flex gap-2">
-            <button
-              onClick={() => {
-                if (onImageUpdate) {
-                  onImageUpdate(resultImage);
-                  onClose();
-                }
-              }}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 text-white font-medium rounded-lg transition-colors"
-            >
-              Continue with this image
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
