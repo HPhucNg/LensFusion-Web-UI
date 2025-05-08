@@ -71,44 +71,6 @@ export const SettingsSidebar = ({
         );
       // Dropdown select input
       case 'select':
-        // Special handling for Image Size parameter to add the Resize button
-        if (param.id === 'imageHeight') {
-          return (
-            <div>
-              <div className="grid grid-cols-2 mb-1">
-                <span className="text-xs font-medium text-gray-300">Image Size</span>
-                <span className="text-xs font-medium text-gray-300">Image Resize</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <select
-                  id={param.id}
-                  className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
-                            focus:ring-0 focus:outline-none"
-                  value={params[param.id]}
-                  onChange={(e) => handleParamChange(param.id, e.target.value)}
-                >
-                  {param.options.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={onResize}
-                  className={`w-full px-3 py-3 border rounded-lg text-center ${
-                    inputImage 
-                      ? "bg-gray-900/50 border-gray-700 hover:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      : "bg-gray-900/30 border-gray-700/50 text-gray-500 cursor-not-allowed"
-                  }`}
-                  title={inputImage ? "Resize image" : "Upload an image first"}
-                  disabled={!inputImage}
-                >
-                  <span className="text-sm">Resize Image</span>
-                </button>
-              </div>
-            </div>
-          );
-        }
         return (
           <select
             id={param.id}
@@ -161,15 +123,18 @@ export const SettingsSidebar = ({
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-gray-300">Advanced Settings</h3>
           
-          <div className="grid grid-cols-1 gap-3">
-            {parameterDefinitions.slice(2, 4).map(param => (
-              param.type === 'select' && (
-                <div key={param.id}>
-                  {renderParameter(param)}
-                </div>
-              )
-            ))}
-          </div>
+          {/* Image Resize Button */}
+          {inputImage && (
+            <div className="mb-3">
+              <label className="block text-xs font-medium mb-1 text-gray-300">Image Adjustments</label>
+              <button
+                onClick={onResize}
+                className="w-full px-3 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-center hover:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <span className="text-sm">Resize & Adjust Image</span>
+              </button>
+            </div>
+          )}
 
           {/* Seed Input */}
           <div className="space-y-1">

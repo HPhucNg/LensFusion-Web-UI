@@ -2,7 +2,6 @@
 export const defaultParams = {
     bgSource: "None",
     prompt: "",
-    imageHeight: 1152,
     numSamples: 1,
     seed: "",
     steps: 30,
@@ -27,18 +26,6 @@ export const defaultParams = {
       type: "text",
       placeholder: "Describe what you want to avoid...",
       defaultValue: defaultParams.negativePrompt
-    },
-    {
-      id: "imageHeight",
-      label: "Image Size",
-      type: "select",
-      options: [
-        { value: 512, label: "512 x 512" },
-        { value: 768, label: "768 x 768" },
-        { value: 1024, label: "1024 x 1024" },
-        { value: 1152, label: "1152 x 1152" }
-      ],
-      defaultValue: defaultParams.imageHeight
     },
     {
         id: "seed",

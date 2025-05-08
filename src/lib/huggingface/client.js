@@ -18,10 +18,6 @@ export async function processImage(imageFile, params = {}) {
       prompt: params.prompt || "",
       negative_prompt: params.negativePrompt || "",
       image_url: uploadedImageUrl,
-      image_size: {
-        width: params.imageWidth || 1024,
-        height: params.imageHeight || 1024
-      },
       num_inference_steps: params.steps || 28,
       seed: params.seed ? parseInt(params.seed) : undefined,
       initial_latent: params.bgSource || "None",
@@ -68,16 +64,16 @@ export async function processImage(imageFile, params = {}) {
         {
           image: {
             url: generatedImageUrl,
-            width: result.data.images[0].width || 1024,
-            height: result.data.images[0].height || 1024
+            width: result.data.images[0].width,
+            height: result.data.images[0].height
           }
         },
         {
           image: {
             // For the preprocessed image, just use the same image for now
             url: generatedImageUrl,
-            width: result.data.images[0].width || 1024,
-            height: result.data.images[0].height || 1024
+            width: result.data.images[0].width,
+            height: result.data.images[0].height
           }
         }
       ],
