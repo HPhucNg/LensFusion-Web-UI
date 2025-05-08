@@ -2,17 +2,38 @@
 const nextConfig = {
     output: 'standalone',
     images: {
-      domains: ['picsum.photos', 'pebblely.com', 'i.pinimg.com','firebasestorage.googleapis.com', 'api.remove.bg','raynamaru-hd-painter.hf.space'], // Allow picsum.photos as a valid image domain
+      domains: [
+        'picsum.photos', 
+        'pebblely.com', 
+        'i.pinimg.com',
+        'firebasestorage.googleapis.com', 
+        'api.remove.bg',
+        'raynamaru-hd-painter.hf.space', 
+        'storage.googleapis.com'
+      ], 
       remotePatterns: [
         {
           protocol: 'https',
-          hostname: 'lllyasviel-iclight-v2-vary.hf.space', // 'lllyasviel-iclight-v2.hf.space' back up space 
+          hostname: 'lllyasviel-iclight-v2-vary.hf.space', 
         },
         {
           protocol: 'https',
           hostname: 'raynamaru-hd-painter.hf.space',
         },
+        {
+          protocol: 'https',
+          hostname: '*.fal.ai',
+        },
+        {
+          protocol: 'https',
+          hostname: 'firebasestorage.googleapis.com',
+          // pathname: '/v0/b/**',
+        },
       ],
+    },
+    serverRuntimeConfig: {
+      // Will only be available on the server side
+      FAL_KEY: process.env.FAL_KEY,
     },
     experimental: {
       serverActions: {

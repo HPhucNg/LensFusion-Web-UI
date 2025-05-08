@@ -1,41 +1,52 @@
 "use server";
-let Client;
 
-async function getClient() {
-  if (!Client) {
-    const { Client: ImportedClient } = await import('@gradio/client');
-    Client = ImportedClient;
-  }
-  return Client;
-}
+import { fal } from "@fal-ai/client";
+
+// Configure fal client with API key from environment variables
+fal.config({
+  credentials: process.env.FAL_KEY
+});
 
 export async function processImage(imageFile, params = {}) {
   try {
-    const ClientClass = await getClient();
-    
-    const client = await ClientClass.connect("lllyasviel/iclight-v2-vary"); // 'llllyasviel/iclight-v2' back-up space
+    // Upload the image file to fal.ai storage
+    const imageUrl = await fal.storage.upload(imageFile);
 
     // Merge default parameters with provided params
     const processParams = {
-      bg_source: params.bgSource || "None",
       prompt: params.prompt || "",
-      image_height: params.imageHeight || 1152,
-      num_samples: params.numSamples || 1,
-      seed: params.seed ? parseInt(params.seed) : Math.floor(Math.random() * 1000000),
-      steps: params.steps || 40,
-      n_prompt: params.negativePrompt || DEFAULT_PARAMS.negativePrompt,
+      negative_prompt: params.negativePrompt || "",
+      image_url: imageUrl,
+      image_size: {
+        width: params.imageWidth || 1024,
+        height: params.imageHeight || 1024
+      },
+      num_inference_steps: params.steps || 28,
+      seed: params.seed ? parseInt(params.seed) : undefined,
+      initial_latent: params.bgSource || "None",
+      num_images: params.numSamples || 1,
       cfg: params.cfg || 1,
-      gs: params.gs || 5,
-      //rs: params.rs || 1,
-      //init_denoise: params.initDenoise || 0.999
+      guidance_scale: params.gs || 5,
+      enable_hr_fix: true,
+      lowres_denoise: 0.98,
+      highres_denoise: 0.95,
+      hr_downscale: 0.5,
+      enable_safety_checker: true,
+      output_format: "jpeg"
     };
 
-    const result = await client.predict("/process", {
-      input_fg: imageFile,
-      ...processParams
+    // Call the fal.ai API
+    const result = await fal.subscribe("fal-ai/iclight-v2", {
+      input: processParams,
+      logs: true,
+      onQueueUpdate: (update) => {
+        if (update.status === "IN_PROGRESS" && update.logs) {
+          update.logs.map((log) => log.message).forEach(console.log);
+        }
+      },
     });
 
-    return result.data;
+    return result.data.images;
   } catch (error) {
     console.error("Error in processImage:", error);
     throw new Error(error.message || "Failed to process image");
