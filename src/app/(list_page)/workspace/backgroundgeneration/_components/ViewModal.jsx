@@ -28,6 +28,7 @@ import {
   X
 } from "lucide-react"
 import RetouchModal from './RetouchModal';
+import ObjectRemovalModal from './ObjectRemovalModal';
 
 const ViewModal = ({ 
   isOpen, 
@@ -44,6 +45,7 @@ const ViewModal = ({
   onDownload
 }) => {
   const [showRetouchModal, setShowRetouchModal] = useState(false);
+  const [showObjectRemovalModal, setShowObjectRemovalModal] = useState(false);
 
   if (!isOpen) return null;
 
@@ -59,14 +61,29 @@ const ViewModal = ({
     setShowRetouchModal(true);
   };
 
+  const handleRemoveClick = () => {
+    setShowObjectRemovalModal(true);
+  };
+
   // Handler for retouched image update
-  const handleRetouchedImage = (newImageUrl) => {
+  const handleRetouchedImage = (newImageUrl, fileObject) => {
     console.log('ViewModal.handleRetouchedImage called with URL:', newImageUrl);
     
     // Update the image in the parent component
     if (onRetouch) {
       console.log('ViewModal calling onRetouch with:', newImageUrl);
-      onRetouch(newImageUrl);
+      onRetouch(newImageUrl, fileObject);
+    }
+  };
+
+  // Handler for object removed image update
+  const handleObjectRemovedImage = (newImageUrl, fileObject) => {
+    console.log('ViewModal.handleObjectRemovedImage called with URL:', newImageUrl);
+    
+    // Update the image in the parent component
+    if (onRemove) {
+      console.log('ViewModal calling onRemove with:', newImageUrl);
+      onRemove(newImageUrl, fileObject);
     }
   };
 
@@ -167,7 +184,7 @@ const ViewModal = ({
                     </button>
                     
                     <button 
-                      onClick={onRemove} 
+                      onClick={handleRemoveClick} 
                       className="flex items-center justify-center space-x-2 p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
                     >
                       <Eraser className="w-4 h-4" />
@@ -213,6 +230,14 @@ const ViewModal = ({
         onClose={() => setShowRetouchModal(false)} 
         imageSrc={imageSrc}
         onImageUpdate={handleRetouchedImage}
+      />
+
+      {/* Object Removal Modal */}
+      <ObjectRemovalModal 
+        isOpen={showObjectRemovalModal} 
+        onClose={() => setShowObjectRemovalModal(false)} 
+        imageSrc={imageSrc}
+        onImageUpdate={handleObjectRemovedImage}
       />
     </>
   );

@@ -944,9 +944,32 @@ export default function ImageProcessor() {
                 createFileFromUrl(newImageUrl);
               }
             }}
+            onRemove={(newImageUrl, fileObject) => {
+              // Save the object-removed image as the new output image
+              setOutputImage(newImageUrl);
+              
+              // If we got a file object, update selectedFile for future generate operations
+              if (fileObject) {
+                console.log('Setting selectedFile from object-removed image file object');
+                setSelectedFile(fileObject);
+              } else {
+                // Try to convert the URL to a file object
+                const createFileFromUrl = async (url) => {
+                  try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'object-removed-image.png', { type: blob.type });
+                    console.log('Created file object from object-removed image URL');
+                    setSelectedFile(file);
+                  } catch (err) {
+                    console.error('Failed to create file from object-removed URL:', err);
+                  }
+                };
+                createFileFromUrl(newImageUrl);
+              }
+            }}
             onInpaint={() => console.log('Inpaint')}
             onExpand={() => console.log('Expand')}
-            onRemove={() => console.log('Remove')}
             onRegenerate={() => handleGenerate()}
             onReprompt={() => console.log('Reprompt')}
             prompt={params.prompt}
@@ -1056,9 +1079,35 @@ export default function ImageProcessor() {
           // Close the fullscreen view after retouching is complete
           closeFullscreen();
         }}
+        onRemove={(newImageUrl, fileObject) => {
+          // Update the main output image when removing objects from fullscreen view
+          setOutputImage(newImageUrl);
+          
+          // If we received a file object, update selectedFile for generation
+          if (fileObject) {
+            console.log('Setting selectedFile from fullscreen object-removed image');
+            setSelectedFile(fileObject);
+          } else {
+            // Try to create a file object from the URL
+            const createFileFromUrl = async (url) => {
+              try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const file = new File([blob], 'object-removed-image.png', { type: blob.type });
+                console.log('Created file object from fullscreen object-removed image URL');
+                setSelectedFile(file);
+              } catch (err) {
+                console.error('Failed to create file from object-removed URL in fullscreen:', err);
+              }
+            };
+            createFileFromUrl(newImageUrl);
+          }
+          
+          // Close the fullscreen view after object removal is complete
+          closeFullscreen();
+        }}
         onInpaint={() => console.log('Inpaint')}
         onExpand={() => console.log('Expand')}
-        onRemove={() => console.log('Remove')}
         onRegenerate={() => handleGenerate()}
         onReprompt={() => console.log('Reprompt')}
         onDownload={() => fullscreenImage && handleDownload(fullscreenImage)}
