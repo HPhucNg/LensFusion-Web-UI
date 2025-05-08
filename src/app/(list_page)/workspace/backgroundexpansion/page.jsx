@@ -8,6 +8,7 @@ import WorkspaceNavbar from '@/components/WorkspaceNavbar';
 import { saveToGallery } from '@/lib/saveToGallery';
 import { auth, db } from '@/firebase/FirebaseConfig';
 import { doc, updateDoc, getDoc, increment } from 'firebase/firestore';
+import { updateUserTokens } from "@/firebase/firebaseUtils";
 
 
 export default function Home() {
@@ -22,6 +23,7 @@ export default function Home() {
     const [user, setUser] = useState(null);
     const [tokens, setTokens] = useState(0);
     const [insufficientTokens, setInsufficientTokens] = useState(false);
+    const [freeTrialTokens, setFreeTrialTokens] = useState(0);
 
     // get user tokens count
     useEffect(() => {
@@ -33,6 +35,7 @@ export default function Home() {
             if (userDoc.exists()) {
                 const tokenCount = userDoc.data().tokens || 0;
                 setTokens(tokenCount);
+                setFreeTrialTokens(userDoc.data().freeTrialTokens || 0);
                 setInsufficientTokens(tokenCount < 10);                
             }
           }
@@ -123,19 +126,17 @@ export default function Home() {
 
         setIsLoading(true); // start loading
         const result = await generateImage(params);
-        setIsLoading(false); // stop loading once the request completes
-
-        // deduct tokens
-        const userRef = doc(db, 'users', user.uid);
-        await updateDoc(userRef, {
-            tokens: increment(-10),
-          });
-          
-        const userDoc = await getDoc(userRef);
-        setTokens(userDoc.data().tokens);
-        
-
         if (result) {
+            // update user token first
+            await updateUserTokens(user.uid, 10);
+            
+            const userRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userRef); 
+        
+            setTokens(userDoc.data().tokens);
+            setFreeTrialTokens(userDoc.data().freeTrialTokens || 0);
+            setInsufficientTokens(userDoc.data().tokens < 10);
+
             // set both images
             const { image1_base64, image2_base64 } = result;
     
@@ -162,6 +163,7 @@ export default function Home() {
         } else {
             console.error("No valid result received from the inference.");
         }
+        setIsLoading(false); // stop loading once the request completes
     };
 
     const handleSliderMouseDown = (e) => {

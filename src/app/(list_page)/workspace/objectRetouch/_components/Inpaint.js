@@ -15,6 +15,7 @@ import { auth, db, storage } from '@/firebase/FirebaseConfig';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { updateUserTokens } from "@/firebase/firebaseUtils";
 
 const saveToUserGallery = async (imageUrl, userId) => {
   try {
@@ -47,6 +48,7 @@ const saveToUserGallery = async (imageUrl, userId) => {
 export default function Inpaint() {
   const [user, setUser] = useState(null);
   const [tokens, setTokens] = useState(0);
+  const [freeTrialTokens, setFreeTrialTokens] = useState(0);
   const [success, setSuccess] = useState(null);
 
   //inpainting states
@@ -78,6 +80,7 @@ export default function Inpaint() {
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
           setTokens(userDoc.data().tokens || 0);
+          setFreeTrialTokens(userDoc.data().freeTrialTokens || 0);
         }
       }
     });
@@ -196,6 +199,7 @@ export default function Inpaint() {
 
   //handle generate image
   const handleGenerate = async () => {
+    const requiredTokens = 15;
 
     // Reset states
     setIsProcessing(true);
@@ -208,6 +212,12 @@ export default function Inpaint() {
         const userRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userRef);
         const userData = userDoc.data();
+        
+        if (userData.subscriptionStatus === 'inactive' && userData.tokens < requiredTokens) {
+          setError("You don't have enough credits. Please subscribe to continue");
+          setIsProcessing(false);
+          return;
+        }
         
         if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
           setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
@@ -240,11 +250,13 @@ export default function Inpaint() {
       } else {
         setError("Could not extract image URL from response");
       }
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        tokens: tokens - 15
-      });
-      setTokens(prev => prev - 15);
+      
+      // Update tokens
+      const updatedTokens = await updateUserTokens(user.uid, requiredTokens);
+      if (updatedTokens) {
+        setTokens(updatedTokens.newTotalTokens);
+        setFreeTrialTokens(updatedTokens.newFreeTrialTokens);
+      }
       
       const saved = await saveToUserGallery(imageUrl, user.uid);
       if (saved) {

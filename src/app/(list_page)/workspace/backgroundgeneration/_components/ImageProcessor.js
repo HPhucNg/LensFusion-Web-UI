@@ -20,6 +20,7 @@ import { MobileMenuButton } from './MobileMenuButton';
 import { ImageContainer } from './ImageContainer';
 import ViewModal from './ViewModal';
 import ResizePreview from "./ResizePreview";
+import { updateUserTokens } from "@/firebase/firebaseUtils";
 
 import { useSearchParams } from 'next/navigation'; // to pull id from URL
 
@@ -144,6 +145,7 @@ export default function ImageProcessor() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userTokens, setUserTokens] = useState(0);
   const [insufficientTokens, setInsufficientTokens] = useState(false);
+  const [freeTrialTokens, setFreeTrialTokens] = useState(0);
   
   //resizing state managements
   const [isResizing, setIsResizing] = useState(false);
@@ -317,6 +319,7 @@ export default function ImageProcessor() {
       if (userSnap.exists()) {
         const userData = userSnap.data();
         setUserTokens(userData.tokens || 0);
+        setFreeTrialTokens(userDoc.data().freeTrialTokens || 0);
         setInsufficientTokens(userData.tokens < 10);
       } else {
         // If user document doesn't exist, set default tokens
@@ -630,7 +633,14 @@ export default function ImageProcessor() {
       const userRef = doc(db, 'users', currentUser.uid);
       const userDoc = await getDoc(userRef);
       const userData = userDoc.data();
-      
+
+      // Handle token to not go below 0
+      if (userData.subscriptionStatus === 'inactive' && userData.tokens < 10) {
+        setError("You don't have enough credits. Please subscribe to continue.");
+        setIsProcessing(false);
+        return;
+      }
+
       if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
         setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
         setIsProcessing(false);
@@ -640,8 +650,12 @@ export default function ImageProcessor() {
 
     // Token checking with fallbacks
     try {
-      // Try to deduct tokens but don't block generation if it fails
-      await deductTokens(10);
+      if (currentUser) {
+        // Deduct free trial tokens and tokens
+        await updateUserTokens(currentUser.uid, 10);
+      } else {
+        await deductTokens(10);
+      }
     } catch (tokenError) {
       console.error("Token system error:", tokenError);
       // Continue anyway - don't block core functionality
