@@ -38,15 +38,15 @@ function MobileTrigger() {
 const categories = [
   { id: 'all', label: 'All', color: '#B9EF9B' },
   { id: 'skincare', label: 'Skincare', color: '#E6CCB1' },
-  { id: 'candles', label: 'Candles', color: '#E6E0B1' },
+  { id: 'candles', label: 'Candle', color: '#E6E0B1' },
   { id: 'furniture', label: 'Furniture', color: '#B1DBE6' },
-  { id: 'cars', label: 'Cars', color: '#C7B1E6' },
-  { id: 'bags', label: 'Bags', color: '#B8B1E6' },
+  { id: 'cars', label: 'Car', color: '#C7B1E6' },
+  { id: 'bags', label: 'Bag', color: '#B8B1E6' },
   { id: 'jewelry', label: 'Jewelry', color: '#E6B1D8' },
   { id: 'shoes', label: 'Shoes', color: '#B1E6C2' },
-  { id: 'watches', label: 'Watches', color: '#E6D8B1' },
-  { id: 'toys', label: 'Toys', color: '#E6B1B1' },
-  { id: 'electronics', label: 'Electronics', color: '#B1C7E6' },
+  { id: 'watches', label: 'Watch', color: '#E6D8B1' },
+  { id: 'toys', label: 'Toy', color: '#E6B1B1' },
+  { id: 'electronics', label: 'Electronic', color: '#B1C7E6' },
   { id: 'others', label: 'Others', color: '#D9B1E6' },
 ];
 
