@@ -1228,49 +1228,6 @@ export default function UserProfile() {
   }, [user, imageStatus]);
   
 
-  const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId = null, subscriptionStatus = 'inactive', currentPlan = null) => {
-    try {
-      if (!userData || !userData.uid) {
-        console.error("User data is missing essential properties.");
-        return;
-      }
-      const userRef = doc(db, 'users', userData.uid); 
-      const userDoc = await getDoc(userRef);
-      
-      if (!userDoc.exists()) {
-        const newUser = {
-          email: userData.email,
-          name: userData.displayName || "guest",
-          photoURL: userData.photoURL,
-          lastLogin: serverTimestamp(),
-          tokens: tokensToAdd, 
-          customerId: customerId || null, 
-          subscriptionStatus: subscriptionStatus,
-          currentPlan: currentPlan ,
-        };
-        await setDoc(userRef, newUser);
-        console.log("New user created in Firebase");
-      } else {
-        const existingData = userDoc.data();
-        const updatedData = {
-          email: userData.email,
-          name: userData.displayName || existingData.name || "guest",
-          photoURL: userData.photoURL,
-          lastLogin: serverTimestamp(),
-          tokens: (existingData.tokens || 0) + tokensToAdd,
-          customerId: customerId || existingData.customerId || null, 
-          subscriptionStatus: subscriptionStatus || existingData.subscriptionStatus,
-          currentPlan: currentPlan || existingData.currentPlan,
-        };
-
-        await setDoc(userRef, updatedData);
-        console.log("User saved to Firebase");
-      }
-    } catch (error) {
-      console.error("Error saving user data:", error);
-    }
-  };
-
   // Handle image click to open gallery modal
   const handleImageClick = (image) => {
     // Debounce the click to prevent multiple rapid clicks
@@ -1344,7 +1301,7 @@ export default function UserProfile() {
                 {user?.displayName || "Guest"}
               </h2>
               <p className="text-gray-400 text-lg mb-4">
-                {user?.email || "No email provided"}
+                {userSettings?.email || user?.email || "No email provided"}
               </p>
               <div className="w-full justify-start text-center py-3 border-2 border-purple-400 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full px-4 sm:px-8 mb-3">
                 <div className="flex items-center justify-center gap-2 w-full overflow-visible">
@@ -1356,35 +1313,38 @@ export default function UserProfile() {
               </div>
 
               {/* Only show free trial message if freeTrialTokens exist AND trial hasn't expired */}
-              {(userSettings?.freeTrialTokens > 0) && (
-              <div className="w-full justify-start text-center py-2">
-                <div className="text-xs text-yellow-600">
-                  Free trial credits {daysLeft > 0 ? `will expire in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}` : 'available'}
+              {(userSettings?.freeTrialTokens > 0 && daysLeft > 0) && (
+                <div className="px-4 py-3 bg-gray-100 dark:bg-gray-800/10 border border-gray-300 dark:border-gray-700 rounded-lg flex items-center">
+                  <div className="text-xs font-medium text-yellow-600 dark:text-yellow-500">
+                    Free trial credits will expire in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
               {/* Display 60 day countdown before resetting credits */}
               {userSettings?.lockedTokens > 0 && userSettings?.lockedTokensExpirationDate && (
-                <div className=" text-sm text-center">
-                  <span className="text-yellow-600">
-                    {Math.ceil((new Date(
-                      typeof userSettings.lockedTokensExpirationDate.toDate === 'function' 
-                        ? userSettings.lockedTokensExpirationDate.toDate() 
-                        : new Date(userSettings.lockedTokensExpirationDate)
-                    ) - new Date()) / (1000 * 60 * 60 * 24))} days remaining until your credits reset
-                    <br/> Subscribe to enable credits
+                <div className="my-3 px-4 py-3 bg-gray-100 dark:bg-gray-800/10 border border-gray-300 dark:border-gray-700 rounded-lg flex items-center">
+                  <span className="text-gray-700 dark:text-gray-200 text-xs">
+                    <span className="text-yellow-600 dark:text-yellow-500 font-medium text-xs">
+                      {Math.ceil((new Date(
+                        typeof userSettings.lockedTokensExpirationDate.toDate === 'function'
+                          ? userSettings.lockedTokensExpirationDate.toDate()
+                          : new Date(userSettings.lockedTokensExpirationDate)
+                      ) - new Date()) / (1000 * 60 * 60 * 24))} days
+                    </span> remaining until your credits reset.Subscribe to enable credits.
                   </span>
                 </div>
               )}
+
               {/* Message to user to subscribe and show after freeTrialToken expired */}
               {showMessage && (
-                <div className="mb-4 text-sm">
+                <div className="my-3 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg flex items-center gap-3">
                   <span className="text-gray-400">
                     Subscribe to enable credits
                   </span>
                 </div>
               )}
+              
               <div className="w-full space-y-3 mt-4">
                 <Button variant="outline" onClick={() => setIsManageAccountOpen(true)} className="w-full justify-start py-6 border-[var(--border-gray)] bg-gradient-to-r from-gray-900 to-gray-800 hover:text-[#c792ff] hover:from-gray-800 hover:to-gray-700 overflow-hidden transition-all duration-300">
                   <Settings className="mr-3 h-5 w-5 " />
