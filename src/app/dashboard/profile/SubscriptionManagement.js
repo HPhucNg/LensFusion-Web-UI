@@ -15,7 +15,7 @@ export default function SubscriptionManagement({ onClose }) {
     const [isResubscribe, setIsResubscribe] = useState(false);
     
     // Get updated data from Context
-    const { status: subscriptionStatus, currentPlan, subscriptionId, cancelationDate, loading, subscriptionEndDate, freeTrialTokens, updateTokenCount, refreshSubscription } = useSubscription();
+    const { subscriptionStatus, currentPlan, subscriptionId, cancelationDate, loading, subscriptionEndDate, freeTrialTokens, updateTokenCount, refreshSubscription } = useSubscription();
 
     useEffect(() => {
         if (success) {
