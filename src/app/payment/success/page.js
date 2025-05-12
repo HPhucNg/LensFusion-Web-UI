@@ -20,7 +20,7 @@ export default function Success() {
         <div className="text-center p-8 ">
           <h1 className="text-3xl font-bold mb-4">Payment Successful!</h1>
           <p className="mb-4">Thank you for your purchase!</p>
-          <p className="text-gray-400"> You will be redirected to your the Dashboard in a few seconds...</p>
+          <p className="text-gray-400"> You will be redirected to the Dashboard in a few seconds...</p>
         </div>
       </div>
     </div>
