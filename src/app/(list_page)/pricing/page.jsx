@@ -18,7 +18,7 @@ function PricingPage() {
   const [pricingType, setPricingType] = useState('monthly');
   const [user, setUser] = useState(null);
   //subscription info of the user
-  const { status: subscriptionStatus, currentPlan, planCycle, subscriptionId, cancelationDate, loading: isLoading } = useSubscription();
+  const { subscriptionStatus, currentPlan, planCycle, subscriptionId, cancelationDate, loading: isLoading } = useSubscription();
   const [hasExpired, setHasExpired] = useState(false);
 
 
