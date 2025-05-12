@@ -28,7 +28,7 @@ import {
   MoreHorizontal
 } from "lucide-react"
 import { useTheme } from '@/hooks/useTheme'
-import { collection, query, where, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore'
+import { onSnapshot, doc, collection, query, where, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore'
 import { db, auth } from '@/firebase/FirebaseConfig'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -157,7 +157,22 @@ export function AppSidebar({
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  
+  const [userSettings, setUserSettings] = useState(null);
+
+  // Fetch user data
+  useEffect(() => {
+    if (!user?.uid) return;
+    
+    const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        setUserSettings(docSnapshot.data());
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [user?.uid]);
+
   // Fetch recent generations using the same method as profile page
   useEffect(() => {
     async function fetchUserImages() {
@@ -230,7 +245,7 @@ export function AppSidebar({
   // Prepare user data for NavUser component with proper fallbacks
   const userData = React.useMemo(() => ({
     name: user?.displayName || "User",
-    email: user?.email || "user@example.com",
+    email: (user?.providerData && user?.providerData[0]?.email) || "user@example.com",
     avatar: user?.photoURL || "",
     subscriptionStatus: user?.subscriptionStatus || "inactive",
     tokens: user?.tokens || 0

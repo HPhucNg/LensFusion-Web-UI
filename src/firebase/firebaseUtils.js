@@ -13,21 +13,25 @@ export const checkFreeTrialExpiration = async (userId) => {
 
     if (!userDoc.exists()) return;
 
-    if (userData.freeTrialTokens && userData.createdAt) {
+    // Check for expire free trial tokens 
+    if (userData.freeTrialTokens > 0 && userData.createdAt) {
       const creationTime = userData.createdAt.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt);
       const currentTime = new Date();
       
       const daysSinceCreation = Math.floor((currentTime - creationTime) / (1000 * 60 * 60 * 24));
       
       // FreeTrialToken expires after 7 days
-      if (daysSinceCreation > 7 && userData.freeTrialTokens > 0) {
+      if (daysSinceCreation > 7) {
         console.log("Free trial has expired");
+        const freeTrialTokens = userData.freeTrialTokens || 0;
+        const currentTokens = userData.tokens || 0;
         const newTotalTokens = Math.max(0, (userData.tokens || 0) - userData.freeTrialTokens);
 
         await updateDoc(userRef, {
         freeTrialTokens: 0,
         tokens: newTotalTokens
         });
+        return { freeTrialTokens: 0, tokens: newTotalTokens };
       }
     }
   } catch (error) {
@@ -69,12 +73,18 @@ export const updateUserTokens = async (userId, tokensToDeduct) => {
 };
 
 //saves users and updates data to firebase
-export const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId = null, subscriptionStatus = 'inactive', currentPlan = 'No Plan', planCycle = null, subscriptionId = null) => {    
+export const saveUserToFirebase = async (userData, email, tokensToAdd = 0, customerId = null, subscriptionStatus = 'inactive', currentPlan = 'No Plan', planCycle = null, subscriptionId = null) => {    
     if (!userData || !userData.uid) {
         console.error("User data is missing essential properties.");
         return;
     }
 
+    // Check if email exists
+    const userEmail = email || userData.email || (userData.providerData && userData.providerData[0]?.email);
+    if (!userEmail) {
+        return;
+    }
+    
     try {
         const userRef = doc(db, 'users', userData.uid); 
         const userDoc = await getDoc(userRef);
@@ -82,7 +92,7 @@ export const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId =
 
         // If the user doesn't exist, create a new doc/user
             const updatedData = {
-                email: userData.email,
+                email: userEmail,
                 name: userData.displayName || existingData.name || "guest",
                 photoURL: userData.photoURL,
                 lastLogin: serverTimestamp(),
@@ -110,8 +120,8 @@ export const saveUserToFirebase = async (userData, tokensToAdd = 0, customerId =
       await checkFreeTrialExpiration(userData.uid);
     }
     
-            await setDoc(userRef, updatedData, { merge: true });
-            console.log(`User ${userDoc.exists() ? 'updated' : 'created'} in Firebase`);
+    await setDoc(userRef, updatedData, { merge: true });
+    console.log(`User ${userDoc.exists() ? 'updated' : 'created'} in Firebase`);
     } catch (error) {
         console.error("Error saving user data:", error);
     }
