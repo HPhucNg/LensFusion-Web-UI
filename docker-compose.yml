@@ -81,7 +81,7 @@ services:
     container_name: stripe-webhook
     command: listen --forward-to http://lensfusion-web:3000/api/webhook/stripe
     environment:
-      - STRIPE_API_KEY=${NEXT_PUBLIC_STRIPE_SECRET_KEY}
+      - STRIPE_API_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
     depends_on:
       - lensfusion-web
