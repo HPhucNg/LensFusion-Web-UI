@@ -164,14 +164,14 @@ export default function ImageUpscaler() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-800 to-black">
       <div className="container mx-auto p-4">
         <WorkspaceNavbar/>
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white mb-4">
+          <h1 className="text-2xl font-bold mb-4">
             Image Upscaler
           </h1>
-          <p className="text-lg text-white/80">Enhance your images with AI-powered upscaling and restoration</p>
+          <p className="text-lg opacity-80">Enhance your images with AI-powered upscaling and restoration</p>
         </div>
 
         {success && (
@@ -212,7 +212,7 @@ export default function ImageUpscaler() {
                         </button>
                         <button
                           onClick={clearImages}
-                          className="p-2 bg-black/50 hover:bg-red-500/70 rounded-lg backdrop-blur-sm border border-white/10 shadow-md transition-all hover:scale-110"
+                          className="p-2 bg-black/50 hover:bg-red-500/70 rounded-lg backdrop-blur-sm border border-[var(--border-gray)] shadow-md transition-all hover:scale-110"
                           title="Remove image"
                         >
                           <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -222,7 +222,7 @@ export default function ImageUpscaler() {
                       </div>
                     </div>
                   ) : (
-                    <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-white/20 hover:border-white/40 transition-all duration-300 group">
+                    <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-[var(--border-gray)] hover:border-blue-600 dark:hover:border-purple-900 transition-all duration-300 group">
                       <input
                         type="file"
                         accept="image/*"
@@ -234,7 +234,7 @@ export default function ImageUpscaler() {
                           <div className="flex flex-col items-center justify-center space-y-3">
                             <div className="relative w-16 h-16">
                               <svg 
-                                className="w-16 h-16 text-white/70 group-hover:scale-110 transition-transform duration-300" 
+                                className="w-16 h-16 text-blue-200 dark:text-white opacity-70 group-hover:scale-110 transition-transform duration-300" 
                                 viewBox="0 0 24 24" 
                                 fill="none" 
                                 stroke="currentColor" 
@@ -247,7 +247,7 @@ export default function ImageUpscaler() {
                                 <path d="m8 17 4-4 4 4" />
                               </svg>
                             </div>
-                            <p className="text-sm text-white font-medium">Drag & drop image<br/>or click to upload</p>
+                            <p className="text-sm text-gray-400 font-medium">Drag & drop image<br/>or click to upload</p>
                           </div>
                         </div>
                       </div>
@@ -280,7 +280,7 @@ export default function ImageUpscaler() {
             </Button>
           </div>
 
-          <div className="group relative flex-1 rounded-2xl p-1 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-white/10 shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
+          <div className="group relative flex-1 rounded-2xl p-1 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-[var(--border-gray)] shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
             <div className="h-full w-full flex flex-col items-center justify-center rounded-xl">
               <div className="w-full h-[500px] flex items-center justify-center relative">
                 {outputImage ? (
@@ -307,7 +307,7 @@ export default function ImageUpscaler() {
                 ) : (
                   <div className="flex flex-col items-center justify-center space-y-4">
                     <svg 
-                      className="w-16 h-16 text-white/70" 
+                      className="w-16 h-16 text-blue-200 dark:text-white opacity-70" 
                       viewBox="0 0 24 24" 
                       fill="none" 
                       stroke="currentColor" 
@@ -319,7 +319,7 @@ export default function ImageUpscaler() {
                       <circle cx="9" cy="9" r="2" />
                       <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
                     </svg>
-                    <p className="text-sm text-white/70 font-medium">Upscaled Image</p>
+                    <p className="text-sm text-gray-400 font-medium">Upscaled Image</p>
                   </div>
                 )}
               </div>

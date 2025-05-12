@@ -21,8 +21,8 @@ export default function ResultViewer({
     <div className={`w-full h-[450px] flex items-center justify-center relative border-2 ${
       resultImage 
         ? 'border-gray-800/30' 
-        : 'border-dashed border-gray-600'
-    } hover:border-purple-500 transition-all duration-300 rounded-xl bg-gray-800/30`}>
+        : 'border-dashed border-[var(--border-gray)]'
+    }  hover:border-blue-600 dark:hover:border-purple-500 transition-all duration-300 rounded-xl bg-gradient-to-r dark:bg-gray-800/30`}>
       {/* Action buttons */}
       {resultImage && (
         <div className="absolute top-2 right-2 flex gap-2 z-40">
@@ -64,7 +64,7 @@ export default function ResultViewer({
         ) : (
           <div className="flex flex-col items-center justify-center space-y-4 text-white">
             <svg 
-              className="w-16 h-16 text-white/70" 
+              className="w-16 h-16 text-blue-200 dark:text-white opacity-70" 
               viewBox="0 0 24 24" 
               fill="none" 
               stroke="currentColor" 

@@ -193,7 +193,7 @@ export default function ImageUploader({ handleImageUpload, originalImage, clearM
           </div>
         </div>
       ) : (
-        <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-gray-600 hover:border-purple-500 transition-all duration-300">
+        <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed  border-[var(--border-gray)] hover:border-blue-600 dark:hover:border-purple-900 transition-all duration-300">
           <div className="text-center p-6 space-y-4">
             <div className="relative">
               <input
@@ -205,7 +205,7 @@ export default function ImageUploader({ handleImageUpload, originalImage, clearM
               />
               <div className="flex flex-col items-center justify-center space-y-3">
                 <svg 
-                  className="w-16 h-16 text-white/70 transition-transform duration-300" 
+                  className="w-16 h-16 text-blue-200 dark:text-white opacity-70  transition-transform duration-300" 
                   viewBox="0 0 24 24" 
                   fill="none" 
                   stroke="currentColor" 

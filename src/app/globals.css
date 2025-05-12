@@ -156,6 +156,7 @@ body {
         --sidebar-ring: 217.2 91.2% 59.8%;
         --sidebar-width: 18rem;
         --sidebar-width-collapsed: 3.5rem;
+        --textarea: #EEEEEE
     }
 
 
@@ -218,6 +219,7 @@ html.light .hover\:from-gray-800:hover {
         --modal-backdrop: none; /* No backdrop blur in dark mode */
         --border-gray: #242c3a;
         color:white;
+        --textarea: rgba(31, 41, 55, 0.2);
     }
 }
 

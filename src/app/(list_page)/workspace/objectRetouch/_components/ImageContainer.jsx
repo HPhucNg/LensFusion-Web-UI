@@ -13,7 +13,7 @@ export const ImageContainer = ({
   <div className={`group relative flex-1 rounded-2xl shadow-xl ${isInput ? "hover:shadow-2xl transition-all duration-300" : ""}`}>
     <div className="h-full w-full flex flex-col items-center justify-center rounded-xl backdrop-blur-sm">
       {/* Image Container */}
-      <div className="relative w-full h-[500px] flex items-center justify-center rounded-xl overflow-hidden bg-gray-800/30 px-4 py-4">
+      <div className="relative w-full h-[500px] flex items-center justify-center rounded-xl overflow-hidden bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900  dark:bg-gray-800/30 px-4 py-4">
         <div className="w-full h-full flex items-center justify-center">
           {imageSrc ? (
             <div className="relative w-full h-full">
@@ -63,7 +63,7 @@ export const ImageContainer = ({
             </div>
           ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <label className={`w-full h-full flex items-center justify-center border-2 border-dashed border-gray-600 ${isInput ? "hover:border-purple-900 transition-all duration-300" : ""} rounded-lg`}>
+            <label className={`w-full h-full flex items-center justify-center border-2 border-dashed border-[var(--border-gray)] ${isInput ? "hover:border-blue-600 dark:hover:border-purple-900 transition-all duration-300" : ""} rounded-lg`}>
             {isInput ? (
               <div className="text-center p-6 space-y-4">
                 <div className="relative">
@@ -73,9 +73,9 @@ export const ImageContainer = ({
                     onChange={uploadHandler}
                     className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
                   />
-                  <div className="flex flex-col items-center justify-center space-y-3">
+                  <div className="flex flex-col  items-center justify-center space-y-3">
                     <svg 
-                      className={`w-16 h-16 text-white/70 ${isInput ? "group-hover:scale-110 transition-transform duration-300" : ""}`}
+                      className={`w-16 h-16 text-blue-200 dark:text-white opacity-70 ${isInput ? "group-hover:scale-110 transition-transform duration-300" : ""}`}
                       viewBox="0 0 24 24" 
                       fill="none" 
                       stroke="currentColor" 
@@ -94,7 +94,7 @@ export const ImageContainer = ({
             ) : (
               <div className="flex flex-col items-center justify-center space-y-4 text-white">
                 <svg 
-                  className="w-16 h-16 text-white/70" 
+                  className="w-16 h-16 text-blue-200 dark:text-white opacity-70" 
                   viewBox="0 0 24 24" 
                   fill="none" 
                   stroke="currentColor" 

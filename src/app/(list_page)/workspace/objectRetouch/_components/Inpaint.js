@@ -321,12 +321,12 @@ export default function Inpaint() {
   };
 
   return (
-    <div className="w-full p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-gray-900 to-black text-white">
+    <div className="w-full p-4 sm:p-6 lg:p-8 bg-[var(--card-background)] dark:bg-gradient-to-br from-gray-900 to-black text-white">
       <h1 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
         AI Object Retouch
       </h1>
 
-      <div className="pt-4 px-4 pb-2 rounded-xl backdrop-blur-sm bg-gray-800/50 border border-gray-700">
+      <div className="pt-4 px-4 pb-2 rounded-xl backdrop-blur-sm bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900  dark:bg-gray-800/50 border border-[var(--border-gray)]">
       {/* Prompt field */}
         <PromptField
           params={params}

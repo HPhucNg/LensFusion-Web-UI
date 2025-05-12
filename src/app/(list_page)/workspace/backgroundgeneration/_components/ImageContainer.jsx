@@ -116,7 +116,7 @@ export const ImageContainer = ({
             </div>
           </div>
         ) : (
-          <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-gray-600 hover:border-purple-900 transition-all duration-300">
+          <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-600 dark:hover:border-purple-900 transition-all duration-300">
             {isInput ? (
               <div className="text-center p-6 space-y-4">
                 <div className="relative">
@@ -126,9 +126,9 @@ export const ImageContainer = ({
                     onChange={uploadHandler}
                     className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
                   />
-                  <div className="flex flex-col items-center justify-center space-y-3">
+                  <div className="flex flex-col items-center justify-center space-y-3 ">
                     <svg 
-                      className="w-16 h-16 text-white/70 group-hover:scale-110 transition-transform duration-300" 
+                      className="w-16 h-16 text-blue-200 dark:text-white opacity-70 group-hover:scale-110 transition-transform duration-300" 
                       viewBox="0 0 24 24" 
                       fill="none" 
                       stroke="currentColor" 
@@ -145,9 +145,9 @@ export const ImageContainer = ({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center space-y-4 text-white">
+              <div className="flex flex-col items-center justify-center space-y-4 ">
                 <svg 
-                  className="w-16 h-16 text-white/70" 
+                  className="w-16 h-16 text-blue-200 dark:text-white opacity-70" 
                   viewBox="0 0 24 24" 
                   fill="none" 
                   stroke="currentColor" 
