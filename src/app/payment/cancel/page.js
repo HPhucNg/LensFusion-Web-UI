@@ -21,7 +21,7 @@ export default function Cancel() {
         <div className="text-center p-8 rounded-xl shadow-2xl border border-gray-800">
           <h1 className="text-3xl font-bold mb-4">Subscription canceled.</h1>
           <p className="mb-4">We will miss you!</p>
-          <p className="text-gray-400"> You will be redirected to your profile in a few seconds...</p>
+          <p className="text-gray-400"> You will be redirected to the Dashboard in a few seconds...</p>
         </div>
       </div>
     </div>
