@@ -169,7 +169,7 @@ async function handleCheckoutSessionCompleted(session) {
             } else {
                 newTokenCount = (userData.tokens || 0) + tokensToAdd;
             }
-            
+            // Update doc when user subscribes to a plan
             await updateDoc(userRef, {
                 tokens: newTokenCount,
                 customerId,
@@ -263,6 +263,7 @@ export async function POST(req) {
                                 const currentTokens = currentUserData.tokens || 0;
                                 const freeTrialTokens = currentUserData.freeTrialTokens || 0;
 
+                                // Reset documeunt after expiration
                                 await updateDoc(userRef, {
                                     subscriptionStatus: 'inactive',
                                     cancel_at_period_end: false,
@@ -270,7 +271,7 @@ export async function POST(req) {
                                     lockedTokens: currentTokens,
                                     lockedTokensExpirationDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
                                     tokens: currentTokens,
-                                    currentPlan: null,
+                                    currentPlan: 'No Plan',
                                     planCycle: null,
                                     freeTrialTokens: freeTrialTokens
                                 });
@@ -331,7 +332,7 @@ export async function POST(req) {
                     where('subscriptionId', '==', subscriptionId),
                     limit(1)
                 );
-                
+
                 const subscriptionDocs = await getDocs(subscriptionQuery);
                 if (!subscriptionDocs.empty) {
                     const subscriptionDoc = subscriptionDocs.docs[0];

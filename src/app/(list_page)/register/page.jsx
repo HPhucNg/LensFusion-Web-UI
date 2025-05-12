@@ -70,15 +70,16 @@ export default function RegisterPage() {
     
     try {
       const provider = new GoogleAuthProvider();
+
+      // Request access to users email and profile info
+      provider.addScope('email');
+      provider.addScope('profile');
+
       const result = await signInWithPopup(auth, provider);
-      
-      if (result.user) {
-        // Set auth cookie
         await setAuthCookie(result.user);
         
         // Redirect to profile page
         router.push('/dashboard/profile');
-      }
     } catch (error) {
       console.error("Google signup error:", error);
       setError(error.message || 'An error occurred during signup with Google');
