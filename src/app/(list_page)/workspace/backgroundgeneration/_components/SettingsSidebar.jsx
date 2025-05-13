@@ -28,7 +28,7 @@ export const SettingsSidebar = ({
                 type="text"
                 id={param.id}
                 placeholder="12345"
-                className="flex-1 p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
+                className="flex-1 p-3 bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900 border border-[var(--border-gray)] rounded-lg 
                           focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={params[param.id]}
                 onChange={(e) => handleParamChange(param.id, e.target.value)}
@@ -36,8 +36,8 @@ export const SettingsSidebar = ({
               <button
                 onClick={generateRandomSeed}
                 type="button"
-                className="p-3 bg-gray-900/50 border border-gray-700 rounded-lg hover:bg-gray-800
-                          focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="p-3 bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900 border border-[var(--border-gray)] rounded-lg hover:bg-gray-800
+                          focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-300"
                 title="Generate Random Seed"
               >
                 <svg 
@@ -62,7 +62,7 @@ export const SettingsSidebar = ({
           <textarea
             id={param.id}
             placeholder={param.placeholder}
-            className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
+            className="w-full p-3 bg-gray-900/50 border border-[var(--border-gray)] rounded-lg 
                       focus:ring-0 focus:outline-none resize-y scrollbar scrollbar-thin scrollbar-track-gray-900/50 scrollbar-thumb-gray-700/50"
             value={params[param.id]}
             onChange={(e) => handleParamChange(param.id, e.target.value)}
@@ -82,7 +82,7 @@ export const SettingsSidebar = ({
               <div className="grid grid-cols-2 gap-2">
                 <select
                   id={param.id}
-                  className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
+                  className="w-full p-3 bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900 border text-gray-400  border-[var(--border-gray)] rounded-lg 
                             focus:ring-0 focus:outline-none"
                   value={params[param.id]}
                   onChange={(e) => handleParamChange(param.id, e.target.value)}
@@ -95,10 +95,10 @@ export const SettingsSidebar = ({
                 </select>
                 <button
                   onClick={onResize}
-                  className={`w-full px-3 py-3 border rounded-lg text-center ${
+                  className={`w-full px-3 py-3 border rounded-lg text-center bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900 ${
                     inputImage 
-                      ? "bg-gray-900/50 border-gray-700 hover:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      : "bg-gray-900/30 border-gray-700/50 text-gray-500 cursor-not-allowed"
+                      ? "bg-opacity-50 border-[var(--border-gray)] hover:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                      : "bg-opacity-30 border-[var(--border-gray)] border-opacity-50 text-gray-500 cursor-not-allowed"
                   }`}
                   title={inputImage ? "Resize image" : "Upload an image first"}
                   disabled={!inputImage}
@@ -112,7 +112,7 @@ export const SettingsSidebar = ({
         return (
           <select
             id={param.id}
-            className="w-full p-3 bg-gray-900/50 border border-gray-700 rounded-lg 
+            className="w-full p-3 bg-[var(--textarea)] border border-[var(--border-gray)] rounded-lg 
                       focus:ring-0 focus:outline-none"
             value={params[param.id]}
             onChange={(e) => handleParamChange(param.id, e.target.value)}
@@ -132,7 +132,7 @@ export const SettingsSidebar = ({
   return (
     <>
       {/* Settings Content */}
-      <div className="space-y-3">
+      <div className="space-y-3 p-2">
         {/* Prompts Section */}
         <div className="space-y-3">
           <div>
@@ -141,7 +141,7 @@ export const SettingsSidebar = ({
               value={params.prompt}
               onChange={(e) => handleParamChange('prompt', e.target.value)}
               placeholder="Describe what you want to generate..."
-              className="w-full p-3 text-sm bg-gray-800/20 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[120px] border border-gray-700 scrollbar scrollbar-thin scrollbar-track-gray-900/50 scrollbar-thumb-gray-700/50"
+              className="w-full p-3 text-sm bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[120px] border border-[var(--border-gray)] scrollbar scrollbar-thin scrollbar-track-gray-900/50 scrollbar-thumb-gray-700/50"
               rows={10}
             />
           </div>
@@ -151,7 +151,7 @@ export const SettingsSidebar = ({
               value={params.negativePrompt}
               onChange={(e) => handleParamChange('negativePrompt', e.target.value)}
               placeholder="Describe what you want to avoid..."
-              className="w-full p-3 text-sm bg-gray-800/20 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[50px] border border-gray-700 scrollbar scrollbar-thin scrollbar-track-gray-900/50 scrollbar-thumb-gray-700/50"
+              className="w-full text-gray-400 p-3 text-sm bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[50px] border border-[var(--border-gray)] scrollbar scrollbar-thin scrollbar-track-gray-900/50 scrollbar-thumb-gray-700/50"
               rows={4}
             />
           </div>
@@ -178,8 +178,8 @@ export const SettingsSidebar = ({
           </div>
           
           {/* Background Removal Toggle - Moved to after seed input */}
-          <div className="flex items-center justify-between p-3 bg-gray-900/50 border border-gray-700 rounded-lg group relative mt-3">
-            <label htmlFor="bg-removal-toggle" className="text-sm font-medium text-gray-300 flex items-center cursor-pointer">
+          <div className="flex items-center justify-between p-3 bg-[var(--border-gray)] dark:bg-gray-900/50 border border-[var(--border-gray)] rounded-lg group relative mt-3">
+            <label htmlFor="bg-removal-toggle" className="text-sm font-medium text-gray-500 dark:text-gray-300 flex items-center cursor-pointer">
               Auto-Remove Background
             </label>
             

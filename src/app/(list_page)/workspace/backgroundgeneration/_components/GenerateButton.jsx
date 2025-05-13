@@ -9,7 +9,7 @@ export const GenerateButton = ({
   insufficientTokens 
 }) => {
   return (
-    <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-gray-800/90 to-transparent">
+    <div className="sticky bottom-0 pt-4 bg-gradient-to-t dark:from-gray-800/90 from-gray-300/90 to-transparent">
       <button
         onClick={handleGenerate}
         disabled={isProcessing || !selectedFile || insufficientTokens}

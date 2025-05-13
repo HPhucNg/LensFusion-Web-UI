@@ -21,7 +21,7 @@ export const PromptField = ({
         value={params.prompt}
         onChange={(e) => handleParamChange('prompt', e.target.value)}
         placeholder="Enter what you would like to replace the object with"
-        className="w-full p-3 text-sm bg-gray-800/20 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[60px] max-h-[200px] border border-gray-700"
+        className="w-full p-3 text-sm bg-gray-100 dark:bg-gray-800/20 rounded-md focus:ring-0 focus:outline-none resize-y min-h-[60px] max-h-[200px] border border-[var(--border-gray)]"
         rows={1}
       />
     </div>

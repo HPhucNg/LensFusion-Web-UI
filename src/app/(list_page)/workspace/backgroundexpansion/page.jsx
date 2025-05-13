@@ -310,7 +310,7 @@ export default function Home() {
                         </div>
                     ) : (
                         <div className='flex gap-[16px] flex-wrap'> {/* user input */}
-                            <div className="flex-1 relative bg-gray-900 p-2 rounded-lg"> {/* upload image */}
+                            <div className="flex-1 relative bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900  p-2 rounded-lg"> {/* upload image */}
                                 {selectedImage ? (
                                     // if an image is selected, display the image
                                     <div className="relative w-full h-full">
@@ -331,7 +331,7 @@ export default function Home() {
                                     </div>
                                 ) : (
                                     // if no image is selected, display the upload label
-                                    <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-gray-600 hover:border-purple-900 transition-all duration-300">
+                                    <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-[var(--border-gray)] hover:border-blue-600 dark:hover:border-purple-900 transition-all duration-300">
                                         <div className="text-center p-6 space-y-4">
                                             <div className="relative">
                                                 <input
@@ -342,7 +342,7 @@ export default function Home() {
                                                 />
                                                 <div className="flex flex-col items-center justify-center space-y-3">
                                                     <svg
-                                                        className="w-16 h-16 text-white/70 group-hover:scale-110 transition-transform duration-300"
+                                                        className="w-16 h-16 text-blue-200 dark:text-white opacity-70  group-hover:scale-110 transition-transform duration-300"
                                                         viewBox="0 0 24 24"
                                                         fill="none"
                                                         stroke="currentColor"

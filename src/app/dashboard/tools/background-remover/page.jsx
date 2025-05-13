@@ -179,28 +179,28 @@ export default function BackgroundRemover() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900">
       <div className="container mx-auto p-4">
        <WorkspaceNavbar/>
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4">
+          <h1 className="text-4xl font-bold mb-4">
             Background Remover
           </h1>
-          <p className="text-lg text-white/80">Remove backgrounds from your images instantly using AI</p>
+          <p className="text-lg opacity-80">Remove backgrounds from your images instantly using AI</p>
         </div>
 
         {/* Success Message */}
         {success && (
           <div className="mb-4 p-4 bg-green-500/10 backdrop-blur-sm rounded-xl border border-green-500/20 animate-fade-in">
-            <p className="text-white">{success}</p>
+            <p className="text-gray-400">{success}</p>
           </div>
         )}
 
         {/* Error Message */}
         {error && (
           <div className="mb-4 p-4 bg-red-500/10 backdrop-blur-sm rounded-xl border border-red-500/20 animate-fade-in">
-            <p className="text-white">{error}</p>
+            <p className="text-gray-400">{error}</p>
           </div>
         )}
 
@@ -242,7 +242,7 @@ export default function BackgroundRemover() {
                       </div>
                     </div>
                   ) : (
-                    <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-white/20 hover:border-white/40 transition-all duration-300 group">
+                    <label className="w-full h-full flex items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-[var(--border-gray)] hover:border-blue-600 dark:hover:border-purple-900 transition-all duration-300 group">
                       <input
                         type="file"
                         accept="image/*"
@@ -254,7 +254,7 @@ export default function BackgroundRemover() {
                           <div className="flex flex-col items-center justify-center space-y-3">
                             <div className="relative w-16 h-16">
                               <svg 
-                                className="w-16 h-16 text-white/70 group-hover:scale-110 transition-transform duration-300" 
+                                className="w-16 h-16 text-blue-200 dark:text-white opacity-70 group-hover:scale-110 transition-transform duration-300" 
                                 viewBox="0 0 24 24" 
                                 fill="none" 
                                 stroke="currentColor" 
@@ -267,7 +267,7 @@ export default function BackgroundRemover() {
                                 <path d="m8 17 4-4 4 4" />
                               </svg>
                             </div>
-                            <p className="text-sm text-white font-medium">Drag & drop image<br/>or click to upload</p>
+                            <p className="text-sm text-gray-400 font-medium">Drag & drop image<br/>or click to upload</p>
                           </div>
                         </div>
                       </div>
@@ -301,7 +301,7 @@ export default function BackgroundRemover() {
           </div>
 
           {/* Output Section */}
-          <div className="group relative flex-1 rounded-2xl p-1 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-white/10 shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
+          <div className="group relative flex-1 rounded-2xl p-1 bg-gradient-to-r dark:bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-[var(--border-gray)] shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
             <div className="h-full w-full flex flex-col items-center justify-center rounded-xl">
               <div className="w-full h-[500px] flex items-center justify-center relative">
                 {outputImage ? (
@@ -328,7 +328,7 @@ export default function BackgroundRemover() {
                 ) : (
                   <div className="flex flex-col items-center justify-center space-y-4">
                     <svg 
-                      className="w-16 h-16 text-white/70" 
+                      className="w-16 h-16 text-blue-200 dark:text-white opacity-70" 
                       viewBox="0 0 24 24" 
                       fill="none" 
                       stroke="currentColor" 
@@ -340,7 +340,7 @@ export default function BackgroundRemover() {
                       <circle cx="9" cy="9" r="2" />
                       <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
                     </svg>
-                    <p className="text-sm text-white/70 font-medium">Processed Image</p>
+                    <p className="text-sm text-gray-400 font-medium">Processed Image</p>
                   </div>
                 )}
               </div>

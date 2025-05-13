@@ -901,7 +901,7 @@ export default function ImageProcessor() {
 
   // Component UI
   return (
-    <div className="h-full flex bg-gray-900 text-white">
+    <div className="h-full flex bg-[var(--card-background)]"> {/*dark:bg-gray-900 */}
       {/* Mobile menu button */}
       <MobileMenuButton 
         setIsSidebarOpen={setIsSidebarOpen} 
@@ -913,7 +913,7 @@ export default function ImageProcessor() {
         ref={sidebarRef}
         className={`fixed lg:relative inset-y-0 left-0 z-40 w-80 transform ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 transition-transform duration-300 ease-in-out bg-gray-900 border-r border-gray-700/50`}
+        } lg:translate-x-0 transition-transform duration-300 ease-in-out bg-[var(--sidebar-background)] border-r border-[var(--border-gray)]`}
       >
         {/* Tab Navigation */}
         <TabNavigation 

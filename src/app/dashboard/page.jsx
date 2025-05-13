@@ -306,7 +306,7 @@ export default function Page() {
                         }`}
                         style={{
                           backgroundColor: selectedCategory === category.id ? category.color : 'rgba(255, 255, 255, 0.07)',
-                          color: selectedCategory === category.id ? '#141823' : 'white',
+                          color: selectedCategory === category.id ? '#141823' : 'gray',
                           backdropFilter: 'blur(8px)',
                           minWidth: category.id === 'all' ? '60px' : '80px',
                           animation: selectedCategory === category.id ? 'tagPulse 2s infinite' : 'none'

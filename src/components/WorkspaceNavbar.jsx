@@ -72,7 +72,7 @@ export default function WorkspaceNavbar() {
           {/* Right - Tokens and Avatar */}
           <div className="flex items-center space-x-5 h-full">
             {/* Token Display - with animation */}
-            <div className={`hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-md bg-gray-800/50 text-white shadow-sm transition-all hover:bg-gray-700/50 ${
+            <div className={`hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-md bg-gray-200 dark:bg-gray-800/50  shadow-sm transition-all hover:bg-gray-300 dark:hover:bg-gray-700/50 ${
               isAnimating ? 'animate-credit-decrease' : ''
             }`}>
               <Gem className={`h-5 w-5 text-purple-400 ${isAnimating ? 'animate-pulse' : ''}`} />

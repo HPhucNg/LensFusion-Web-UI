@@ -299,14 +299,14 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-      <div className="bg-[#0D161F] border border-gray-800 rounded-lg w-full max-w-4xl m-4">
+      <div className="dark:bg-[#0D161F]  bg-[var(--card-background)] border border-[var(--border-gray)] rounded-lg w-full max-w-4xl m-4">
         {/* Header */}
-        <div className="border-b border-gray-800 p-4 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-white">Account Management</h2>
+        <div className="border-b border-[var(--border-gray)] p-4 flex justify-between items-center">
+          <h2 className="text-xl font-bold ">Account Management</h2>
           <Button
             variant="ghost"
             onClick={onClose}
-            className="text-gray-400 hover:text-white"
+            className="text-gray-400 hover:text"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -315,12 +315,12 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
         {/* Content */}
         <div className="flex h-[600px]">
           {/* Sidebar */}
-          <div className="w-64 border-r border-gray-800">
+          <div className="w-64 border-r border-[var(--border-gray)]">
             <nav className="space-y-1 p-4">
               <button
                 onClick={() => setActiveTab('profile')}
                 className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
-                  activeTab === 'profile' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                  activeTab === 'profile' ? 'dark:bg-gray-800 bg-gray-200 dark:text-white' : 'text-gray-400 dark:hover:bg-gray-800/50 hover:bg-gray-500/50 hover:text-white'
                 }`}
               >
                 <User2 className="h-5 w-5" />
@@ -330,7 +330,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               <button
                 onClick={() => setActiveTab('security')}
                 className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
-                  activeTab === 'security' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                  activeTab === 'security' ? 'dark:bg-gray-800 bg-gray-200 dark:text-white' : 'text-gray-400 dark:hover:bg-gray-800/50 hover:bg-gray-500/50 hover:text-white'
                 }`}
               >
                 <Lock className="h-5 w-5" />
@@ -340,7 +340,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               <button
                 onClick={() => setActiveTab('notifications')}
                 className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
-                  activeTab === 'notifications' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                  activeTab === 'notifications' ? 'dark:bg-gray-800 bg-gray-200 dark:text-white' : 'text-gray-400 dark:hover:bg-gray-800/50 hover:bg-gray-500/50 hover:text-white'
                 }`}
               >
                 <Bell className="h-5 w-5" />
@@ -350,7 +350,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               <button
                 onClick={() => setActiveTab('interface')}
                 className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
-                  activeTab === 'interface' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                  activeTab === 'interface' ? 'dark:bg-gray-800 bg-gray-200 dark:text-white' : 'text-gray-400 dark:hover:bg-gray-800/50 hover:bg-gray-500/50 hover:text-white'
                 }`}
               >
                 <Settings className="h-5 w-5" />
@@ -360,7 +360,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
               <button
                 onClick={() => setActiveTab('danger')}
                 className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg ${
-                  activeTab === 'danger' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50'
+                  activeTab === 'danger' ? 'dark:bg-gray-800 bg-gray-200 dark:text-white' : 'text-gray-400 dark:hover:bg-gray-800/50 hover:bg-gray-500/50 hover:text-white'
                 }`}
               >
                 <AlertTriangle className="h-5 w-5 text-red-500" />
@@ -385,7 +385,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="space-y-6">
-                <h3 className="text-lg font-medium text-white">Profile Information</h3>
+                <h3 className="text-lg font-medium ">Profile Information</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -396,7 +396,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     type="text"
                     value={profileData.displayName}
                       onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full bg-gray-200/50 dark:bg-gray-800/50 border border-[var(--border-gray)] rounded-lg px-3 py-2  focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
                 
@@ -408,7 +408,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       type="text"
                       value={profileData.firstName}
                       onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full bg-gray-200/50 dark:bg-gray-800/50  border border-[var(--border-gray)] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
                   
@@ -420,7 +420,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       type="text"
                       value={profileData.lastName}
                       onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full bg-gray-200/50 dark:bg-gray-800/50 border border-[var(--border-gray)] rounded-lg px-3 py-2  focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                 </div>
                 
@@ -432,7 +432,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       type="text"
                       value={profileData.location}
                       onChange={(e) => setProfileData(prev => ({ ...prev, location: e.target.value }))}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full bg-gray-200/50 dark:bg-gray-800/50  border border-[var(--border-gray)] rounded-lg px-3 py-2  focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
                 </div>
@@ -448,10 +448,10 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       <img
                         src={profileData.photoURL}
                         alt="Profile Preview"
-                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-800"
+                        className="w-20 h-20 rounded-full object-cover border-2 border-[var(--border-gray)]"
                       />
                     ) : (
-                      <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center border-2 border-gray-700">
+                      <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center border-2 border-[var(--border-gray)]">
                         <User2 className="w-10 h-10 text-gray-400" />
                       </div>
                     )}
@@ -468,12 +468,12 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     />
                     <Button 
                       variant="outline" 
-                      className="inline-flex items-center gap-2 px-3 py-1 text-sm text-white bg-transparent border border-gray-700 hover:bg-gray-800"
+                      className="inline-flex items-center gap-2 px-3 py-1 text-sm text-white bg-transparent border border-[var(--border-gray)] hover:bg-gray-800"
                       onClick={() => document.getElementById('photo-upload').click()}
                       disabled={isLoading}
                     >
                       <Camera className="h-4 w-4" />
-                      <span className="text-white">
+                      <span className="text-gray-400">
                         {isLoading ? 'Uploading...' : 'Upload Profile Picture'}
                       </span>
                     </Button>
@@ -493,18 +493,18 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
             {/* Security Tab */}
             {activeTab === 'security' && (
               <div className="space-y-6">
-                <h3 className="text-lg font-medium text-white">Security Settings</h3>
+                <h3 className="text-lg font-medium ">Security Settings</h3>
                 
                 <div className="space-y-4">
-                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                  <div className="p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
                     <div className="mb-3">
-                      <h4 className="font-medium text-white">Active Sessions</h4>
+                      <h4 className="font-medium">Active Sessions</h4>
                       <p className="text-sm text-gray-400">View and manage your active sessions across different devices</p>
                     </div>
                     <Button
                       variant="outline"
                       onClick={() => setShowActiveSessions(true)}
-                      className="bg-transparent border border-gray-700 hover:bg-gray-800 text-white"
+                      className="bg-transparent border border-gray-700 hover:bg-gray-800 "
                     >
                       View Active Sessions
                     </Button>
@@ -524,12 +524,12 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
             {/* Notifications Tab */}
             {activeTab === 'notifications' && (
               <div className="space-y-6">
-                <h3 className="text-lg font-medium text-white">Notification Preferences</h3>
+                <h3 className="text-lg font-medium ">Notification Preferences</h3>
                 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
                     <div>
-                      <h4 className="font-medium text-white">Email Notifications</h4>
+                      <h4 className="font-medium ">Email Notifications</h4>
                       <p className="text-sm text-gray-400">Receive notifications via email</p>
                     </div>
                     <div className="flex items-center">
@@ -548,9 +548,9 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
                     <div>
-                      <h4 className="font-medium text-white">Push Notifications</h4>
+                      <h4 className="font-medium">Push Notifications</h4>
                       <p className="text-sm text-gray-400">Receive push notifications in browser</p>
                     </div>
                     <div className="flex items-center">
@@ -569,9 +569,9 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
                     <div>
-                      <h4 className="font-medium text-white">Product Updates</h4>
+                      <h4 className="font-medium ">Product Updates</h4>
                       <p className="text-sm text-gray-400">Receive updates about new features and improvements</p>
                     </div>
                     <div className="flex items-center">
@@ -590,9 +590,9 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
                     <div>
-                      <h4 className="font-medium text-white">Security Alerts</h4>
+                      <h4 className="font-medium ">Security Alerts</h4>
                       <p className="text-sm text-gray-400">Get notified about security-related activity</p>
                     </div>
                     <div className="flex items-center">
@@ -611,9 +611,9 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
                     <div>
-                      <h4 className="font-medium text-white">Marketing Emails</h4>
+                      <h4 className="font-medium ">Marketing Emails</h4>
                       <p className="text-sm text-gray-400">Receive promotional emails and special offers</p>
                     </div>
                     <div className="flex items-center">
@@ -646,12 +646,12 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
             {/* Interface Tab */}
             {activeTab === 'interface' && (
               <div className="space-y-6">
-                <h3 className="text-lg font-medium text-white">Interface Settings</h3>
+                <h3 className="text-lg font-medium ">Interface Settings</h3>
                 
                 <div className="space-y-4">
-                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                  <div className="p-4 bg-gray-200/50 dark:bg-gray-800/50  rounded-lg">
                     <div className="mb-3">
-                      <h4 className="font-medium text-white">Color Scheme</h4>
+                      <h4 className="font-medium ">Color Scheme</h4>
                       <p className="text-sm text-gray-400">Choose your preferred color scheme</p>
                     </div>
                     <div className="flex gap-3">
@@ -667,7 +667,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       <Button
                         variant={interfaceSettings.colorScheme === 'light' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, colorScheme: 'light'}))}
-                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                        className={`bg-transparent border border-[var(--border-gray)] dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
                           interfaceSettings.colorScheme === 'light' ? 'bg-purple-600 border-purple-600' : ''
                         }`}
                       >
@@ -676,7 +676,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       <Button
                         variant={interfaceSettings.colorScheme === 'dark' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, colorScheme: 'dark'}))}
-                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                        className={`bg-transparent border border-[var(--border-gray)]  dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
                           interfaceSettings.colorScheme === 'dark' ? 'bg-purple-600 border-purple-600' : ''
                         }`}
                       >
@@ -685,17 +685,17 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     </div>
                   </div>
                   
-                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                  <div className="p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
                     <div className="mb-3">
-                      <h4 className="font-medium text-white">Accent Color</h4>
+                      <h4 className="font-medium ">Accent Color</h4>
                       <p className="text-sm text-gray-400">Choose accent color for UI elements</p>
                     </div>
                     <div className="flex flex-wrap gap-3">
                       <Button
                         variant={interfaceSettings.accentColor === 'purple' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'purple'}))}
-                        className={`bg-transparent border hover:bg-gray-800 text-white ${
-                          interfaceSettings.accentColor === 'purple' ? 'bg-purple-600 border-purple-600' : 'border-gray-700'
+                        className={`bg-transparent border dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
+                          interfaceSettings.accentColor === 'purple' ? 'bg-purple-600 border-purple-600' : 'border-[var(--border-gray)] '
                         }`}
                       >
                         <div className="w-4 h-4 rounded-full bg-purple-500 mr-2"></div>
@@ -704,8 +704,8 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       <Button
                         variant={interfaceSettings.accentColor === 'blue' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'blue'}))}
-                        className={`bg-transparent border hover:bg-gray-800 text-white ${
-                          interfaceSettings.accentColor === 'blue' ? 'bg-blue-600 border-blue-600' : 'border-gray-700'
+                        className={`bg-transparent border dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
+                          interfaceSettings.accentColor === 'blue' ? 'bg-blue-600 border-blue-600' : 'border-[var(--border-gray)]'
                         }`}
                       >
                         <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
@@ -714,8 +714,8 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       <Button
                         variant={interfaceSettings.accentColor === 'teal' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'teal'}))}
-                        className={`bg-transparent border hover:bg-gray-800 text-white ${
-                          interfaceSettings.accentColor === 'teal' ? 'bg-teal-600 border-teal-600' : 'border-gray-700'
+                        className={`bg-transparent border dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
+                          interfaceSettings.accentColor === 'teal' ? 'bg-teal-600 border-teal-600' : 'border-[var(--border-gray)] '
                         }`}
                       >
                         <div className="w-4 h-4 rounded-full bg-teal-500 mr-2"></div>
@@ -724,8 +724,8 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       <Button
                         variant={interfaceSettings.accentColor === 'amber' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'amber'}))}
-                        className={`bg-transparent border hover:bg-gray-800 text-white ${
-                          interfaceSettings.accentColor === 'amber' ? 'bg-amber-600 border-amber-600' : 'border-gray-700'
+                        className={`bg-transparent border dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
+                          interfaceSettings.accentColor === 'amber' ? 'bg-amber-600 border-amber-600' : 'border-[var(--border-gray)] '
                         }`}
                       >
                         <div className="w-4 h-4 rounded-full bg-amber-500 mr-2"></div>
@@ -734,8 +734,8 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       <Button
                         variant={interfaceSettings.accentColor === 'pink' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, accentColor: 'pink'}))}
-                        className={`bg-transparent border hover:bg-gray-800 text-white ${
-                          interfaceSettings.accentColor === 'pink' ? 'bg-pink-600 border-pink-600' : 'border-gray-700'
+                        className={`bg-transparent border dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
+                          interfaceSettings.accentColor === 'pink' ? 'bg-pink-600 border-pink-600' : 'border-[var(--border-gray)] '
                         }`}
                       >
                         <div className="w-4 h-4 rounded-full bg-pink-500 mr-2"></div>
@@ -744,16 +744,16 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     </div>
                   </div>
                   
-                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                  <div className="p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
                     <div className="mb-3">
-                      <h4 className="font-medium text-white">Text Size</h4>
+                      <h4 className="font-medium">Text Size</h4>
                       <p className="text-sm text-gray-400">Adjust the text size for better readability</p>
                     </div>
                     <div className="flex gap-3">
                       <Button
                         variant={interfaceSettings.fontSize === 'small' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, fontSize: 'small'}))}
-                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                        className={`bg-transparent border border-[var(--border-gray)]  dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
                           interfaceSettings.fontSize === 'small' ? 'bg-purple-600 border-purple-600' : ''
                         }`}
                       >
@@ -762,7 +762,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       <Button
                         variant={interfaceSettings.fontSize === 'medium' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, fontSize: 'medium'}))}
-                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                        className={`bg-transparent border border-[var(--border-gray)]  dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
                           interfaceSettings.fontSize === 'medium' ? 'bg-purple-600 border-purple-600' : ''
                         }`}
                       >
@@ -771,7 +771,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       <Button
                         variant={interfaceSettings.fontSize === 'large' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, fontSize: 'large'}))}
-                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                        className={`bg-transparent border border-[var(--border-gray)]  dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
                           interfaceSettings.fontSize === 'large' ? 'bg-purple-600 border-purple-600' : ''
                         }`}
                       >
@@ -780,16 +780,16 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     </div>
                   </div>
                   
-                  <div className="p-4 bg-gray-800/50 rounded-lg">
+                  <div className="p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
                     <div className="mb-3">
-                      <h4 className="font-medium text-white">Gallery View</h4>
+                      <h4 className="font-medium ">Gallery View</h4>
                       <p className="text-sm text-gray-400">Set your preferred gallery view density</p>
                     </div>
                     <div className="flex gap-3">
                       <Button
                         variant={interfaceSettings.gridViewType === 'compact' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, gridViewType: 'compact'}))}
-                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                        className={`bg-transparent border border-[var(--border-gray)]  dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
                           interfaceSettings.gridViewType === 'compact' ? 'bg-purple-600 border-purple-600' : ''
                         }`}
                       >
@@ -798,7 +798,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       <Button
                         variant={interfaceSettings.gridViewType === 'comfortable' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, gridViewType: 'comfortable'}))}
-                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                        className={`bg-transparent border border-[var(--border-gray)]  dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
                           interfaceSettings.gridViewType === 'comfortable' ? 'bg-purple-600 border-purple-600' : ''
                         }`}
                       >
@@ -807,7 +807,7 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                       <Button
                         variant={interfaceSettings.gridViewType === 'spacious' ? "default" : "outline"}
                         onClick={() => setInterfaceSettings(prev => ({...prev, gridViewType: 'spacious'}))}
-                        className={`bg-transparent border border-gray-700 hover:bg-gray-800 text-white ${
+                        className={`bg-transparent border border-[var(--border-gray)]  dark:hover:bg-gray-800 hover:bg-gray-300 hover:text-white  ${
                           interfaceSettings.gridViewType === 'spacious' ? 'bg-purple-600 border-purple-600' : ''
                         }`}
                       >
@@ -816,9 +816,9 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-gray-200/50 dark:bg-gray-800/50  rounded-lg">
                     <div>
-                      <h4 className="font-medium text-white">Reduce Animations</h4>
+                      <h4 className="font-medium ">Reduce Animations</h4>
                       <p className="text-sm text-gray-400">Minimize animations for a simpler experience</p>
                     </div>
                     <div className="flex items-center">
@@ -837,9 +837,9 @@ const AccountManagementDialog = ({ isOpen, onClose, user }) => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
                     <div>
-                      <h4 className="font-medium text-white">High Contrast Mode</h4>
+                      <h4 className="font-medium ">High Contrast Mode</h4>
                       <p className="text-sm text-gray-400">Increase contrast for better accessibility</p>
                     </div>
                     <div className="flex items-center">

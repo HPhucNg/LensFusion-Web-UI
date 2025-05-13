@@ -561,8 +561,12 @@ export default function ObjectRemovalUI() {
   };
 
   return (
-    <div className="w-full p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-gray-900 to-black text-white">
-      <h1 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
+    <div className="w-full p-4 sm:p-6 lg:p-8 bg-[var(--card-background)] dark:bg-gradient-to-br from-gray-900 to-black text-white">
+      <h1 className="text-3xl font-bold mb-4 bg-clip-text" style={{
+        background: 'linear-gradient(to right,#a78bfa, #3b82f6)', // purple-400 to blue-500
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+      }}>
         AI Object Remover
       </h1>
       
@@ -586,7 +590,7 @@ export default function ObjectRemovalUI() {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
         {/* Input Section */}
-        <div className="bg-gray-800/30 rounded-2xl overflow-hidden shadow-xl relative p-0 m-0" ref={imageContainerRef}>
+        <div className=" bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900 dark:bg-gray-800/30 rounded-2xl overflow-hidden shadow-xl relative p-0 m-0" ref={imageContainerRef}>
           <ImageUploader 
             handleImageUpload={handleImageUpload} 
             originalImage={originalImage} 
@@ -623,7 +627,7 @@ export default function ObjectRemovalUI() {
         </div>
       )}
       {/* Tips Section */}
-      <div className="mt-10 pt-4 px-4 pb-2 rounded-xl backdrop-blur-sm bg-gray-800/50 border border-gray-700">
+      <div className="mt-10 pt-4 px-4 pb-2 rounded-xl backdrop-blur-sm bg-gradient-to-r dark:bg-gray-800/50 border border-[var(--border-gray)]">
         <h3 className="text-sm font-semibold mb-2 text-purple-400">Tips for best results:</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm text-gray-300">
           <div className="flex items-start gap-2">
