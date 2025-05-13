@@ -33,7 +33,7 @@ Designed for e-commerce sellers, our one-stop SaaS transforms every product into
    Use mask system to tranform an object in the image
 
 3. ### Object Removal  
-   ![Object Removal](https://firebasestorage.googleapis.com/v0/b/lensfusion-fc879.firebasestorage.app/o/public_resources%2Fgithub%2FScreenshot%202025-05-12%20203440.png?alt=media&token=94fe2658-7306-446a-84d8-793da71dd25d)
+   ![Object Removal](https://firebasestorage.googleapis.com/v0/b/lensfusion-fc879.firebasestorage.app/o/public_resources%2Fgithub%2FScreenshot%202025-05-13%20024206.png?alt=media&token=56e9a248-9e86-4c5c-87ef-411c2c4937a8)
 
    Use mask system to remove any object in the image
 
