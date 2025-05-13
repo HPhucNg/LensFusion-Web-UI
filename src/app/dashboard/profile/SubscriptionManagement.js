@@ -72,9 +72,9 @@ export default function SubscriptionManagement({ onClose }) {
   
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-            <div className="bg-[#0D161F] border border-gray-800 rounded-lg w-full max-w-4xl m-4">
-                <div className="border-b border-gray-800 p-4 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-white">
+            <div className="dark:bg-[#0D161F] bg-[var(--card-background)] border border-[var(--border-gray)] rounded-lg w-full max-w-4xl m-4">
+                <div className="border-b border-[var(--border-gray)] p-4 flex justify-between items-center">
+                    <h2 className="text-xl font-bold ">
                         {activeTab === 'current' ? 'Subscription Management' : 
                          activeTab === 'change' && isResubscribe ? 'Resubscribe' :
                          activeTab === 'change' ? 'Pricing Plan' :
@@ -83,7 +83,7 @@ export default function SubscriptionManagement({ onClose }) {
                     <Button
                         variant="ghost"
                         onClick={onClose}
-                        className="text-gray-400 hover:text-white hover:bg-gray-900"
+                        className="text-gray-400 dark:hover:text-white hover:text-gray-800 hover:bg-gray-200 dark:hover:bg-gray-900"
                     >
                         <X className="h-5 w-5" />
                     </Button>
@@ -131,13 +131,13 @@ export default function SubscriptionManagement({ onClose }) {
 
                                     {/* Active Subscription */}
                                     {subscriptionStatus === 'active' ? (
-                                    <div className="border border-gray-700 p-4 sm:p-8 rounded-lg shadow-xl">
-                                        <div className="p-3 sm:p-4 rounded-lg mb-6 border border-gray-800">
+                                    <div className="border border-[var(--border-gray)] p-4 sm:p-8 rounded-lg shadow-xl">
+                                        <div className="p-3 sm:p-4 rounded-lg mb-6 border border-[var(--border-gray)]0">
                                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                                                 <div>
                                                     <h4 className="text-xl sm:text-2xl font-semibold gradient-plan-text select-none">{currentPlan}</h4>
                                                 </div>
-                                                <div className="px-3 py-1 rounded-full text-sm border border-gray-700 self-start sm:self-auto text-white">
+                                                <div className="px-3 py-1 rounded-full text-sm border border-gray-700 self-start sm:self-auto">
                                                     Active
                                                 </div>
                                             </div>
@@ -148,20 +148,20 @@ export default function SubscriptionManagement({ onClose }) {
                                         <div className="flex flex-wrap gap-4">
                                             <Button
                                                 onClick={handleChangePlan}
-                                                className="bg-transparent hover:bg-gray-800 text-white border border-gray-700"
+                                                className="bg-transparent dark:hover:bg-gray-800 hover:bg-[var(--border-gray)] hover:text-black dark:text-white text-gray-400 border border-[var(--border-gray)]"
                                             >
                                                 Change Plan
                                             </Button>
                                             
                                             <Button
                                                 onClick={() => setActiveTab('cancel')}
-                                                className="bg-transparent hover:bg-gray-800 text-white border border-gray-700"
+                                                className="bg-transparent dark:hover:bg-gray-800 hover:bg-[var(--border-gray)] hover:text-black dark:text-white text-gray-400 border border-[var(--border-gray)] "
                                             >
                                                 Cancel Subscription
                                             </Button>
                                             <Button
                                                 onClick={() => setActiveTab('credit')}
-                                                className="bg-transparent hover:bg-gray-800 text-white border border-gray-700 self-start sm:self-auto"
+                                                className="bg-transparent dark:hover:bg-gray-800 hover:bg-[var(--border-gray)] hover:text-black dark:text-white text-gray-400 border border-[var(--border-gray)] self-start sm:self-auto"
                                             >
                                                 Buy credits
                                             </Button>

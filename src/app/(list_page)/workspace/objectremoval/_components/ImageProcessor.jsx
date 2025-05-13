@@ -562,7 +562,11 @@ export default function ObjectRemovalUI() {
 
   return (
     <div className="w-full p-4 sm:p-6 lg:p-8 bg-[var(--card-background)] dark:bg-gradient-to-br from-gray-900 to-black text-white">
-      <h1 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
+      <h1 className="text-3xl font-bold mb-4 bg-clip-text" style={{
+        background: 'linear-gradient(to right,#a78bfa, #3b82f6)', // purple-400 to blue-500
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+      }}>
         AI Object Remover
       </h1>
       

@@ -178,8 +178,8 @@ export const SettingsSidebar = ({
           </div>
           
           {/* Background Removal Toggle - Moved to after seed input */}
-          <div className="flex items-center justify-between p-3 bg-gray-900/50 border border-gray-700 rounded-lg group relative mt-3">
-            <label htmlFor="bg-removal-toggle" className="text-sm font-medium text-gray-300 flex items-center cursor-pointer">
+          <div className="flex items-center justify-between p-3 bg-[var(--border-gray)] dark:bg-gray-900/50 border border-[var(--border-gray)] rounded-lg group relative mt-3">
+            <label htmlFor="bg-removal-toggle" className="text-sm font-medium text-gray-500 dark:text-gray-300 flex items-center cursor-pointer">
               Auto-Remove Background
             </label>
             
