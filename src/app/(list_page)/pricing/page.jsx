@@ -18,7 +18,7 @@ function PricingPage() {
   const [pricingType, setPricingType] = useState('monthly');
   const [user, setUser] = useState(null);
   //subscription info of the user
-  const { status: subscriptionStatus, currentPlan, planCycle, subscriptionId, cancelationDate, loading: isLoading } = useSubscription();
+  const { subscriptionStatus, currentPlan, planCycle, subscriptionId, cancelationDate, loading: isLoading } = useSubscription();
   const [hasExpired, setHasExpired] = useState(false);
 
 
@@ -87,16 +87,20 @@ function PricingPage() {
   // dynamic rendering
   const faqItems = [
     {
-      question: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit?',
-      answer: 'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+      question: 'How do I reactivate my subscription after cancellation?',
+      answer: "To reactivate your subscription, simply go to your profile page, select 'Manage Subscription,' and click on 'Resubscribe.'"
     },
     {
-      question: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit?',
-      answer: 'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+      question: 'How do I purchase additional credits?',
+      answer: "You can buy additional credits through the 'Manage Subscription' page in your profile. Additional credits are only available to users with an active subscription."
     },
     {
-      question: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit?',
-      answer: 'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+      question: 'What happens to my credits if I cancel my subscription?',
+      answer: "If you cancel your subscription, you have access until the end of your billing cycle and your credits will be locked for 60 days when your plan is inactive. To continue using your credits, you'll need to resubscribe within the 60 days."
+    },
+    {
+      question: 'How does the free trial work?',
+      answer: "New users receive 50 free credits valid for 7 days. After this period, any unused free trial credits will expire and be removed from your account."
     }
   ];
 
@@ -111,7 +115,7 @@ function PricingPage() {
           className={`px-6 py-2 rounded-md transition-all border ${
             pricingType === 'monthly'
               ? 'selected' 
-              : 'bg-gray-800  hover:bg-gray-700 hover:text-white'
+              : 'bg-gray-800  hover:bg-gray-400 hover:text-white'
           }`} 
           onClick={() => togglePricing('monthly')}
         >
@@ -121,7 +125,7 @@ function PricingPage() {
           className={`px-6 py-2 rounded-md transition-all border ${
             pricingType === 'yearly'
               ? 'selected' 
-              : 'bg-gray-800 hover:bg-gray-700 hover:text-white'
+              : 'bg-gray-800 hover:bg-gray-400 hover:text-white'
           }`}
           onClick={() => togglePricing('yearly')}
         >
@@ -177,7 +181,7 @@ function PricingPage() {
                 ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
                   : index === 1
                   ? 'bg-black text-white hover:bg-gray-600'
-                  : 'bg-white text-black hover:bg-gray-500'
+                  : 'bg-white text-black hover:bg-gray-300'
               }`}
               onClick={() => {
                 const priceId = pricingType === 'monthly' 

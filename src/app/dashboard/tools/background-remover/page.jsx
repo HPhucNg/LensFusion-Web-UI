@@ -13,6 +13,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import DownloadOptions from '@/components/DownloadOptions';
 import { removeBackgroundClient } from '@/lib/removeBackground';
 import WorkspaceNavbar from '@/components/WorkspaceNavbar';
+import { updateUserTokens } from "@/firebase/firebaseUtils";
 
 // Add function to save image to user gallery
 const saveToUserGallery = async (imageUrl, userId) => {
@@ -47,12 +48,15 @@ export default function BackgroundRemover() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [tokens, setTokens] = useState(0);
+  const [freeTrialTokens, setFreeTrialTokens] = useState(0);
   const [inputImage, setInputImage] = useState(null);
   const [outputImage, setOutputImage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
+
+  const tokenCost = 3;
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
@@ -62,6 +66,7 @@ export default function BackgroundRemover() {
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
           setTokens(userDoc.data().tokens || 0);
+          setFreeTrialTokens(userDoc.data().freeTrialTokens || 0);
         }
       }
     });
@@ -106,24 +111,38 @@ export default function BackgroundRemover() {
   };
 
   const handleRemoveBackground = async () => {
-    if (!inputImage || isProcessing || tokens < 1) return;
-    
-    setIsProcessing(true);
-    setError(null);
-    setSuccess(null);
-    
-    // Locked token for unsubscribed users
+    if (!inputImage || isProcessing ) return;
+
+    // Error handling for tokens
     if (user) {
       const userRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userRef);
       const userData = userDoc.data();
-      
+
+      // Handle token to not go below 0
+      if (userData.subscriptionStatus === 'inactive' && userData.tokens < tokenCost) {
+        setError("You don't have enough credits. Please subscribe to continue");
+        setIsProcessing(false);
+        return;
+      }
+
       if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
         setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
         setIsProcessing(false);
         return;
       }
     }
+
+    // Update tokens
+    const updatedTokens = await updateUserTokens(user.uid, tokenCost);
+      if (updatedTokens) {
+        setTokens(updatedTokens.newTotalTokens);
+        setFreeTrialTokens(updatedTokens.newFreeTrialTokens);
+      }  
+
+    setIsProcessing(true);
+    setError(null);
+    setSuccess(null);
 
     try {
       const response = await fetch(inputImage);
@@ -132,12 +151,6 @@ export default function BackgroundRemover() {
       
       const resultUrl = await removeBackgroundClient(file);
       setOutputImage(resultUrl);
-      
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        tokens: tokens - 1
-      });
-      setTokens(prev => prev - 1);
       
       const saved = await saveToUserGallery(resultUrl, user.uid);
       if (saved) {
@@ -266,7 +279,7 @@ export default function BackgroundRemover() {
 
             <Button
               onClick={handleRemoveBackground}
-              disabled={!inputImage || isProcessing || tokens < 1}
+              disabled={!inputImage || isProcessing || tokens < tokenCost}
               className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-base font-medium rounded-xl shadow-lg hover:shadow-purple-500/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
             >
               {isProcessing ? (
@@ -281,7 +294,7 @@ export default function BackgroundRemover() {
                 <>
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-600/0 via-purple-600/20 to-purple-600/0 group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                   <Upload className="w-5 h-5 mr-2 relative z-10" />
-                  <span className="relative z-10">Remove Background (1 Token)</span>
+                  <span className="relative z-10">Remove Background ({tokenCost} Token)</span>
                 </>
               )}
             </Button>

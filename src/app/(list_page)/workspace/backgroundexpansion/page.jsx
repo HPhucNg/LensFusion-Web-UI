@@ -3,11 +3,13 @@ import React, { useState, useEffect} from 'react';
 import { defaultParams, ratioSettings } from './config';
 import { generateImage } from './apiHelper'; 
 import DownloadOptions from '@/components/DownloadOptions';
-import { GenerateButton } from '../backgroundgeneration/_components/GenerateButton';
+//import { GenerateButton } from '../backgroundgeneration/_components/GenerateButton';
 import WorkspaceNavbar from '@/components/WorkspaceNavbar';
 import { saveToGallery } from '@/lib/saveToGallery';
 import { auth, db } from '@/firebase/FirebaseConfig';
 import { doc, updateDoc, getDoc, increment } from 'firebase/firestore';
+import { updateUserTokens } from "@/firebase/firebaseUtils";
+import { Gem } from 'lucide-react';
 
 
 export default function Home() {
@@ -22,6 +24,10 @@ export default function Home() {
     const [user, setUser] = useState(null);
     const [tokens, setTokens] = useState(0);
     const [insufficientTokens, setInsufficientTokens] = useState(false);
+    const [freeTrialTokens, setFreeTrialTokens] = useState(0);
+    const [error, setError] = useState(null);
+
+    const tokenCost = 3
 
     // get user tokens count
     useEffect(() => {
@@ -33,7 +39,8 @@ export default function Home() {
             if (userDoc.exists()) {
                 const tokenCount = userDoc.data().tokens || 0;
                 setTokens(tokenCount);
-                setInsufficientTokens(tokenCount < 10);                
+                setFreeTrialTokens(userDoc.data().freeTrialTokens || 0);
+                setInsufficientTokens(tokenCount < tokenCost);                
             }
           }
         });
@@ -115,7 +122,33 @@ export default function Home() {
 
     // for calling API when user is ready
     const handleGenerateClick = async () => {
-        if (tokens < 10) {
+        // Error handling for tokens
+        if (user) {
+            const userRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userRef);
+            const userData = userDoc.data();
+            
+            if (userData.subscriptionStatus === 'inactive' && userData.tokens < tokenCost) {
+              setError("You don't have enough credits. Please subscribe to continue");
+              setIsLoading(false);
+              return;
+            }
+            
+            if (userData.subscriptionStatus === 'inactive' && userData.lockedTokens > 0) {
+              setError("Your credits are currently locked. Please subscribe to a plan to keep using this feature.");
+              setIsLoading(false);
+              return;
+            }
+          }
+
+        // Update tokens
+        const updatedTokens = await updateUserTokens(user.uid, tokenCost);
+        if (updatedTokens) {
+          setTokens(updatedTokens.newTotalTokens);
+          setFreeTrialTokens(updatedTokens.newFreeTrialTokens);
+        }
+
+        if (tokens < tokenCost) {
             setInsufficientTokens(true);
             console.warn("Insufficient tokens");
             return;
@@ -123,19 +156,10 @@ export default function Home() {
 
         setIsLoading(true); // start loading
         const result = await generateImage(params);
-        setIsLoading(false); // stop loading once the request completes
-
-        // deduct tokens
-        const userRef = doc(db, 'users', user.uid);
-        await updateDoc(userRef, {
-            tokens: increment(-10),
-          });
-          
-        const userDoc = await getDoc(userRef);
-        setTokens(userDoc.data().tokens);
-        
-
         if (result) {
+            const userRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userRef); 
+        
             // set both images
             const { image1_base64, image2_base64 } = result;
     
@@ -162,6 +186,7 @@ export default function Home() {
         } else {
             console.error("No valid result received from the inference.");
         }
+        setIsLoading(false); // stop loading once the request completes
     };
 
     const handleSliderMouseDown = (e) => {
@@ -205,6 +230,36 @@ export default function Home() {
         setSliderPosition(50);
     };
 
+    // Created similar generate buttom from ()../backgroundgeneration/_components/GenerateButton) since the token count is different from that component
+    const GenerateButton = ({handleGenerate, isProcessing, selectedFile, userTokens, insufficientTokens}) => {
+        return (
+          <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-gray-800/90 to-transparent">
+            <button
+              onClick={handleGenerate}
+              disabled={isProcessing || !selectedFile || insufficientTokens}
+              className="w-full py-2 text-white font-medium text-base bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 disabled:bg-gradient-to-r disabled:from-gray-700 disabled:to-gray-600 rounded-md transition-all disabled:cursor-not-allowed relative overflow-hidden flex items-center justify-center"
+            >
+              {isProcessing ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <svg className="w-5 h-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Processing...</span>
+                </div>
+              ) : insufficientTokens ? (
+                'Insufficient Tokens'
+              ) : (
+                <div className="flex items-center justify-center">
+                  <span>Generate Image</span>
+                  <Gem className="w-4 h-4 mx-1.5 text-white" />
+                  <span>{tokenCost}</span>
+                </div>
+              )}
+            </button>
+          </div>
+        );
+      };
 
 
     return (
@@ -536,6 +591,12 @@ export default function Home() {
                                     userTokens={tokens}
                                     insufficientTokens={insufficientTokens}
                                 />
+
+                                {error && (
+                                    <div className="text-xs text-red-400 border border-gray-600 p-2 rounded-md mt-3 inline-block ">
+                                    {error}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         )}

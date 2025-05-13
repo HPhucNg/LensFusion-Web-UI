@@ -6,6 +6,7 @@ import BrandSection from '../components/BrandSection';
 import ProductCategory from '@/components/landing_page/ProductCategory';
 import ScrollToTop from '@/components/ScrollToTop';
 import Image from 'next/image'
+import Link from 'next/link'
 import HeroVideo from '@/components/HeroVideo';
 
 export default function Home() {
@@ -76,16 +77,18 @@ export default function Home() {
             {/* Call-to-Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               {/* Get Started Button with Animation */}
-              <button className="relative inline-flex h-12 w-full sm:w-auto overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
-                <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
-                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-8 sm:px-16 py-5 text-sm font-medium text-white backdrop-blur-3xl">
-                  Get Started
-                </span>
-              </button>
+              <Link href="/dashboard">
+                <button className="relative inline-flex h-12 w-full sm:w-auto overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
+                  <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
+                  <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-8 sm:px-16 py-5 text-sm font-medium text-white backdrop-blur-3xl">
+                    Get Started
+                  </span>
+                </button>
+              </Link>
               {/* Live Demo Button with Shimmer Effect */}
-              <button className="w-full sm:w-auto inline-flex h-12 font-semibold animate-shimmer items-center justify-center rounded-full border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-8 sm:px-16 font-medium text-white transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
+              {/* <button className="w-full sm:w-auto inline-flex h-12 font-semibold animate-shimmer items-center justify-center rounded-full border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-8 sm:px-16 font-medium text-white transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
                 Live Demo
-              </button>
+              </button> */}
             </div>
 
             {/* Hero Video Section */}
@@ -125,7 +128,7 @@ export default function Home() {
               {/* Right Content - Demo Image */}
               <div className="relative w-full mt-4 sm:mt-0">
                 <Image
-                  src="/background-removal.png"
+                  src="https://firebasestorage.googleapis.com/v0/b/lensfusion-fc879.firebasestorage.app/o/public_resources%2Fhomepage%2Fimages%2Fbackground-removal.png?alt=media&token=4295a3c3-948e-4dc8-9397-7f78ab693616"
                   alt="Background removal demonstration"
                   width={2400}
                   height={1600}
@@ -140,8 +143,8 @@ export default function Home() {
               {/* Left Content - Demo Image */}
               <div className="relative w-full order-2 md:order-1">
                 <Image
-                  src="/change_background.jpg"
-                  alt="Background removal demonstration"
+                  src="https://firebasestorage.googleapis.com/v0/b/lensfusion-fc879.firebasestorage.app/o/public_resources%2Fhomepage%2Fimages%2Fchange_background.jpg?alt=media&token=6de6841a-eb0f-443b-869e-8951a376d06d"
+                  alt="ChangeBackground demonstration"
                   width={2400}
                   height={1600}
                   className="w-full h-auto object-contain"

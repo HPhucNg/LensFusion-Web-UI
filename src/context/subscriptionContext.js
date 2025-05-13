@@ -2,17 +2,20 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from '@/firebase/FirebaseConfig';
 import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
-import { saveUserToFirebase } from '@/firebase/firebaseUtils';
+import { saveUserToFirebase, checkFreeTrialExpiration } from '@/firebase/firebaseUtils';
 
-// this is used to manage the subscription status
+// Context used to manage the subscription status
 const SubscriptionContext = createContext();
 
+// Store subscription data to use throughout application
 export function SubscriptionProvider({ children }) {
+  //default value for users with no active subscription
   const [subscriptionData, setSubscriptionData] = useState({
-    status: 'inactive',
+    subscriptionStatus: 'inactive',
     currentPlan: null,
     planCycle: null,
     tokens: 0,
+    freeTrialTokens: 0,
     subscriptionId: null,
     cancel_at_period_end: false,
     cancelationDate: null,
@@ -20,41 +23,49 @@ export function SubscriptionProvider({ children }) {
     subscriptionEndDate: null,
   });
 
+  // Helper function to format the subscription end date consistently
+  const formatEndDate = (dateValue) => {
+    if (!dateValue) return null;
+    
+    if (dateValue.toDate) {
+      return dateValue.toDate().toLocaleDateString();
+    } else if (typeof dateValue === 'string') {
+      return new Date(dateValue).toLocaleDateString();
+    }
+    return null;
+  };
+
+  // Helper function to create subscription data object from Firestore data
+  const createSubscriptionDataFromFirestore = (userData) => {
+    return {
+      subscriptionStatus: userData.subscriptionStatus || 'inactive',
+      currentPlan: userData.currentPlan || 'No Plan',
+      planCycle: userData.planCycle || null,
+      tokens: userData.tokens || 0,
+      freeTrialTokens: userData.freeTrialTokens || 0,
+      customerId: userData.customerId || null,
+      subscriptionId: userData.subscriptionId,
+      cancel_at_period_end: userData.cancel_at_period_end || false,
+      cancelationDate: userData.cancelationDate || null,
+      loading: false,
+      subscriptionEndDate: formatEndDate(userData.subscriptionEndDate)
+    };
+  };
+
+  // Refresh any changes made
   const refreshSubscription = async () => {
     try {
       const user = auth.currentUser;
       if (user) {
+        // Check if free trial expired
+        await checkFreeTrialExpiration(user.uid);
+        
         const userRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userRef);
         
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          
-          // Format the subscription end date
-          let formattedEndDate = null;
-          if (userData.subscriptionEndDate) {
-            if (userData.subscriptionEndDate.toDate) {
-              formattedEndDate = userData.subscriptionEndDate.toDate().toLocaleDateString();
-            } 
-            else if (typeof userData.subscriptionEndDate === 'string') {
-              formattedEndDate = new Date(userData.subscriptionEndDate).toLocaleDateString();
-            }
-          }
-          
-          // Update the subscription data state with fresh data
-          setSubscriptionData({
-            status: userData.subscriptionStatus || 'inactive',
-            currentPlan: userData.currentPlan || 'No Plan',
-            planCycle: userData.planCycle || null,
-            tokens: userData.tokens || 0,
-            customerId: userData.customerId || null,
-            subscriptionId: userData.subscriptionId,
-            cancel_at_period_end: userData.cancel_at_period_end || false,
-            cancelationDate: userData.cancelationDate || null,
-            loading: false,
-            subscriptionEndDate: formattedEndDate
-          });
-          
+          setSubscriptionData(createSubscriptionDataFromFirestore(userData));
           return true;
         }
       }
@@ -72,7 +83,7 @@ export function SubscriptionProvider({ children }) {
       if (user) {
         const userRef = doc(db, 'users', user.uid);
         await updateDoc(userRef, {
-          tokens: newTokens
+          tokens: Math.max(0, newTokens)
         });
         console.log('Token count updated');
         return true;
@@ -88,60 +99,33 @@ export function SubscriptionProvider({ children }) {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        await refreshSubscription();
         const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        if (!userDoc.exists()) {
+          await saveUserToFirebase(user);
+        }
+        await checkFreeTrialExpiration(user.uid);
+        await refreshSubscription();
+        
         const unsubscribeSnapshot = onSnapshot(userRef, (userDoc) => {
           if (userDoc.exists()) {
             const userData = userDoc.data();
             console.log('Firestore user data:', userData); // Debug log
-
-            let formattedEndDate = null;
-            if (userData.subscriptionEndDate) {
-              if (userData.subscriptionEndDate.toDate) {
-                formattedEndDate = userData.subscriptionEndDate.toDate().toLocaleDateString();
-              } 
-              else if (typeof userData.subscriptionEndDate === 'string') {
-                formattedEndDate = new Date(userData.subscriptionEndDate).toLocaleDateString();
-              }
-            }
-
-            setSubscriptionData({
-              status: userData.subscriptionStatus || 'inactive',
-              currentPlan: userData.currentPlan || 'No Plan',
-              planCycle: userData.planCycle || null,
-              tokens: userData.tokens || 0,
-              customerId: userData.customerId || null,
-              subscriptionId: userData.subscriptionId,
-              cancel_at_period_end: userData.cancel_at_period_end || false,
-              cancelationDate: userData.cancelationDate || null,
-              loading: false,
-              subscriptionEndDate: formattedEndDate
-            });
-          } else {
-            //If user document doesn't exist, create default values
-            saveUserToFirebase(user);
-            setSubscriptionData({
-              status: 'inactive',
-              currentPlan: 'No Plan',
-              planCycle: null,
-              tokens: 0,
-              customerId: null,
-              subscriptionId: null,
-              cancel_at_period_end: false,
-              cancelationDate: null,
-              loading: false,
-              subscriptionEndDate: null
-            });
+        
+            // Update subscription data
+            setSubscriptionData(createSubscriptionDataFromFirestore(userData));
           }
         });
+
         return () => unsubscribeSnapshot();
       } else {
         // Resets the states when user not authenticated
         setSubscriptionData({
-          status: 'inactive',
+          subscriptionStatus: 'inactive',
           currentPlan: 'No Plan',
           planCycle: null,
           tokens: 0,
+          freeTrialTokens: 0,
           customerId: null,
           subscriptionId: null,
           cancel_at_period_end: false,
@@ -169,6 +153,7 @@ export function SubscriptionProvider({ children }) {
     </SubscriptionContext.Provider>
   );
 }
+
 //custom hook for using context
 export const useSubscription = () => {
   const context = useContext(SubscriptionContext);

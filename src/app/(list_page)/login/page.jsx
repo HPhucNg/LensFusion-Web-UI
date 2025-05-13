@@ -84,14 +84,18 @@ export default function LoginPage() {
   
     try {
       const provider = new GoogleAuthProvider();
+
+      // Request access to users email and profile info
+      provider.addScope('email');
+      provider.addScope('profile');
+
       const result = await signInWithPopup(auth, provider);
-      const user = result.user;
       
-      // Set auth cookie
-      await setAuthCookie(user);
+      await setAuthCookie(result.user);
       
       // Redirect to profile page
       router.push('/dashboard');
+      
     } catch (error) {
       console.error("Google login error:", error);
       setError('Error signing in with Google. Please try again.');

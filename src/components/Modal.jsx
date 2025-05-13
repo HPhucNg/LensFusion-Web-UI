@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
     DropdownMenu,
@@ -304,17 +303,22 @@ function Modal({ closeModal, add_community, selectedImage, initialStatus, setIma
                         <div> {/* Category Dropdown */}
                         <label className="text-sm font-medium text-gray-400">Category:</label>
                             <select 
-                                className="w-full mt-1 bg-gray-800/50 border border-gray-600 rounded-lg py-2 px-3 text-sm focus:outline-none"
+                                className="w-full mt-1 bg-gray-800/50 border border-gray-600 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#8d5aed] transition-all duration-200"
                                 value={pinDetails.category}
                                 onChange={(e) => setPinDetails({ ...pinDetails, category: e.target.value })}
                             >
                                 <option value="">Select Category</option>
+                                <option value="toys">Toys</option>
                                 <option value="skincare">Skincare</option>
                                 <option value="candles">Candles</option>
                                 <option value="furniture">Furniture</option>
-                                <option value="jewellery">Jewellery</option>
+                                <option value="cars">Cars</option>
                                 <option value="bags">Bags</option>
-                                <option value="other">Other</option>
+                                <option value="jewelry">Jewelry</option>
+                                <option value="shoes">Shoes</option>
+                                <option value="watches">Watches</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="others">Others</option>
                             </select>
                         </div>
                         <div className='pt-2'>
